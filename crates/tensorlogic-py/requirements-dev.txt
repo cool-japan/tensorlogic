@@ -1,0 +1,20 @@
+# Development dependencies for tensorlogic-py
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-xdist>=3.0.0  # For parallel test execution
+
+# Type checking
+mypy>=1.0.0
+types-numpy
+numpy>=1.20.0
+
+# Formatting and linting
+black>=23.0.0
+ruff>=0.1.0
+
+# Documentation
+jupyter>=1.0.0
+notebook>=7.0.0
+matplotlib>=3.5.0  # For visualization in notebooks

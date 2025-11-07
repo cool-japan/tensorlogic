@@ -1,0 +1,68 @@
+[workspace]
+members = [
+  "crates/tensorlogic",
+  "crates/tensorlogic-cli",
+  "crates/tensorlogic-ir",
+  "crates/tensorlogic-compiler",
+  "crates/tensorlogic-infer",
+  "crates/tensorlogic-train",
+  "crates/tensorlogic-adapters",
+  "crates/tensorlogic-oxirs-bridge",
+  "crates/tensorlogic-scirs-backend",
+  "crates/tensorlogic-sklears-kernels",
+  "crates/tensorlogic-quantrs-hooks",
+  "crates/tensorlogic-trustformers",
+]
+# Note: tensorlogic-py is excluded from workspace as it uses PyO3 extension-module
+# and must be built with maturin (not cargo build)
+# Note: fuzz directories are excluded as they have their own workspace configuration
+exclude = [
+  "crates/tensorlogic-py",
+  "crates/*/fuzz",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0-alpha.1"
+edition = "2021"
+license = "Apache-2.0"
+homepage = "https://github.com/cool-japan/tensorlogic"
+repository = "https://github.com/cool-japan/tensorlogic"
+rust-version = "1.90"
+
+[workspace.dependencies]
+# External dependencies
+thiserror = "2"
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+bincode = { version = "2", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+indexmap = { version = "2", features = ["serde"] }
+smallvec = "1"
+once_cell = "1"
+lazy_static = "1"
+log = "0.4"
+criterion = "0.7"
+proptest = "1"
+approx = "0.5"
+
+# SciRS2 dependencies (from crates.io)
+scirs2-core = "0.1.0-rc.2"
+scirs2-linalg = "0.1.0-rc.2"
+scirs2-autograd = "0.1.0-rc.2"
+scirs2-optimize = "0.1.0-rc.2"
+
+# Internal tensorlogic crates
+tensorlogic-ir = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-ir" }
+tensorlogic-adapters = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-adapters" }
+tensorlogic-infer = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-infer" }
+tensorlogic-compiler = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-compiler" }
+tensorlogic-scirs-backend = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-scirs-backend" }
+tensorlogic-train = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-train" }
+tensorlogic-oxirs-bridge = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-oxirs-bridge" }
+tensorlogic-sklears-kernels = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-sklears-kernels" }
+tensorlogic-quantrs-hooks = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-quantrs-hooks" }
+tensorlogic-trustformers = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-trustformers" }
+

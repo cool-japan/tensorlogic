@@ -1,0 +1,41 @@
+[package]
+name = "tensorlogic-train"
+version = "0.1.0-alpha.1"
+description = "Training loops, loss composition, and optimization schedules for TensorLogic"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Core tensorlogic crates
+tensorlogic-ir.workspace = true
+tensorlogic-infer.workspace = true
+tensorlogic-scirs-backend.workspace = true
+
+# SciRS2 dependencies for training
+scirs2-core.workspace = true
+scirs2-autograd.workspace = true
+scirs2-optimize.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Data structures
+indexmap.workspace = true
+
+# Logging
+log.workspace = true
+
+# Serialization (for checkpoints)
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+criterion = "0.7"
+
+[[bench]]
+name = "training_performance"
+harness = false

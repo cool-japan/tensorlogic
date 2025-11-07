@@ -1,0 +1,29 @@
+[package]
+name = "tensorlogic-compiler"
+version = "0.1.0-alpha.1"
+description = "Compiler for transforming logic expressions into tensor computation graphs"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+tensorlogic-adapters.workspace = true
+tensorlogic-ir.workspace = true
+
+[features]
+default = []
+# Enable integration tests that require tensorlogic-scirs-backend (creates circular dev-dependency)
+integration-tests = []
+
+[dev-dependencies]
+criterion.workspace = true
+scirs2-core.workspace = true
+tensorlogic-infer.workspace = true
+# tensorlogic-scirs-backend.workspace = true  # Disabled: circular dev-dependency
+
+[[bench]]
+name = "compilation_performance"
+harness = false

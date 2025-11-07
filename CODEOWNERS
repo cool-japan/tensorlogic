@@ -1,0 +1,27 @@
+# CODEOWNERS for Tensorlogic
+# These owners will be the default owners for everything in the repo.
+# They will be requested for review when someone opens a pull request.
+
+* @cool-japan/tensorlogic-maintainers
+
+# Core IR and compiler layer
+/crates/tensorlogic-ir/ @cool-japan/tensorlogic-core
+/crates/tensorlogic-compiler/ @cool-japan/tensorlogic-core
+/crates/tensorlogic-infer/ @cool-japan/tensorlogic-core
+
+# Execution backends
+/crates/tensorlogic-scirs-backend/ @cool-japan/tensorlogic-backend
+/crates/tensorlogic-train/ @cool-japan/tensorlogic-backend
+
+# Integration layer
+/crates/tensorlogic-oxirs-bridge/ @cool-japan/tensorlogic-integration
+/crates/tensorlogic-sklears-kernels/ @cool-japan/tensorlogic-integration
+/crates/tensorlogic-quantrs-hooks/ @cool-japan/tensorlogic-integration
+/crates/tensorlogic-trustformers/ @cool-japan/tensorlogic-integration
+
+# Python bindings
+/crates/tensorlogic-py/ @cool-japan/tensorlogic-python
+
+# Documentation
+/docs/ @cool-japan/tensorlogic-docs
+*.md @cool-japan/tensorlogic-docs

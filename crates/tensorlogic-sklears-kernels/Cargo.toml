@@ -1,0 +1,55 @@
+[package]
+name = "tensorlogic-sklears-kernels"
+version = "0.1.0-alpha.1"
+description = "Logic-derived similarity kernels for SkleaRS integration"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tensorlogic-ir.workspace = true
+tensorlogic-compiler.workspace = true
+tensorlogic-infer.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "kernel_computation"
+harness = false
+
+[[bench]]
+name = "matrix_operations"
+harness = false
+
+[[bench]]
+name = "caching_performance"
+harness = false
+
+[[bench]]
+name = "composite_kernels"
+harness = false
+
+[[bench]]
+name = "graph_kernels"
+harness = false
+
+[[example]]
+name = "tree_kernels_demo"
+
+[[example]]
+name = "low_rank_approximation"
+
+[[example]]
+name = "ml_workflow"
+
+[[example]]
+name = "provenance_tracking"
+
+[[example]]
+name = "symbolic_kernels"

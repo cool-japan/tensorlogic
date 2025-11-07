@@ -1,0 +1,18 @@
+# Cargo configuration for TensorLogic workspace
+
+[alias]
+# Run nextest on all workspace members
+nt = "nextest run --workspace"
+nta = "nextest run --workspace --all-features"
+
+# Regular test aliases
+tw = "test --workspace"
+twa = "test --workspace --all-features"
+
+# Build aliases
+bw = "build --workspace"
+bwa = "build --workspace --all-features"
+
+# Clippy for workspace
+cw = "clippy --workspace --all-targets"
+cwa = "clippy --workspace --all-targets --all-features"

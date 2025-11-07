@@ -1,0 +1,767 @@
+//! TensorLogic expressions (TLExpr).
+
+pub mod ac_matching;
+pub mod advanced_analysis;
+pub mod advanced_rewriting;
+mod analysis;
+pub mod confluence;
+pub mod defuzzification;
+pub mod distributive_laws;
+mod domain_validation;
+pub mod ltl_ctl_utilities;
+pub mod modal_axioms;
+pub mod modal_equivalences;
+pub mod normal_forms;
+pub mod optimization;
+pub mod optimization_pipeline;
+pub mod probabilistic_reasoning;
+pub mod rewriting;
+pub mod strategy_selector;
+pub mod temporal_equivalences;
+mod validation;
+
+use serde::{Deserialize, Serialize};
+
+use crate::term::Term;
+
+/// Aggregation operation type.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AggregateOp {
+    /// Count the number of elements
+    Count,
+    /// Sum of all elements
+    Sum,
+    /// Average (mean) of elements
+    Average,
+    /// Maximum element
+    Max,
+    /// Minimum element
+    Min,
+    /// Product of all elements
+    Product,
+    /// Any (existential - true if any element is true)
+    Any,
+    /// All (universal - true if all elements are true)
+    All,
+}
+
+/// T-norm (triangular norm) kinds for fuzzy AND operations.
+/// A t-norm is a binary operation T: [0,1] × [0,1] → [0,1] that is:
+/// - Commutative: T(a,b) = T(b,a)
+/// - Associative: T(a,T(b,c)) = T(T(a,b),c)
+/// - Monotonic: If a ≤ b then T(a,c) ≤ T(b,c)
+/// - Has 1 as identity: T(a,1) = a
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TNormKind {
+    /// Minimum t-norm (Gödel): T(a,b) = min(a,b)
+    /// Standard fuzzy AND, also known as Zadeh t-norm
+    Minimum,
+
+    /// Product t-norm: T(a,b) = a * b
+    /// Probabilistic interpretation of independence
+    Product,
+
+    /// Łukasiewicz t-norm: T(a,b) = max(0, a + b - 1)
+    /// Strong conjunction in Łukasiewicz logic
+    Lukasiewicz,
+
+    /// Drastic t-norm: T(a,b) = { b if a=1, a if b=1, 0 otherwise }
+    /// Most restrictive t-norm
+    Drastic,
+
+    /// Nilpotent minimum: T(a,b) = { min(a,b) if a+b>1, 0 otherwise }
+    NilpotentMinimum,
+
+    /// Hamacher product: T(a,b) = ab/(a+b-ab) for a,b > 0
+    /// Generalizes product t-norm
+    Hamacher,
+}
+
+/// T-conorm (triangular conorm) kinds for fuzzy OR operations.
+/// A t-conorm is the dual of a t-norm: S(a,b) = 1 - T(1-a, 1-b)
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TCoNormKind {
+    /// Maximum t-conorm (Gödel): S(a,b) = max(a,b)
+    /// Standard fuzzy OR, dual of minimum t-norm
+    Maximum,
+
+    /// Probabilistic sum: S(a,b) = a + b - a*b
+    /// Dual of product t-norm
+    ProbabilisticSum,
+
+    /// Łukasiewicz t-conorm: S(a,b) = min(1, a + b)
+    /// Bounded sum, dual of Łukasiewicz t-norm
+    BoundedSum,
+
+    /// Drastic t-conorm: S(a,b) = { b if a=0, a if b=0, 1 otherwise }
+    /// Most permissive t-conorm, dual of drastic t-norm
+    Drastic,
+
+    /// Nilpotent maximum: S(a,b) = { max(a,b) if a+b<1, 1 otherwise }
+    /// Dual of nilpotent minimum
+    NilpotentMaximum,
+
+    /// Hamacher sum: dual of Hamacher product
+    Hamacher,
+}
+
+/// Fuzzy negation kinds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum FuzzyNegationKind {
+    /// Standard fuzzy negation: N(a) = 1 - a
+    Standard,
+
+    /// Sugeno negation: N(a) = (1-a)/(1+λa) for λ > -1
+    /// Parameterized family of negations
+    Sugeno {
+        /// Lambda parameter, must be > -1
+        lambda: i32, // Using i32 to maintain Eq trait; actual value is lambda/100
+    },
+
+    /// Yager negation: N(a) = (1 - a^w)^(1/w) for w > 0
+    Yager {
+        /// w parameter stored as integer (actual = w/10)
+        w: u32,
+    },
+}
+
+/// Fuzzy implication operator kinds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum FuzzyImplicationKind {
+    /// Gödel implication: I(a,b) = { 1 if a≤b, b otherwise }
+    Godel,
+
+    /// Łukasiewicz implication: I(a,b) = min(1, 1-a+b)
+    Lukasiewicz,
+
+    /// Reichenbach implication: I(a,b) = 1 - a + ab
+    Reichenbach,
+
+    /// Kleene-Dienes implication: I(a,b) = max(1-a, b)
+    KleeneDienes,
+
+    /// Rescher implication: I(a,b) = { 1 if a≤b, 0 otherwise }
+    Rescher,
+
+    /// Goguen implication: I(a,b) = { 1 if a≤b, b/a otherwise }
+    Goguen,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum TLExpr {
+    Pred {
+        name: String,
+        args: Vec<Term>,
+    },
+    And(Box<TLExpr>, Box<TLExpr>),
+    Or(Box<TLExpr>, Box<TLExpr>),
+    Not(Box<TLExpr>),
+    Exists {
+        var: String,
+        domain: String,
+        body: Box<TLExpr>,
+    },
+    ForAll {
+        var: String,
+        domain: String,
+        body: Box<TLExpr>,
+    },
+    Imply(Box<TLExpr>, Box<TLExpr>),
+    Score(Box<TLExpr>),
+
+    // Arithmetic operations
+    Add(Box<TLExpr>, Box<TLExpr>),
+    Sub(Box<TLExpr>, Box<TLExpr>),
+    Mul(Box<TLExpr>, Box<TLExpr>),
+    Div(Box<TLExpr>, Box<TLExpr>),
+    Pow(Box<TLExpr>, Box<TLExpr>),
+    Mod(Box<TLExpr>, Box<TLExpr>),
+    Min(Box<TLExpr>, Box<TLExpr>),
+    Max(Box<TLExpr>, Box<TLExpr>),
+
+    // Unary mathematical operations
+    Abs(Box<TLExpr>),
+    Floor(Box<TLExpr>),
+    Ceil(Box<TLExpr>),
+    Round(Box<TLExpr>),
+    Sqrt(Box<TLExpr>),
+    Exp(Box<TLExpr>),
+    Log(Box<TLExpr>),
+    Sin(Box<TLExpr>),
+    Cos(Box<TLExpr>),
+    Tan(Box<TLExpr>),
+
+    // Comparison operations
+    Eq(Box<TLExpr>, Box<TLExpr>),
+    Lt(Box<TLExpr>, Box<TLExpr>),
+    Gt(Box<TLExpr>, Box<TLExpr>),
+    Lte(Box<TLExpr>, Box<TLExpr>),
+    Gte(Box<TLExpr>, Box<TLExpr>),
+
+    // Conditional expression
+    IfThenElse {
+        condition: Box<TLExpr>,
+        then_branch: Box<TLExpr>,
+        else_branch: Box<TLExpr>,
+    },
+
+    // Numeric literal
+    Constant(f64),
+
+    // Aggregation operations (re-enabled with explicit output tracking support)
+    Aggregate {
+        op: AggregateOp,
+        var: String,
+        domain: String,
+        body: Box<TLExpr>,
+        /// Optional group-by variables
+        group_by: Option<Vec<String>>,
+    },
+
+    // Let binding for local variable definitions
+    Let {
+        var: String,
+        value: Box<TLExpr>,
+        body: Box<TLExpr>,
+    },
+
+    // Modal logic operators
+    /// Necessity operator (□, "box"): something is necessarily true
+    /// In all possible worlds or states, the expression holds
+    Box(Box<TLExpr>),
+
+    /// Possibility operator (◇, "diamond"): something is possibly true
+    /// In at least one possible world or state, the expression holds
+    /// Related to Box by: ◇P = ¬□¬P
+    Diamond(Box<TLExpr>),
+
+    // Temporal logic operators
+    /// Next operator (X): true in the next state
+    Next(Box<TLExpr>),
+
+    /// Eventually operator (F): true in some future state
+    Eventually(Box<TLExpr>),
+
+    /// Always/Globally operator (G): true in all future states
+    Always(Box<TLExpr>),
+
+    /// Until operator (U): first expression holds until second becomes true
+    Until {
+        before: Box<TLExpr>,
+        after: Box<TLExpr>,
+    },
+
+    // Fuzzy logic operators
+    /// T-norm (fuzzy AND) with specified semantics
+    TNorm {
+        kind: TNormKind,
+        left: Box<TLExpr>,
+        right: Box<TLExpr>,
+    },
+
+    /// T-conorm (fuzzy OR) with specified semantics
+    TCoNorm {
+        kind: TCoNormKind,
+        left: Box<TLExpr>,
+        right: Box<TLExpr>,
+    },
+
+    /// Fuzzy negation with specified semantics
+    FuzzyNot {
+        kind: FuzzyNegationKind,
+        expr: Box<TLExpr>,
+    },
+
+    /// Fuzzy implication operator
+    FuzzyImplication {
+        kind: FuzzyImplicationKind,
+        premise: Box<TLExpr>,
+        conclusion: Box<TLExpr>,
+    },
+
+    // Probabilistic operators
+    /// Soft existential quantifier with temperature parameter
+    /// Temperature controls how "soft" the quantifier is:
+    /// - Low temperature (→0): approaches hard max (standard exists)
+    /// - High temperature: smoother aggregation (log-sum-exp)
+    SoftExists {
+        var: String,
+        domain: String,
+        body: Box<TLExpr>,
+        /// Temperature parameter (default: 1.0)
+        temperature: f64,
+    },
+
+    /// Soft universal quantifier with temperature parameter
+    /// Temperature controls how "soft" the quantifier is:
+    /// - Low temperature (→0): approaches hard min (standard forall)
+    /// - High temperature: smoother aggregation
+    SoftForAll {
+        var: String,
+        domain: String,
+        body: Box<TLExpr>,
+        /// Temperature parameter (default: 1.0)
+        temperature: f64,
+    },
+
+    /// Weighted rule with confidence/probability
+    /// Used in probabilistic logic programming
+    WeightedRule {
+        weight: f64,
+        rule: Box<TLExpr>,
+    },
+
+    /// Probabilistic choice between alternatives with given probabilities
+    /// Probabilities should sum to 1.0
+    ProbabilisticChoice {
+        alternatives: Vec<(f64, TLExpr)>, // (probability, expression) pairs
+    },
+
+    // Extended temporal logic (LTL properties)
+    /// Release operator (R): dual of Until
+    /// P R Q means Q holds until and including when P becomes true
+    Release {
+        released: Box<TLExpr>,
+        releaser: Box<TLExpr>,
+    },
+
+    /// Weak Until (W): P W Q means P holds until Q, but Q may never hold
+    WeakUntil {
+        before: Box<TLExpr>,
+        after: Box<TLExpr>,
+    },
+
+    /// Strong Release (M): dual of weak until
+    StrongRelease {
+        released: Box<TLExpr>,
+        releaser: Box<TLExpr>,
+    },
+}
+
+impl TLExpr {
+    pub fn pred(name: impl Into<String>, args: Vec<Term>) -> Self {
+        TLExpr::Pred {
+            name: name.into(),
+            args,
+        }
+    }
+
+    pub fn and(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::And(Box::new(left), Box::new(right))
+    }
+
+    pub fn or(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Or(Box::new(left), Box::new(right))
+    }
+
+    pub fn negate(expr: TLExpr) -> Self {
+        TLExpr::Not(Box::new(expr))
+    }
+
+    pub fn exists(var: impl Into<String>, domain: impl Into<String>, body: TLExpr) -> Self {
+        TLExpr::Exists {
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+        }
+    }
+
+    pub fn forall(var: impl Into<String>, domain: impl Into<String>, body: TLExpr) -> Self {
+        TLExpr::ForAll {
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+        }
+    }
+
+    pub fn imply(premise: TLExpr, conclusion: TLExpr) -> Self {
+        TLExpr::Imply(Box::new(premise), Box::new(conclusion))
+    }
+
+    pub fn score(expr: TLExpr) -> Self {
+        TLExpr::Score(Box::new(expr))
+    }
+
+    // Arithmetic operations
+    #[allow(clippy::should_implement_trait)]
+    pub fn add(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Add(Box::new(left), Box::new(right))
+    }
+
+    #[allow(clippy::should_implement_trait)]
+    pub fn sub(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Sub(Box::new(left), Box::new(right))
+    }
+
+    #[allow(clippy::should_implement_trait)]
+    pub fn mul(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Mul(Box::new(left), Box::new(right))
+    }
+
+    #[allow(clippy::should_implement_trait)]
+    pub fn div(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Div(Box::new(left), Box::new(right))
+    }
+
+    pub fn pow(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Pow(Box::new(left), Box::new(right))
+    }
+
+    pub fn modulo(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Mod(Box::new(left), Box::new(right))
+    }
+
+    pub fn min(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Min(Box::new(left), Box::new(right))
+    }
+
+    pub fn max(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Max(Box::new(left), Box::new(right))
+    }
+
+    // Unary mathematical operations
+    pub fn abs(expr: TLExpr) -> Self {
+        TLExpr::Abs(Box::new(expr))
+    }
+
+    pub fn floor(expr: TLExpr) -> Self {
+        TLExpr::Floor(Box::new(expr))
+    }
+
+    pub fn ceil(expr: TLExpr) -> Self {
+        TLExpr::Ceil(Box::new(expr))
+    }
+
+    pub fn round(expr: TLExpr) -> Self {
+        TLExpr::Round(Box::new(expr))
+    }
+
+    pub fn sqrt(expr: TLExpr) -> Self {
+        TLExpr::Sqrt(Box::new(expr))
+    }
+
+    pub fn exp(expr: TLExpr) -> Self {
+        TLExpr::Exp(Box::new(expr))
+    }
+
+    pub fn log(expr: TLExpr) -> Self {
+        TLExpr::Log(Box::new(expr))
+    }
+
+    pub fn sin(expr: TLExpr) -> Self {
+        TLExpr::Sin(Box::new(expr))
+    }
+
+    pub fn cos(expr: TLExpr) -> Self {
+        TLExpr::Cos(Box::new(expr))
+    }
+
+    pub fn tan(expr: TLExpr) -> Self {
+        TLExpr::Tan(Box::new(expr))
+    }
+
+    // Comparison operations
+    pub fn eq(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Eq(Box::new(left), Box::new(right))
+    }
+
+    pub fn lt(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Lt(Box::new(left), Box::new(right))
+    }
+
+    pub fn gt(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Gt(Box::new(left), Box::new(right))
+    }
+
+    pub fn lte(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Lte(Box::new(left), Box::new(right))
+    }
+
+    pub fn gte(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::Gte(Box::new(left), Box::new(right))
+    }
+
+    // Conditional
+    pub fn if_then_else(condition: TLExpr, then_branch: TLExpr, else_branch: TLExpr) -> Self {
+        TLExpr::IfThenElse {
+            condition: Box::new(condition),
+            then_branch: Box::new(then_branch),
+            else_branch: Box::new(else_branch),
+        }
+    }
+
+    // Constant
+    pub fn constant(value: f64) -> Self {
+        TLExpr::Constant(value)
+    }
+
+    // Aggregation operations
+    pub fn aggregate(
+        op: AggregateOp,
+        var: impl Into<String>,
+        domain: impl Into<String>,
+        body: TLExpr,
+    ) -> Self {
+        TLExpr::Aggregate {
+            op,
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+            group_by: None,
+        }
+    }
+
+    pub fn aggregate_with_group_by(
+        op: AggregateOp,
+        var: impl Into<String>,
+        domain: impl Into<String>,
+        body: TLExpr,
+        group_by: Vec<String>,
+    ) -> Self {
+        TLExpr::Aggregate {
+            op,
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+            group_by: Some(group_by),
+        }
+    }
+
+    pub fn count(var: impl Into<String>, domain: impl Into<String>, body: TLExpr) -> Self {
+        Self::aggregate(AggregateOp::Count, var, domain, body)
+    }
+
+    pub fn sum(var: impl Into<String>, domain: impl Into<String>, body: TLExpr) -> Self {
+        Self::aggregate(AggregateOp::Sum, var, domain, body)
+    }
+
+    pub fn average(var: impl Into<String>, domain: impl Into<String>, body: TLExpr) -> Self {
+        Self::aggregate(AggregateOp::Average, var, domain, body)
+    }
+
+    pub fn max_agg(var: impl Into<String>, domain: impl Into<String>, body: TLExpr) -> Self {
+        Self::aggregate(AggregateOp::Max, var, domain, body)
+    }
+
+    pub fn min_agg(var: impl Into<String>, domain: impl Into<String>, body: TLExpr) -> Self {
+        Self::aggregate(AggregateOp::Min, var, domain, body)
+    }
+
+    pub fn product(var: impl Into<String>, domain: impl Into<String>, body: TLExpr) -> Self {
+        Self::aggregate(AggregateOp::Product, var, domain, body)
+    }
+
+    // Let binding
+    pub fn let_binding(var: impl Into<String>, value: TLExpr, body: TLExpr) -> Self {
+        TLExpr::Let {
+            var: var.into(),
+            value: Box::new(value),
+            body: Box::new(body),
+        }
+    }
+
+    // Modal logic operators
+    /// Create a Box (necessity) operator.
+    ///
+    /// □P: "P is necessarily true" - holds in all possible worlds/states
+    pub fn modal_box(expr: TLExpr) -> Self {
+        TLExpr::Box(Box::new(expr))
+    }
+
+    /// Create a Diamond (possibility) operator.
+    ///
+    /// ◇P: "P is possibly true" - holds in at least one possible world/state
+    pub fn modal_diamond(expr: TLExpr) -> Self {
+        TLExpr::Diamond(Box::new(expr))
+    }
+
+    // Temporal logic operators
+    /// Create a Next operator.
+    ///
+    /// XP: "P is true in the next state"
+    pub fn next(expr: TLExpr) -> Self {
+        TLExpr::Next(Box::new(expr))
+    }
+
+    /// Create an Eventually operator.
+    ///
+    /// FP: "P will eventually be true" - true in some future state
+    pub fn eventually(expr: TLExpr) -> Self {
+        TLExpr::Eventually(Box::new(expr))
+    }
+
+    /// Create an Always operator.
+    ///
+    /// GP: "P is always true" - true in all future states
+    pub fn always(expr: TLExpr) -> Self {
+        TLExpr::Always(Box::new(expr))
+    }
+
+    /// Create an Until operator.
+    ///
+    /// P U Q: "P holds until Q becomes true"
+    pub fn until(before: TLExpr, after: TLExpr) -> Self {
+        TLExpr::Until {
+            before: Box::new(before),
+            after: Box::new(after),
+        }
+    }
+
+    // Fuzzy logic builders
+
+    /// Create a T-norm (fuzzy AND) operation with specified semantics.
+    pub fn tnorm(kind: TNormKind, left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::TNorm {
+            kind,
+            left: Box::new(left),
+            right: Box::new(right),
+        }
+    }
+
+    /// Create a minimum T-norm (standard fuzzy AND).
+    pub fn fuzzy_and(left: TLExpr, right: TLExpr) -> Self {
+        Self::tnorm(TNormKind::Minimum, left, right)
+    }
+
+    /// Create a product T-norm (probabilistic AND).
+    pub fn probabilistic_and(left: TLExpr, right: TLExpr) -> Self {
+        Self::tnorm(TNormKind::Product, left, right)
+    }
+
+    /// Create a T-conorm (fuzzy OR) operation with specified semantics.
+    pub fn tconorm(kind: TCoNormKind, left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::TCoNorm {
+            kind,
+            left: Box::new(left),
+            right: Box::new(right),
+        }
+    }
+
+    /// Create a maximum T-conorm (standard fuzzy OR).
+    pub fn fuzzy_or(left: TLExpr, right: TLExpr) -> Self {
+        Self::tconorm(TCoNormKind::Maximum, left, right)
+    }
+
+    /// Create a probabilistic sum T-conorm.
+    pub fn probabilistic_or(left: TLExpr, right: TLExpr) -> Self {
+        Self::tconorm(TCoNormKind::ProbabilisticSum, left, right)
+    }
+
+    /// Create a fuzzy negation with specified semantics.
+    pub fn fuzzy_not(kind: FuzzyNegationKind, expr: TLExpr) -> Self {
+        TLExpr::FuzzyNot {
+            kind,
+            expr: Box::new(expr),
+        }
+    }
+
+    /// Create a standard fuzzy negation (1 - x).
+    pub fn standard_fuzzy_not(expr: TLExpr) -> Self {
+        Self::fuzzy_not(FuzzyNegationKind::Standard, expr)
+    }
+
+    /// Create a fuzzy implication with specified semantics.
+    pub fn fuzzy_imply(kind: FuzzyImplicationKind, premise: TLExpr, conclusion: TLExpr) -> Self {
+        TLExpr::FuzzyImplication {
+            kind,
+            premise: Box::new(premise),
+            conclusion: Box::new(conclusion),
+        }
+    }
+
+    // Probabilistic operators builders
+
+    /// Create a soft existential quantifier with temperature parameter.
+    ///
+    /// # Arguments
+    /// * `var` - Variable name
+    /// * `domain` - Domain name
+    /// * `body` - Expression body
+    /// * `temperature` - Temperature parameter (default 1.0). Lower = harder max.
+    pub fn soft_exists(
+        var: impl Into<String>,
+        domain: impl Into<String>,
+        body: TLExpr,
+        temperature: f64,
+    ) -> Self {
+        TLExpr::SoftExists {
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+            temperature,
+        }
+    }
+
+    /// Create a soft universal quantifier with temperature parameter.
+    ///
+    /// # Arguments
+    /// * `var` - Variable name
+    /// * `domain` - Domain name
+    /// * `body` - Expression body
+    /// * `temperature` - Temperature parameter (default 1.0). Lower = harder min.
+    pub fn soft_forall(
+        var: impl Into<String>,
+        domain: impl Into<String>,
+        body: TLExpr,
+        temperature: f64,
+    ) -> Self {
+        TLExpr::SoftForAll {
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+            temperature,
+        }
+    }
+
+    /// Create a weighted rule with confidence/probability.
+    ///
+    /// # Arguments
+    /// * `weight` - Weight/confidence (typically in [0,1] for probabilities)
+    /// * `rule` - The rule expression
+    pub fn weighted_rule(weight: f64, rule: TLExpr) -> Self {
+        TLExpr::WeightedRule {
+            weight,
+            rule: Box::new(rule),
+        }
+    }
+
+    /// Create a probabilistic choice between alternatives.
+    ///
+    /// # Arguments
+    /// * `alternatives` - Vector of (probability, expression) pairs. Should sum to 1.0.
+    pub fn probabilistic_choice(alternatives: Vec<(f64, TLExpr)>) -> Self {
+        TLExpr::ProbabilisticChoice { alternatives }
+    }
+
+    // Extended temporal logic builders
+
+    /// Create a Release operator (R).
+    ///
+    /// P R Q: "Q holds until and including when P becomes true"
+    pub fn release(released: TLExpr, releaser: TLExpr) -> Self {
+        TLExpr::Release {
+            released: Box::new(released),
+            releaser: Box::new(releaser),
+        }
+    }
+
+    /// Create a Weak Until operator (W).
+    ///
+    /// P W Q: "P holds until Q, but Q may never hold"
+    pub fn weak_until(before: TLExpr, after: TLExpr) -> Self {
+        TLExpr::WeakUntil {
+            before: Box::new(before),
+            after: Box::new(after),
+        }
+    }
+
+    /// Create a Strong Release operator (M).
+    ///
+    /// P M Q: Dual of weak until
+    pub fn strong_release(released: TLExpr, releaser: TLExpr) -> Self {
+        TLExpr::StrongRelease {
+            released: Box::new(released),
+            releaser: Box::new(releaser),
+        }
+    }
+}

@@ -1,0 +1,26 @@
+[package]
+name = "tensorlogic-oxirs-bridge"
+version = "0.1.0-alpha.1"
+description = "RDF/GraphQL/SHACL integration and provenance tracking for TensorLogic"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tensorlogic-ir.workspace = true
+tensorlogic-adapters.workspace = true
+tensorlogic-compiler.workspace = true
+
+# Lightweight RDF support (oxrdf only, no heavy oxirs-core)
+oxrdf = { version = "0.3.1" }
+oxttl = { version = "0.2.1" }  # Turtle/N-Triples parser
+
+# Utilities
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+indexmap.workspace = true
+chrono = { version = "0.4", features = ["serde"] }

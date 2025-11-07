@@ -1,0 +1,351 @@
+# Python Wheels Build Workflow
+#
+# This workflow builds Python wheels for multiple platforms and Python versions.
+# Rename this file to python-wheels.yml to enable it.
+#
+# Usage:
+# 1. Rename to .github/workflows/python-wheels.yml
+# 2. Add PYPI_API_TOKEN secret to repository settings
+# 3. Create a new tag (e.g., v0.1.0) to trigger release build
+# 4. Or manually trigger workflow from Actions tab
+
+name: Build Python Wheels
+
+on:
+  # Trigger on version tags
+  push:
+    tags:
+      - 'v*'
+      - 'tensorlogic-py-v*'
+
+  # Manual workflow dispatch
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to PyPI'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+          - 'testpypi'
+
+  # Pull request builds (no publish)
+  pull_request:
+    paths:
+      - 'crates/tensorlogic-py/**'
+      - '.github/workflows/python-wheels.yml'
+
+env:
+  PACKAGE_NAME: tensorlogic_py
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # Build wheels for Linux (x86_64 and aarch64)
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Build wheels (manylinux)
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: >
+            --release
+            --out dist
+            --manifest-path crates/tensorlogic-py/Cargo.toml
+          sccache: 'true'
+          manylinux: auto
+          before-script-linux: |
+            # Install system dependencies if needed
+            yum install -y openssl-devel || apt-get install -y libssl-dev
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.target }}
+          path: dist
+          retention-days: 7
+
+      - name: Test wheel installation
+        if: matrix.target == 'x86_64'
+        run: |
+          pip install dist/*.whl
+          python -c "import tensorlogic_py as tl; print(f'Version: {tl.__version__}')"
+
+  # Build wheels for macOS (Intel and Apple Silicon)
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: >
+            --release
+            --out dist
+            --manifest-path crates/tensorlogic-py/Cargo.toml
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-${{ matrix.target }}
+          path: dist
+          retention-days: 7
+
+      - name: Test wheel installation
+        if: matrix.target == 'x86_64'
+        run: |
+          pip install dist/*.whl
+          python -c "import tensorlogic_py as tl; print(f'Version: {tl.__version__}')"
+
+  # Build universal macOS wheels (both architectures in one wheel)
+  macos-universal:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Build universal wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          args: >
+            --release
+            --out dist
+            --manifest-path crates/tensorlogic-py/Cargo.toml
+            --target universal2-apple-darwin
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-universal
+          path: dist
+          retention-days: 7
+
+  # Build wheels for Windows
+  windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        target: [x64]
+        # Can add x86 if needed
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: >
+            --release
+            --out dist
+            --manifest-path crates/tensorlogic-py/Cargo.toml
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-${{ matrix.target }}
+          path: dist
+          retention-days: 7
+
+      - name: Test wheel installation
+        run: |
+          pip install (Get-ChildItem dist/*.whl)
+          python -c "import tensorlogic_py as tl; print(f'Version: {tl.__version__}')"
+
+  # Build source distribution (sdist)
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: >
+            --out dist
+            --manifest-path crates/tensorlogic-py/Cargo.toml
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist
+          retention-days: 7
+
+  # Run Python tests with built wheels
+  test:
+    needs: [linux, macos, windows]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+
+      - name: Install wheel and test dependencies
+        shell: bash
+        run: |
+          pip install dist/*.whl
+          pip install pytest numpy
+
+      - name: Run Python tests
+        working-directory: crates/tensorlogic-py
+        run: pytest tests/ -v
+
+      - name: Run example scripts
+        working-directory: crates/tensorlogic-py
+        run: |
+          python python_examples/00_minimal_rule.py
+          python python_examples/01_compilation_strategies.py
+
+  # Publish to PyPI (only on tags or manual trigger)
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [linux, macos, windows, macos-universal, sdist, test]
+    if: >
+      (startsWith(github.ref, 'refs/tags/') && !contains(github.ref, 'pre')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'false')
+    environment:
+      name: pypi
+      url: https://pypi.org/p/${{ env.PACKAGE_NAME }}
+    permissions:
+      id-token: write  # For trusted publishing
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+
+      - name: Download sdist
+        uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+
+      - name: List distributions
+        run: ls -lh dist/
+
+      - name: Publish to TestPyPI
+        if: >
+          github.event_name == 'workflow_dispatch' &&
+          github.event.inputs.publish == 'testpypi'
+        uses: PyO3/maturin-action@v1
+        env:
+          MATURIN_PYPI_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        with:
+          command: upload
+          args: --skip-existing dist/* --repository testpypi
+
+      - name: Publish to PyPI
+        if: >
+          startsWith(github.ref, 'refs/tags/') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
+        uses: PyO3/maturin-action@v1
+        env:
+          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        with:
+          command: upload
+          args: --skip-existing dist/*
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+  # Build with SIMD features (optional, for performance builds)
+  linux-simd:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build wheels with SIMD
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: >
+            --release
+            --out dist
+            --manifest-path crates/tensorlogic-py/Cargo.toml
+            --features simd
+          sccache: 'true'
+          manylinux: auto
+          before-script-linux: |
+            # Set RUSTFLAGS for native CPU optimization
+            export RUSTFLAGS="-C target-cpu=x86-64-v3"
+
+      - name: Upload SIMD wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.target }}-simd
+          path: dist
+          retention-days: 7
+
+# Workflow summary for badge
+# Add to README.md:
+# ![Build Wheels](https://github.com/cool-japan/tensorlogic/actions/workflows/python-wheels.yml/badge.svg)

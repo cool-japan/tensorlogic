@@ -1,0 +1,17 @@
+[package]
+name = "tensorlogic-infer"
+version = "0.1.0-alpha.1"
+description = "Execution and autodiff traits for TensorLogic inference engines"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+tensorlogic-ir.workspace = true
+num_cpus = "1.17.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }

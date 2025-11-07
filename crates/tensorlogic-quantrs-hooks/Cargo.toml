@@ -1,0 +1,22 @@
+[package]
+name = "tensorlogic-quantrs-hooks"
+version = "0.1.0-alpha.1"
+description = "Probabilistic graphical model and message-passing interoperability for QuantRS2"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+chrono = "0.4"
+tensorlogic-ir.workspace = true
+tensorlogic-compiler.workspace = true
+tensorlogic-infer.workspace = true
+scirs2-core = { workspace = true, features = ["random"] }
+
+[dev-dependencies]
+approx = "0.5"

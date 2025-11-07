@@ -1,0 +1,52 @@
+[package]
+name = "tensorlogic-compiler-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+# Empty workspace to prevent inheriting from parent
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1.4", features = ["derive"] }
+
+[dependencies.tensorlogic-compiler]
+path = ".."
+
+[dependencies.tensorlogic-ir]
+path = "../../tensorlogic-ir"
+
+[dependencies.tensorlogic-adapters]
+path = "../../tensorlogic-adapters"
+
+[[bin]]
+name = "fuzz_compile_expression"
+path = "fuzz_targets/fuzz_compile_expression.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_type_checking"
+path = "fuzz_targets/fuzz_type_checking.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_quantifiers"
+path = "fuzz_targets/fuzz_quantifiers.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_optimizations"
+path = "fuzz_targets/fuzz_optimizations.rs"
+test = false
+doc = false
+bench = false

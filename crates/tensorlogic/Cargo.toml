@@ -1,0 +1,51 @@
+[package]
+name = "tensorlogic"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Logic-as-Tensor planning layer - meta crate re-exporting all TensorLogic components"
+keywords = ["logic", "tensor", "neural-symbolic", "differentiable", "machine-learning"]
+categories = ["science", "algorithms", "mathematics"]
+
+[dependencies]
+# Core planning layer (engine-agnostic)
+tensorlogic-ir.workspace = true
+tensorlogic-compiler.workspace = true
+tensorlogic-infer.workspace = true
+tensorlogic-adapters.workspace = true
+
+# Execution layer (SciRS2-powered)
+tensorlogic-scirs-backend.workspace = true
+tensorlogic-train.workspace = true
+
+# Integration layer
+tensorlogic-oxirs-bridge.workspace = true
+tensorlogic-sklears-kernels.workspace = true
+tensorlogic-quantrs-hooks.workspace = true
+tensorlogic-trustformers.workspace = true
+
+# Utilities (for examples)
+anyhow.workspace = true
+
+[[example]]
+name = "00_minimal_rule"
+path = "examples/00_minimal_rule/main.rs"
+
+[[example]]
+name = "01_exists_reduce"
+path = "examples/01_exists_reduce/main.rs"
+
+[[example]]
+name = "02_scirs2_execution"
+path = "examples/02_scirs2_execution/main.rs"
+
+[[example]]
+name = "03_rdf_integration"
+path = "examples/03_rdf_integration/main.rs"
+
+[[example]]
+name = "04_compilation_strategies"
+path = "examples/04_compilation_strategies/main.rs"

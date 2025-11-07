@@ -1,0 +1,40 @@
+[workspace]
+# This package is intentionally standalone (not in parent workspace)
+# because PyO3 extension-module requires maturin for building
+
+[package]
+name = "tensorlogic-py"
+version = "0.1.0-alpha.1"
+edition = "2021"
+license = "Apache-2.0"
+homepage = "https://github.com/cool-japan/tensorlogic"
+repository = "https://github.com/cool-japan/tensorlogic"
+rust-version = "1.90"
+
+[lib]
+name = "pytensorlogic"
+crate-type = ["cdylib"]
+
+[features]
+default = []
+simd = ["scirs2-core/simd"]
+gpu = []  # Future GPU support
+
+[dependencies]
+pyo3 = { version = "0.27", features = ["extension-module", "abi3-py39"] }
+numpy = "0.27"
+anyhow = "1"
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+bincode = "1"
+tensorlogic-ir = { path = "../tensorlogic-ir" }
+tensorlogic-compiler = { path = "../tensorlogic-compiler" }
+tensorlogic-infer = { path = "../tensorlogic-infer" }
+tensorlogic-adapters = { path = "../tensorlogic-adapters" }
+tensorlogic-scirs-backend = { path = "../tensorlogic-scirs-backend" }
+tensorlogic-oxirs-bridge = { path = "../tensorlogic-oxirs-bridge" }
+scirs2-core = "0.1.0-rc.2"
+
+[package.metadata.maturin]
+# optional: maturin build config

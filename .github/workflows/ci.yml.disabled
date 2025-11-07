@@ -1,0 +1,16 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: [cpu, simd]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all -- -D warnings
+      - run: cargo build --no-default-features --features ${{ matrix.features }}
+      - run: cargo test  --no-default-features --features ${{ matrix.features }}
