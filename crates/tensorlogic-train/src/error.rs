@@ -37,6 +37,10 @@ pub enum TrainError {
     #[error("Model error: {0}")]
     ModelError(String),
 
+    /// Error in configuration.
+    #[error("Configuration error: {0}")]
+    ConfigError(String),
+
     /// Error from tensorlogic-infer.
     #[error("Executor error: {0}")]
     ExecutorError(#[from] tensorlogic_infer::ExecutorError),

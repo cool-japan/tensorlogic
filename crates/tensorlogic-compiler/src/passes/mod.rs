@@ -1,8 +1,10 @@
 //! Compiler passes (validation, optimization, etc.).
 
+pub mod advanced_analysis;
 pub mod cse;
 pub mod diagnostics;
 pub mod einsum_opt;
+pub mod graph_opt_integration;
 pub mod metadata_propagation;
 pub mod post_compilation;
 pub mod scope_analysis;
@@ -11,11 +13,19 @@ pub mod symbol_integration;
 pub mod type_checking;
 pub mod validation;
 
+pub use advanced_analysis::{
+    analyze_graph, print_report, quick_analyze, AnalysisReport, OptimizationRecommendation,
+    ParallelOpportunity, RecommendationCategory,
+};
 pub use cse::{eliminate_common_subexpressions, CseResult};
 pub use diagnostics::{
     diagnose_expression, enhance_error, Diagnostic, DiagnosticBuilder, DiagnosticLevel,
 };
 pub use einsum_opt::{optimize_einsum_graph, EinsumOptResult};
+pub use graph_opt_integration::{
+    apply_graph_optimizations, apply_pattern_optimizations, quick_optimize,
+    recommend_optimizations, GraphOptConfig, GraphOptStats,
+};
 pub use metadata_propagation::{
     attach_expr_metadata, propagate_metadata, MetadataBuilder, MetadataCompilationResult,
 };

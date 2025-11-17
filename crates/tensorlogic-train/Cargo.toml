@@ -39,3 +39,19 @@ criterion = "0.7"
 [[bench]]
 name = "training_performance"
 harness = false
+
+[[bench]]
+name = "scheduler_performance"
+harness = false
+
+[[bench]]
+name = "loss_performance"
+harness = false
+
+[[bench]]
+name = "callback_overhead"
+harness = false
+
+[[bench]]
+name = "metrics_performance"
+harness = false

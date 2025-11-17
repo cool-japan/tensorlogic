@@ -1342,4 +1342,147 @@ mod tests {
         // After patience epochs, LR should be reduced
         assert!((scheduler.get_lr() - 0.01).abs() < 1e-6);
     }
+
+    #[test]
+    fn test_sgdr_scheduler() {
+        let mut scheduler = SgdrScheduler::new(0.1, 0.001, 10, 2.0);
+        let mut optimizer = SgdOptimizer::new(OptimizerConfig::default());
+
+        // At start, should be at max_lr
+        let initial_lr = scheduler.get_current_lr();
+        assert!((initial_lr - 0.1).abs() < 1e-6);
+
+        // Step through first period
+        for _ in 0..5 {
+            scheduler.step(&mut optimizer);
+        }
+
+        // Should be decreasing
+        let mid_lr = scheduler.get_lr();
+        assert!(mid_lr < initial_lr);
+
+        // Complete first period and check restart
+        for _ in 5..10 {
+            scheduler.step(&mut optimizer);
+        }
+
+        // After restart, should be back to max_lr
+        scheduler.step(&mut optimizer);
+        let restart_lr = scheduler.get_lr();
+        assert!(restart_lr > mid_lr); // Should have restarted
+
+        // Period should have doubled
+        assert_eq!(scheduler.current_period, 20);
+    }
+}
+
+/// SGDR: Stochastic Gradient Descent with Warm Restarts scheduler.
+///
+/// Based on "SGDR: Stochastic Gradient Descent with Warm Restarts" (Loshchilov & Hutter, 2017).
+/// Periodically resets the learning rate to a high value and then decays it using cosine annealing.
+#[derive(Debug, Clone)]
+pub struct SgdrScheduler {
+    /// Initial learning rate (after restart).
+    pub max_lr: f64,
+    /// Minimum learning rate.
+    pub min_lr: f64,
+    /// Initial period length.
+    pub t_0: usize,
+    /// Period multiplication factor after each restart.
+    pub t_mult: f64,
+    /// Current step within the period.
+    current_step: usize,
+    /// Current period length.
+    current_period: usize,
+    /// Total steps taken.
+    total_steps: usize,
+}
+
+impl SgdrScheduler {
+    /// Create a new SGDR scheduler.
+    ///
+    /// # Arguments
+    /// * `max_lr` - Maximum learning rate (used at restart)
+    /// * `min_lr` - Minimum learning rate
+    /// * `t_0` - Initial period length
+    /// * `t_mult` - Period multiplication factor (typically 1.0 or 2.0)
+    pub fn new(max_lr: f64, min_lr: f64, t_0: usize, t_mult: f64) -> Self {
+        Self {
+            max_lr,
+            min_lr,
+            t_0,
+            t_mult,
+            current_step: 0,
+            current_period: t_0,
+            total_steps: 0,
+        }
+    }
+
+    /// Get current learning rate based on cosine annealing within the period.
+    fn get_current_lr(&self) -> f64 {
+        let progress = self.current_step as f64 / self.current_period as f64;
+        let cosine_factor = (1.0 + (std::f64::consts::PI * progress).cos()) / 2.0;
+        self.min_lr + (self.max_lr - self.min_lr) * cosine_factor
+    }
+}
+
+impl LrScheduler for SgdrScheduler {
+    fn step(&mut self, optimizer: &mut dyn Optimizer) {
+        let lr = self.get_current_lr();
+        optimizer.set_lr(lr);
+
+        self.current_step += 1;
+        self.total_steps += 1;
+
+        // Check if we need to restart
+        if self.current_step >= self.current_period {
+            self.current_step = 0;
+            self.current_period = (self.current_period as f64 * self.t_mult) as usize;
+            // After restart, LR resets to max_lr
+        }
+    }
+
+    fn get_lr(&self) -> f64 {
+        self.get_current_lr()
+    }
+
+    fn state_dict(&self) -> std::collections::HashMap<String, f64> {
+        let mut state = std::collections::HashMap::new();
+        state.insert("max_lr".to_string(), self.max_lr);
+        state.insert("min_lr".to_string(), self.min_lr);
+        state.insert("t_0".to_string(), self.t_0 as f64);
+        state.insert("t_mult".to_string(), self.t_mult);
+        state.insert("current_step".to_string(), self.current_step as f64);
+        state.insert("current_period".to_string(), self.current_period as f64);
+        state.insert("total_steps".to_string(), self.total_steps as f64);
+        state
+    }
+
+    fn load_state_dict(
+        &mut self,
+        state: &std::collections::HashMap<String, f64>,
+    ) -> crate::TrainResult<()> {
+        if let Some(&max_lr) = state.get("max_lr") {
+            self.max_lr = max_lr;
+        }
+        if let Some(&min_lr) = state.get("min_lr") {
+            self.min_lr = min_lr;
+        }
+        if let Some(&t_0) = state.get("t_0") {
+            self.t_0 = t_0 as usize;
+        }
+        if let Some(&t_mult) = state.get("t_mult") {
+            self.t_mult = t_mult;
+        }
+        if let Some(&current_step) = state.get("current_step") {
+            self.current_step = current_step as usize;
+        }
+        if let Some(&current_period) = state.get("current_period") {
+            self.current_period = current_period as usize;
+        }
+        if let Some(&total_steps) = state.get("total_steps") {
+            self.total_steps = total_steps as usize;
+        }
+        Ok(())
+    }
 }

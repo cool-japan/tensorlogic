@@ -31,7 +31,7 @@ pub fn format_graph_stats(graph: &EinsumGraph) -> String {
 }
 
 pub fn print_compilation_success(graph: &EinsumGraph) {
-    print_success(&format!("Compilation successful"));
+    print_success("Compilation successful");
     println!("  {}", format_graph_stats(graph));
 }
 

@@ -20,14 +20,18 @@ mod batch;
 mod callbacks;
 mod crossval;
 mod curriculum;
+mod distillation;
 mod ensemble;
 mod error;
 mod hyperparameter;
+mod label_smoothing;
 mod logging;
 mod loss;
 mod metrics;
 mod model;
+mod multitask;
 mod optimizer;
+mod optimizers;
 mod regularization;
 mod scheduler;
 mod trainer;
@@ -69,7 +73,7 @@ pub use regularization::{
 pub use scheduler::{
     CosineAnnealingLrScheduler, CyclicLrMode, CyclicLrScheduler, ExponentialLrScheduler,
     LrScheduler, MultiStepLrScheduler, NoamScheduler, OneCycleLrScheduler, PlateauMode,
-    PolynomialDecayLrScheduler, ReduceLROnPlateauScheduler, StepLrScheduler,
+    PolynomialDecayLrScheduler, ReduceLROnPlateauScheduler, SgdrScheduler, StepLrScheduler,
     WarmupCosineLrScheduler,
 };
 pub use trainer::{Trainer, TrainerConfig, TrainingHistory, TrainingState};
@@ -101,3 +105,12 @@ pub use crossval::{
 pub use ensemble::{
     AveragingEnsemble, BaggingHelper, Ensemble, StackingEnsemble, VotingEnsemble, VotingMode,
 };
+
+// Multi-task learning
+pub use multitask::{MultiTaskLoss, PCGrad, TaskWeightingStrategy};
+
+// Knowledge distillation
+pub use distillation::{AttentionTransferLoss, DistillationLoss, FeatureDistillationLoss};
+
+// Label smoothing
+pub use label_smoothing::{LabelSmoothingLoss, MixupLoss};

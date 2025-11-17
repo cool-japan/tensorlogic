@@ -43,8 +43,8 @@ pub fn parse_expression(input: &str) -> Result<TLExpr> {
 
 fn parse_implication(input: &str) -> Result<TLExpr> {
     if let Some(pos) = find_operator(input, &["->", "IMPLIES", "=>", "→"]) {
-        let left = parse_or(&input[..pos].trim())?;
-        let right = parse_implication(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_or(input[..pos].trim())?;
+        let right = parse_implication(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::imply(left, right));
     }
     parse_or(input)
@@ -52,8 +52,8 @@ fn parse_implication(input: &str) -> Result<TLExpr> {
 
 fn parse_or(input: &str) -> Result<TLExpr> {
     if let Some(pos) = find_operator(input, &[" OR ", " | ", "||"]) {
-        let left = parse_and(&input[..pos].trim())?;
-        let right = parse_or(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_and(input[..pos].trim())?;
+        let right = parse_or(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::Or(Box::new(left), Box::new(right)));
     }
     parse_and(input)
@@ -61,8 +61,8 @@ fn parse_or(input: &str) -> Result<TLExpr> {
 
 fn parse_and(input: &str) -> Result<TLExpr> {
     if let Some(pos) = find_operator(input, &[" AND ", " & ", "&&", "∧"]) {
-        let left = parse_comparison(&input[..pos].trim())?;
-        let right = parse_and(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_comparison(input[..pos].trim())?;
+        let right = parse_and(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::And(Box::new(left), Box::new(right)));
     }
     parse_comparison(input)
@@ -71,38 +71,38 @@ fn parse_and(input: &str) -> Result<TLExpr> {
 fn parse_comparison(input: &str) -> Result<TLExpr> {
     // Check for comparison operators
     if let Some(pos) = find_operator(input, &[" = ", " == "]) {
-        let left = parse_additive(&input[..pos].trim())?;
-        let right = parse_additive(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_additive(input[..pos].trim())?;
+        let right = parse_additive(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::Eq(Box::new(left), Box::new(right)));
     }
 
     if let Some(pos) = find_operator(input, &[" <= ", " ≤ "]) {
-        let left = parse_additive(&input[..pos].trim())?;
-        let right = parse_additive(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_additive(input[..pos].trim())?;
+        let right = parse_additive(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::Lte(Box::new(left), Box::new(right)));
     }
 
     if let Some(pos) = find_operator(input, &[" >= ", " ≥ "]) {
-        let left = parse_additive(&input[..pos].trim())?;
-        let right = parse_additive(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_additive(input[..pos].trim())?;
+        let right = parse_additive(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::Gte(Box::new(left), Box::new(right)));
     }
 
     if let Some(pos) = find_operator(input, &[" < "]) {
-        let left = parse_additive(&input[..pos].trim())?;
-        let right = parse_additive(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_additive(input[..pos].trim())?;
+        let right = parse_additive(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::Lt(Box::new(left), Box::new(right)));
     }
 
     if let Some(pos) = find_operator(input, &[" > "]) {
-        let left = parse_additive(&input[..pos].trim())?;
-        let right = parse_additive(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_additive(input[..pos].trim())?;
+        let right = parse_additive(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::Gt(Box::new(left), Box::new(right)));
     }
 
     if let Some(pos) = find_operator(input, &[" != ", " ≠ "]) {
-        let left = parse_additive(&input[..pos].trim())?;
-        let right = parse_additive(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_additive(input[..pos].trim())?;
+        let right = parse_additive(input[pos + operator_len(&input[pos..])..].trim())?;
         let eq = TLExpr::Eq(Box::new(left), Box::new(right));
         return Ok(TLExpr::Not(Box::new(eq)));
     }
@@ -112,14 +112,14 @@ fn parse_comparison(input: &str) -> Result<TLExpr> {
 
 fn parse_additive(input: &str) -> Result<TLExpr> {
     if let Some(pos) = find_operator(input, &[" + "]) {
-        let left = parse_multiplicative(&input[..pos].trim())?;
-        let right = parse_additive(&input[pos + 3..].trim())?;
+        let left = parse_multiplicative(input[..pos].trim())?;
+        let right = parse_additive(input[pos + 3..].trim())?;
         return Ok(TLExpr::Add(Box::new(left), Box::new(right)));
     }
 
     if let Some(pos) = find_operator(input, &[" - "]) {
-        let left = parse_multiplicative(&input[..pos].trim())?;
-        let right = parse_additive(&input[pos + 3..].trim())?;
+        let left = parse_multiplicative(input[..pos].trim())?;
+        let right = parse_additive(input[pos + 3..].trim())?;
         return Ok(TLExpr::Sub(Box::new(left), Box::new(right)));
     }
 
@@ -128,14 +128,14 @@ fn parse_additive(input: &str) -> Result<TLExpr> {
 
 fn parse_multiplicative(input: &str) -> Result<TLExpr> {
     if let Some(pos) = find_operator(input, &[" * ", " × "]) {
-        let left = parse_unary(&input[..pos].trim())?;
-        let right = parse_multiplicative(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_unary(input[..pos].trim())?;
+        let right = parse_multiplicative(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::Mul(Box::new(left), Box::new(right)));
     }
 
     if let Some(pos) = find_operator(input, &[" / ", " ÷ "]) {
-        let left = parse_unary(&input[..pos].trim())?;
-        let right = parse_multiplicative(&input[pos + operator_len(&input[pos..])..].trim())?;
+        let left = parse_unary(input[..pos].trim())?;
+        let right = parse_multiplicative(input[pos + operator_len(&input[pos..])..].trim())?;
         return Ok(TLExpr::Div(Box::new(left), Box::new(right)));
     }
 
@@ -263,9 +263,9 @@ fn parse_conditional(input: &str) -> Result<TLExpr> {
         .or_else(|| input.find(" else "))
         .ok_or_else(|| anyhow::anyhow!("Missing ELSE in IF-THEN-ELSE"))?;
 
-    let cond = parse_expression(&input[..then_pos].trim())?;
-    let then_expr = parse_expression(&input[then_pos + 6..else_pos].trim())?;
-    let else_expr = parse_expression(&input[else_pos + 6..].trim())?;
+    let cond = parse_expression(input[..then_pos].trim())?;
+    let then_expr = parse_expression(input[then_pos + 6..else_pos].trim())?;
+    let else_expr = parse_expression(input[else_pos + 6..].trim())?;
 
     Ok(TLExpr::IfThenElse {
         condition: Box::new(cond),

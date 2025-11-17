@@ -1,0 +1,213 @@
+.TH TENSORLOGIC 1 "2025-01-17" "tensorlogic 0.1.0-alpha.1" "User Commands"
+.SH NAME
+tensorlogic \- compile logical expressions to tensor computation graphs
+.SH SYNOPSIS
+.B tensorlogic
+[\fIOPTIONS\fR] [\fIINPUT\fR]
+.br
+.B tensorlogic
+\fICOMMAND\fR [\fIARGS\fR]
+.SH DESCRIPTION
+.B tensorlogic
+is a command-line interface for compiling logical expressions (predicates, quantifiers, implications) into tensor computation graphs using the TensorLogic framework. It provides comprehensive tooling for logic-as-tensor compilation with multiple input/output formats, compilation strategies, and analysis capabilities.
+.SH OPTIONS
+.TP
+.BR \-f ", " \-\-input\-format " " \fIFORMAT\fR
+Input format: \fBexpr\fR (default), \fBjson\fR, or \fByaml\fR.
+.TP
+.BR \-o ", " \-\-output " " \fIFILE\fR
+Write output to \fIFILE\fR instead of stdout.
+.TP
+.BR \-F ", " \-\-output\-format " " \fIFORMAT\fR
+Output format: \fBgraph\fR (default), \fBdot\fR, \fBjson\fR, or \fBstats\fR.
+.TP
+.BR \-s ", " \-\-strategy " " \fISTRATEGY\fR
+Compilation strategy: \fBsoft_differentiable\fR (default), \fBhard_boolean\fR, \fBfuzzy_godel\fR, \fBfuzzy_product\fR, \fBfuzzy_lukasiewicz\fR, or \fBprobabilistic\fR.
+.TP
+.BR \-d ", " \-\-domains " " \fINAME:SIZE\fR
+Define domain with format \fINAME:SIZE\fR (can be specified multiple times).
+.TP
+.BR \-\-validate
+Enable graph validation after compilation.
+.TP
+.BR \-\-debug
+Enable detailed debug output.
+.TP
+.BR \-a ", " \-\-analyze
+Show graph complexity metrics and analysis.
+.TP
+.BR \-q ", " \-\-quiet
+Quiet mode with minimal output.
+.TP
+.BR \-\-no\-color
+Disable colored terminal output.
+.TP
+.BR \-\-no\-config
+Don't load configuration file.
+.TP
+.BR \-h ", " \-\-help
+Print help information.
+.TP
+.BR \-V ", " \-\-version
+Print version information.
+.SH COMMANDS
+.TP
+.B repl
+Start interactive Read-Eval-Print Loop (REPL) mode for exploring TensorLogic.
+.TP
+.BR batch " " \fIFILE\fR...
+Process multiple expressions from files (one expression per line).
+.TP
+.BR watch " " \fIFILE\fR
+Watch a file and recompile automatically on changes.
+.TP
+.BR completion " " \fISHELL\fR
+Generate shell completion script for \fISHELL\fR (\fBbash\fR, \fBzsh\fR, \fBfish\fR, or \fBpowershell\fR).
+.TP
+.BR config " " \fICOMMAND\fR
+Manage configuration files. Commands: \fBshow\fR, \fBpath\fR, \fBinit\fR, \fBedit\fR.
+.TP
+.BR convert " " \fIINPUT\fR " " \fB\-\-from\fR " " \fIFORMAT\fR " " \fB\-\-to\fR " " \fIFORMAT\fR
+Convert between formats (expr, json, yaml). Options: \fB\-\-pretty\fR for formatted output, \fB\-o\fR for output file.
+.SH EXPRESSION SYNTAX
+TensorLogic supports a rich expression language:
+.TP
+.B Predicates
+\fBpred(x, y)\fR - Atomic propositions
+.TP
+.B Logical Operators
+\fBAND\fR (&, &&, \[u2227]), \fBOR\fR (|, ||, \[u2228]), \fBNOT\fR (~, !, \[u00AC]), \fBIMPLIES\fR (->, =>, \[u2192])
+.TP
+.B Quantifiers
+\fBEXISTS x IN Domain. expr\fR (\[u2203]), \fBFORALL x IN Domain. expr\fR (\[u2200])
+.TP
+.B Arithmetic
++ (addition), - (subtraction), * (\[u00D7] multiplication), / (\[u00F7] division)
+.TP
+.B Comparisons
+= (==), < , > , <= (\[u2264]), >= (\[u2265]), != (\[u2260])
+.TP
+.B Conditional
+\fBIF\fR condition \fBTHEN\fR expr1 \fBELSE\fR expr2
+.SH COMPILATION STRATEGIES
+.TP
+.B soft_differentiable
+For neural network training with smooth gradients. AND uses element-wise product, OR uses probabilistic sum.
+.TP
+.B hard_boolean
+For discrete Boolean logic. AND uses minimum, OR uses maximum.
+.TP
+.B fuzzy_godel
+Gödel fuzzy logic with min/max operations.
+.TP
+.B fuzzy_product
+Product fuzzy logic with probabilistic semantics.
+.TP
+.B fuzzy_lukasiewicz
+Łukasiewicz fuzzy logic with bounded operations.
+.TP
+.B probabilistic
+Probabilistic interpretation of logical operations.
+.SH CONFIGURATION
+TensorLogic reads configuration from \fB.tensorlogicrc\fR (TOML format) in the following order:
+.IP 1. 4
+Path specified by \fBTENSORLOGIC_CONFIG\fR environment variable
+.IP 2. 4
+\fB.tensorlogicrc\fR in current directory
+.IP 3. 4
+\fB.tensorlogicrc\fR in home directory
+.PP
+Example configuration:
+.PP
+.nf
+.RS
+strategy = "soft_differentiable"
+colored = true
+validate = false
+
+[domains]
+Person = 100
+City = 50
+
+[repl]
+prompt = "tensorlogic> "
+history_file = ".tensorlogic_history"
+max_history = 1000
+
+[watch]
+debounce_ms = 500
+clear_screen = true
+.RE
+.fi
+.SH EXAMPLES
+.TP
+.B Basic compilation
+tensorlogic "knows(x, y)"
+.TP
+.B Compile with strategy
+tensorlogic --strategy fuzzy_godel "p AND q"
+.TP
+.B Generate DOT visualization
+tensorlogic "knows(x, y)" --output-format dot > graph.dot
+.br
+dot -Tpng graph.dot -o graph.png
+.TP
+.B Use quantifiers with domains
+tensorlogic --domains Person:100 "EXISTS x IN Person. knows(x, alice)"
+.TP
+.B Convert formats
+tensorlogic convert "knows(x, y)" --from expr --to json --pretty
+.TP
+.B Batch processing
+tensorlogic batch expressions.txt
+.TP
+.B Interactive REPL
+tensorlogic repl
+.TP
+.B Watch mode for development
+tensorlogic watch my_rules.tl
+.TP
+.B Generate shell completion
+tensorlogic completion bash > /etc/bash_completion.d/tensorlogic
+.SH FILES
+.TP
+.B ~/.tensorlogicrc
+User configuration file
+.TP
+.B .tensorlogicrc
+Project-specific configuration file
+.TP
+.B ~/.tensorlogic_history
+REPL command history
+.SH ENVIRONMENT
+.TP
+.B TENSORLOGIC_CONFIG
+Path to configuration file (overrides default locations)
+.TP
+.B EDITOR
+Editor to use for \fBconfig edit\fR command (default: vi)
+.SH EXIT STATUS
+.TP
+.B 0
+Success
+.TP
+.B 1
+Compilation error
+.TP
+.B 2
+Invalid arguments
+.TP
+.B 3
+I/O error
+.TP
+.B 4
+Validation error
+.SH SEE ALSO
+.BR dot (1),
+TensorLogic documentation: https://github.com/cool-japan/tensorlogic
+.SH BUGS
+Report bugs at: https://github.com/cool-japan/tensorlogic/issues
+.SH AUTHORS
+Part of the COOLJAPAN ecosystem
+.SH COPYRIGHT
+Copyright \(co 2025 COOLJAPAN. Licensed under Apache 2.0.

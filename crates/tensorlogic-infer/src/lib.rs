@@ -11,6 +11,8 @@
 //! - **TlRecoverableExecutor**: Execution with error recovery and checkpointing
 //! - **TlCapabilities**: Backend capability queries
 //! - **TlProfiledExecutor**: Execution profiling
+//! - **TlJitExecutor**: Just-In-Time compilation support
+//! - **TlDistributedExecutor**: Distributed multi-device execution
 //!
 //! ## Optimization Utilities
 //! - **GraphOptimizer**: Fusion detection, dead node elimination, redundancy analysis
@@ -23,6 +25,19 @@
 //! - **ExecutionContext**: State management and lifecycle tracking with hooks
 //! - **GraphCompiler**: Ahead-of-time graph compilation with optimization passes
 //! - **CompilationCache**: Caching of compiled graphs to avoid recompilation
+//!
+//! ## JIT Compilation
+//! - **JitCompiler**: Runtime compilation with hot path detection
+//! - **JitCache**: Specialized caching for JIT-compiled graphs
+//! - **HotPathDetector**: Identifies frequently executed code paths
+//! - **AdaptiveOptimizer**: Progressively optimizes based on runtime profiling
+//!
+//! ## Distributed Execution
+//! - **DistributedExecutor**: Multi-device execution coordination
+//! - **DataParallelCoordinator**: Data-parallel training across devices
+//! - **ModelParallelCoordinator**: Model-parallel execution with tensor sharding
+//! - **PipelineParallelCoordinator**: Pipeline parallelism across stages
+//! - **CommunicationBackend**: Abstract interface for device communication
 //!
 //! ## Analysis and Validation
 //! - **GraphValidator**: Graph validation and diagnostics
@@ -60,11 +75,13 @@ pub mod capabilities;
 pub mod compilation;
 pub mod context;
 pub mod debug;
+pub mod distributed;
 mod dummy_executor;
 mod dummy_tensor;
 pub mod eager;
 mod error;
 pub mod gradcheck;
+pub mod jit;
 pub mod memory;
 mod ops;
 pub mod optimization;
@@ -115,6 +132,12 @@ pub use debug::{
     ExecutionTrace, ExecutionTracer, OperationHandle, TensorInspector, TensorStats,
     TraceEntry as DebugTraceEntry, TraceSummary,
 };
+pub use distributed::{
+    CommunicationBackend, CommunicationOp, DataParallelCoordinator, DistributedConfig,
+    DistributedExecutor, DistributedPlacementPlan, DistributedStats, DummyCommunicationBackend,
+    ModelParallelCoordinator, ParallelismStrategy as DistributedParallelismStrategy,
+    PipelineParallelCoordinator, ReductionOp, ShardingSpec, TlDistributedExecutor,
+};
 pub use dummy_executor::DummyExecutor;
 pub use dummy_tensor::DummyTensor;
 pub use eager::{EagerOp, EagerOps, EagerTape, TlEagerAutodiff, Variable, VariableGrad};
@@ -122,6 +145,11 @@ pub use error::ExecutorError;
 pub use gradcheck::{
     compare_gradients, numerical_gradient_central, numerical_gradient_forward, quick_check,
     GradCheckConfig, GradCheckResult, GradientChecker, GradientError,
+};
+pub use jit::{
+    AdaptiveOptimizationPlan, AdaptiveOptimizer, HotPathDetector, JitCache, JitCacheEntry,
+    JitCacheStats, JitCompiler, JitConfig, JitEntryStats, JitKey, JitStats, SpecializationContext,
+    TlJitExecutor,
 };
 pub use memory::{MemoryEstimate, MemoryEstimator, TensorMemory};
 pub use ops::{ElemOp, ReduceOp};

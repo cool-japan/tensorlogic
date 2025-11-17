@@ -26,6 +26,18 @@ criterion.workspace = true
 name = "symbol_table_benchmarks"
 harness = false
 
+[[bench]]
+name = "incremental_validation_benchmarks"
+harness = false
+
+[[bench]]
+name = "query_planner_benchmarks"
+harness = false
+
+[[bench]]
+name = "schema_evolution_benchmarks"
+harness = false
+
 [[bin]]
 name = "schema_validate"
 path = "src/bin/schema_validate.rs"

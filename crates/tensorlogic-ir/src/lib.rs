@@ -46,6 +46,11 @@
 //!
 //! ### Type System
 //! - Static type checking with [`PredicateSignature`] and [`TypeAnnotation`]
+//! - **Parametric types** with type constructors (`List<T>`, `Option<T>`, `Tuple<A,B>`, etc.)
+//! - Type unification using Robinson's algorithm
+//! - Generalization and instantiation for polymorphic types
+//! - **Effect system** for tracking computational effects (purity, differentiability, stochasticity)
+//! - Effect polymorphism and inference
 //! - Arity validation ensures consistent predicate usage
 //! - Type inference and compatibility checking
 //!
@@ -135,6 +140,8 @@
 //! - `03_graph_construction`: Building computation graphs
 //! - `05_serialization`: JSON and binary serialization
 //! - `06_visualization`: Pretty printing and DOT export
+//! - `07_parametric_types`: Parametric types, unification, and polymorphic signatures
+//! - `08_effect_system`: Effect tracking, polymorphism, and annotations
 //!
 //! ## Architecture
 //!
@@ -144,6 +151,8 @@
 //! - **graph**: Tensor computation graphs and nodes
 //! - **domain**: Domain constraints and validation
 //! - **signature**: Type signatures for predicates
+//! - **[`parametric_types`]**: Parametric types, type constructors, and unification
+//! - **[`effect_system`]**: Effect tracking, polymorphism, and annotations
 //! - **metadata**: Provenance and source tracking
 //! - **[`serialization`]**: Versioned JSON/binary formats
 //! - **[`util`]**: Pretty printing and statistics
@@ -179,11 +188,13 @@
 pub mod diff;
 mod display;
 mod domain;
+pub mod effect_system;
 mod error;
 mod expr;
 pub mod fuzzing;
 mod graph;
 mod metadata;
+pub mod parametric_types;
 pub mod serialization;
 mod signature;
 mod term;
@@ -194,6 +205,10 @@ mod tests;
 
 pub use diff::{diff_exprs, diff_graphs, ExprDiff, GraphDiff, NodeDiff};
 pub use domain::{DomainInfo, DomainRegistry, DomainType};
+pub use effect_system::{
+    infer_operation_effects, ComputationalEffect, Effect, EffectAnnotation, EffectScheme,
+    EffectSet, EffectSubstitution, EffectVar, MemoryEffect, ProbabilisticEffect,
+};
 pub use error::IrError;
 pub use expr::ac_matching::{
     ac_equivalent, flatten_ac, normalize_ac, ACOperator, ACPattern, Multiset,
@@ -240,9 +255,36 @@ pub use expr::temporal_equivalences::apply_temporal_equivalences;
 pub use expr::{
     AggregateOp, FuzzyImplicationKind, FuzzyNegationKind, TCoNormKind, TLExpr, TNormKind,
 };
+pub use graph::constant_folding::{
+    analyze_constants, apply_constant_folding, fold_constants_aggressive,
+    identify_constant_subgraphs, ConstantInfo, ConstantPropagationResult, FoldingStats,
+};
 pub use graph::cost_model::{
     auto_annotate_costs, estimate_graph_cost, estimate_operation_cost, CostSummary, GraphCostModel,
     OperationCost,
+};
+pub use graph::fusion::{
+    fuse_all, fuse_einsum_operations, fuse_elementwise_operations, fuse_map_reduce, FusionStats,
+};
+pub use graph::layout::{
+    apply_layouts, find_layout_fusion_opportunities, optimize_layouts, LayoutOptimizationResult,
+    LayoutStrategy, StridePattern, TensorLayout,
+};
+pub use graph::memory::{
+    analyze_inplace_opportunities, analyze_memory, MemoryAnalysis, TensorMemory,
+};
+pub use graph::parallel::{
+    analyze_parallelization, partition_independent_subgraphs, ParallelGroup,
+    ParallelizationAnalysis,
+};
+pub use graph::pattern::{
+    GraphPattern, GraphRewriteRule, PatternMatch, PatternMatcher,
+    RewriteStats as PatternRewriteStats,
+};
+pub use graph::schedule::{ExecutionSchedule, GraphScheduler, SchedulingObjective};
+pub use graph::tiling::{
+    apply_multilevel_tiling, apply_register_tiling, apply_tiling, recommend_tiling_strategy,
+    TileConfig, TilingResult, TilingStrategy,
 };
 pub use graph::{
     are_graphs_equivalent, canonical_hash, canonicalize_graph, export_to_dot,
@@ -251,6 +293,10 @@ pub use graph::{
     ValidationWarning, ValidationWarningKind,
 };
 pub use metadata::{Metadata, Provenance, SourceLocation, SourceSpan};
+pub use parametric_types::{
+    compose_substitutions, generalize, instantiate, unify, Kind, ParametricType, TypeConstructor,
+    TypeSubstitution,
+};
 pub use serialization::{VersionedExpr, VersionedGraph, FORMAT_VERSION};
 pub use signature::{PredicateSignature, SignatureRegistry};
 pub use term::{Term, TypeAnnotation};

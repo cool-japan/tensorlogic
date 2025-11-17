@@ -34,7 +34,7 @@ use std::time::{Duration, SystemTime};
 use tensorlogic_ir::EinsumGraph;
 
 /// Optimization level for graph compilation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub enum OptimizationLevel {
     /// No optimization - compile as-is
     None,

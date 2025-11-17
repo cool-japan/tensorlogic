@@ -7,6 +7,7 @@ mod batch;
 mod cli;
 mod completion;
 mod config;
+mod conversion;
 mod output;
 mod parser;
 mod repl;
@@ -93,6 +94,26 @@ fn run() -> Result<()> {
             Ok(())
         }
         Some(Commands::Config { command }) => handle_config_command(command),
+        Some(Commands::Convert {
+            input,
+            from,
+            to,
+            output,
+            pretty,
+        }) => {
+            let result = conversion::convert(input, *from, *to, *pretty)?;
+
+            match output {
+                Some(path) => {
+                    fs::write(path, &result).context("Failed to write output file")?;
+                    print_success(&format!("Converted to: {}", path.display()));
+                }
+                None => {
+                    println!("{}", result);
+                }
+            }
+            Ok(())
+        }
         None => {
             // Main compilation mode
             compile_mode(&cli, &config)
@@ -102,7 +123,11 @@ fn run() -> Result<()> {
 
 fn compile_mode(cli: &Cli, config: &Config) -> Result<()> {
     // Read input
-    let expr = read_input(&cli.input, &cli.input_format)?;
+    let input = cli
+        .input
+        .as_ref()
+        .context("Input is required for compilation mode")?;
+    let expr = read_input(input, &cli.input_format)?;
 
     if config.debug {
         eprintln!("Parsed expression: {:?}", expr);
@@ -164,7 +189,9 @@ fn compile_mode(cli: &Cli, config: &Config) -> Result<()> {
             }
         }
         None => {
-            if !cli.quiet {
+            // Don't print status for structured formats (they need clean stdout for parsing)
+            let is_structured = matches!(cli.output_format, OutputFormat::Json);
+            if !cli.quiet && !is_structured {
                 print_compilation_success(&graph);
                 println!();
             }

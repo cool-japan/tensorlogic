@@ -92,7 +92,9 @@ mod constraint;
 mod diff;
 mod domain;
 mod error;
+mod evolution;
 mod hierarchy;
+mod incremental_validation;
 mod lazy;
 mod mask;
 mod metadata;
@@ -100,6 +102,7 @@ mod parametric;
 mod performance;
 mod predicate;
 mod product;
+mod query_planner;
 mod schema_analysis;
 mod signature_matcher;
 mod symbol_table;
@@ -137,3 +140,16 @@ pub use schema_analysis::{SchemaAnalyzer, SchemaIssue, SchemaRecommendations, Sc
 pub use signature_matcher::{MatcherStats, SignatureMatcher};
 pub use symbol_table::SymbolTable;
 pub use validation::{SchemaValidator, ValidationReport};
+
+// Re-export new modules (already declared above as mod)
+pub use evolution::{
+    BreakingChange, ChangeImpact, ChangeKind, CompatibilityReport, EvolutionAnalyzer,
+    MigrationPlan, MigrationStep, VersionBump,
+};
+pub use incremental_validation::{
+    AffectedComponents, Change, ChangeStats, ChangeTracker, ChangeType, DependencyGraph,
+    IncrementalValidationReport, IncrementalValidator, ValidationCache,
+};
+pub use query_planner::{
+    IndexStrategy, PredicatePattern, PredicateQuery, QueryPlan, QueryPlanner, QueryStatistics,
+};

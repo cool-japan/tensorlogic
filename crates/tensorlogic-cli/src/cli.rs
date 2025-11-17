@@ -9,9 +9,9 @@ use std::path::PathBuf;
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
 pub struct Cli {
-    /// Input expression or file path
+    /// Input expression or file path (required for compilation mode)
     #[arg(value_name = "INPUT")]
-    pub input: String,
+    pub input: Option<String>,
 
     /// Input format
     #[arg(short = 'f', long, value_enum, default_value = "expr")]
@@ -91,6 +91,28 @@ pub enum Commands {
         #[command(subcommand)]
         command: ConfigCommand,
     },
+
+    /// Convert between formats
+    Convert {
+        /// Input file or expression
+        input: String,
+
+        /// Input format
+        #[arg(short = 'f', long, value_enum)]
+        from: ConvertFormat,
+
+        /// Output format
+        #[arg(short = 't', long, value_enum)]
+        to: ConvertFormat,
+
+        /// Output file (stdout if not specified)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+
+        /// Pretty-print the output
+        #[arg(short, long)]
+        pretty: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -125,6 +147,16 @@ pub enum OutputFormat {
     Json,
     /// Statistics only
     Stats,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum ConvertFormat {
+    /// Expression string
+    Expr,
+    /// JSON format
+    Json,
+    /// YAML format
+    Yaml,
 }
 
 fn parse_domain(s: &str) -> Result<(String, usize), String> {

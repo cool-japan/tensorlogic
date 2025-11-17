@@ -2,7 +2,12 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::parametric_types::ParametricType;
+
 /// Type annotation for a term.
+///
+/// This is the simple string-based type annotation. For parametric types,
+/// use [`ParametricType`] which supports type constructors and variables.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TypeAnnotation {
     pub type_name: String,
@@ -12,6 +17,19 @@ impl TypeAnnotation {
     pub fn new(type_name: impl Into<String>) -> Self {
         TypeAnnotation {
             type_name: type_name.into(),
+        }
+    }
+
+    /// Convert to a parametric type (concrete type)
+    pub fn to_parametric(&self) -> ParametricType {
+        ParametricType::concrete(&self.type_name)
+    }
+
+    /// Create from a parametric type if it's a concrete type
+    pub fn from_parametric(ty: &ParametricType) -> Option<Self> {
+        match ty {
+            ParametricType::Concrete(name) => Some(TypeAnnotation::new(name.clone())),
+            _ => None, // Can't convert parametric or variable types
         }
     }
 }

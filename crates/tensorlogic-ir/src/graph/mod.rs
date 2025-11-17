@@ -2,13 +2,21 @@
 
 pub mod advanced_analysis;
 pub mod canonicalization;
+pub mod constant_folding;
 pub mod cost_model;
 pub mod dot_export;
 mod einsum_spec;
 mod einsum_spec_display;
+pub mod fusion;
+pub mod layout;
+pub mod memory;
 mod node;
 pub mod optimization;
 mod optype;
+pub mod parallel;
+pub mod pattern;
+pub mod schedule;
+pub mod tiling;
 pub mod transform;
 pub mod validation;
 

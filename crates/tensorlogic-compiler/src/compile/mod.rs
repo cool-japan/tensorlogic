@@ -4,7 +4,7 @@ mod arithmetic;
 mod comparison;
 mod conditional;
 pub mod custom_ops;
-// mod fuzzy; // TODO: Rewrite following correct patterns (see SESSION10_SUMMARY.md)
+mod fuzzy;
 mod implication;
 mod let_binding;
 mod logic_ops;
@@ -29,7 +29,9 @@ pub(crate) use conditional::{compile_constant, compile_if_then_else};
 pub use custom_ops::{
     CustomOpData, CustomOpHandler, CustomOpMetadata, CustomOpRegistry, ExtendedCompilerContext,
 };
-// pub(crate) use fuzzy::{compile_fuzzy_implication, compile_fuzzy_not, compile_tconorm, compile_tnorm}; // TODO: Enable when fuzzy.rs is rewritten
+pub(crate) use fuzzy::{
+    compile_fuzzy_implication, compile_fuzzy_not, compile_tconorm, compile_tnorm,
+};
 pub(crate) use implication::compile_imply;
 pub(crate) use let_binding::compile_let;
 pub(crate) use logic_ops::{compile_and, compile_not, compile_or};
@@ -131,14 +133,15 @@ pub(crate) fn compile_expr(
         // Let binding
         TLExpr::Let { var, value, body } => compile_let(var, value, body, ctx, graph),
 
-        // Fuzzy logic operators - TODO: Enable when fuzzy.rs is rewritten
-        TLExpr::TNorm { .. }
-        | TLExpr::TCoNorm { .. }
-        | TLExpr::FuzzyNot { .. }
-        | TLExpr::FuzzyImplication { .. } => {
-            bail!("Fuzzy logic operators are not yet implemented. This feature is under development. \
-                   See SESSION10_SUMMARY.md for implementation status.")
-        }
+        // Fuzzy logic operators
+        TLExpr::TNorm { kind, left, right } => compile_tnorm(*kind, left, right, ctx, graph),
+        TLExpr::TCoNorm { kind, left, right } => compile_tconorm(*kind, left, right, ctx, graph),
+        TLExpr::FuzzyNot { kind, expr } => compile_fuzzy_not(*kind, expr, ctx, graph),
+        TLExpr::FuzzyImplication {
+            kind,
+            premise,
+            conclusion,
+        } => compile_fuzzy_implication(*kind, premise, conclusion, ctx, graph),
         TLExpr::SoftExists {
             var,
             domain,

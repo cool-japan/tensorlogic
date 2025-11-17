@@ -45,6 +45,11 @@ pub trait Loss: Debug {
         predictions: &ArrayView<f64, Ix2>,
         targets: &ArrayView<f64, Ix2>,
     ) -> TrainResult<Array<f64, Ix2>>;
+
+    /// Get the name of the loss function.
+    fn name(&self) -> &str {
+        "unknown"
+    }
 }
 
 /// Cross-entropy loss for classification.

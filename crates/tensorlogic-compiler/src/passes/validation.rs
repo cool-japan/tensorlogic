@@ -356,6 +356,7 @@ mod tests {
                     type_name: "Person".to_string(),
                 },
             ],
+            parametric_types: None,
         }];
 
         // Fully quantified expression
