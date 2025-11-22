@@ -2,7 +2,7 @@
 # Save as: .gitlab-ci.yml
 
 variables:
-  TENSORLOGIC_VERSION: "0.1.0-alpha.1"
+  TENSORLOGIC_VERSION: "0.1.0-alpha.2"
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
 
 stages:

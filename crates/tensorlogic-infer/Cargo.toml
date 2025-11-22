@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-infer"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "Execution and autodiff traits for TensorLogic inference engines"
 edition.workspace = true
 license.workspace = true

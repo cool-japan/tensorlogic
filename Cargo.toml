@@ -23,7 +23,7 @@ exclude = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://github.com/cool-japan/tensorlogic"
@@ -78,14 +78,14 @@ sklears-core = { version = "0.1.0-alpha.2", path = "../sklears/crates/sklears-co
 sklears-kernel-approximation = { version = "0.1.0-alpha.2", path = "../sklears/crates/sklears-kernel-approximation" }
 
 # Internal tensorlogic crates
-tensorlogic-ir = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-ir" }
-tensorlogic-adapters = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-adapters" }
-tensorlogic-infer = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-infer" }
-tensorlogic-compiler = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-compiler" }
-tensorlogic-scirs-backend = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-scirs-backend" }
-tensorlogic-train = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-train" }
-tensorlogic-oxirs-bridge = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-oxirs-bridge" }
-tensorlogic-sklears-kernels = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-sklears-kernels" }
-tensorlogic-quantrs-hooks = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-quantrs-hooks" }
-tensorlogic-trustformers = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-trustformers" }
+tensorlogic-ir = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-ir" }
+tensorlogic-adapters = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-adapters" }
+tensorlogic-infer = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-infer" }
+tensorlogic-compiler = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-compiler" }
+tensorlogic-scirs-backend = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-scirs-backend" }
+tensorlogic-train = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-train" }
+tensorlogic-oxirs-bridge = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-oxirs-bridge" }
+tensorlogic-sklears-kernels = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-sklears-kernels" }
+tensorlogic-quantrs-hooks = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-quantrs-hooks" }
+tensorlogic-trustformers = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-trustformers" }
 

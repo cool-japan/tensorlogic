@@ -1295,7 +1295,7 @@ Add the `sklears` feature to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tensorlogic-sklears-kernels = { version = "0.1.0-alpha.1", features = ["sklears"] }
+tensorlogic-sklears-kernels = { version = "0.1.0-alpha.2", features = ["sklears"] }
 ```
 
 ### Usage

@@ -56,7 +56,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tensorlogic-quantrs-hooks = "0.1.0-alpha.1"
+tensorlogic-quantrs-hooks = "0.1.0-alpha.2"
 scirs2-core = "0.1.0-rc.2"  # For tensor operations
 ```
 

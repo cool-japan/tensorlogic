@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-quantrs-hooks"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "Probabilistic graphical model and message-passing interoperability for QuantRS2"
 edition.workspace = true
 license.workspace = true

@@ -56,7 +56,7 @@ This crate serves as the **lingua franca** between all TensorLogic components, p
 
 ```toml
 [dependencies]
-tensorlogic-ir = "0.1.0-alpha.1"
+tensorlogic-ir = "0.1.0-alpha.2"
 ```
 
 ## Quick Start

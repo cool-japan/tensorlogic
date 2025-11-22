@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-oxirs-bridge"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "RDF/GraphQL/SHACL integration and provenance tracking for TensorLogic"
 edition.workspace = true
 license.workspace = true

@@ -135,7 +135,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tensorlogic-adapters = "0.1.0-alpha.1"
+tensorlogic-adapters = "0.1.0-alpha.2"
 ```
 
 ## Quick Start

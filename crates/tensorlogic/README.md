@@ -18,7 +18,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tensorlogic = "0.1.0-alpha.1"
+tensorlogic = "0.1.0-alpha.2"
 ```
 
 ### Basic Usage
@@ -158,7 +158,7 @@ Control which components are included:
 
 ```toml
 [dependencies]
-tensorlogic = { version = "0.1.0-alpha.1", features = ["simd"] }
+tensorlogic = { version = "0.1.0-alpha.2", features = ["simd"] }
 ```
 
 Available features:
@@ -243,15 +243,15 @@ If you were using individual crates:
 **Before:**
 ```toml
 [dependencies]
-tensorlogic-ir = "0.1.0-alpha.1"
-tensorlogic-compiler = "0.1.0-alpha.1"
-tensorlogic-scirs-backend = "0.1.0-alpha.1"
+tensorlogic-ir = "0.1.0-alpha.2"
+tensorlogic-compiler = "0.1.0-alpha.2"
+tensorlogic-scirs-backend = "0.1.0-alpha.2"
 ```
 
 **After:**
 ```toml
 [dependencies]
-tensorlogic = "0.1.0-alpha.1"
+tensorlogic = "0.1.0-alpha.2"
 ```
 
 Your code remains the same, just update imports:

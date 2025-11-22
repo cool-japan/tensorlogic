@@ -37,9 +37,9 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tensorlogic-compiler = "0.1.0-alpha.1"
-tensorlogic-ir = "0.1.0-alpha.1"
-tensorlogic-scirs-backend = "0.1.0-alpha.1"
+tensorlogic-compiler = "0.1.0-alpha.2"
+tensorlogic-ir = "0.1.0-alpha.2"
+tensorlogic-scirs-backend = "0.1.0-alpha.2"
 ```
 
 ### Python
