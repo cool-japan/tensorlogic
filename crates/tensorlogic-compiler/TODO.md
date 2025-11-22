@@ -291,7 +291,41 @@ See main [TODO.md](../../TODO.md) for overall project status.
 
 ## Future Enhancements 🔮
 
-### Advanced Logic
+### Advanced Logic (Alpha.3 Enhancements) ✅ PARTIAL
+- [x] **Counting Quantifiers** ✅ COMPLETE (Alpha.3)
+  - [x] CountingExists (∃≥k x. P(x)) - at least k elements satisfy P
+  - [x] CountingForAll (∀≥k x. P(x)) - at least k elements satisfy P
+  - [x] ExactCount (∃=k x. P(x)) - exactly k elements satisfy P
+  - [x] Majority (Majority x. P(x)) - more than half satisfy P
+  - [x] Implementations using sum reductions and soft thresholding
+  - [x] 4 comprehensive unit tests (all passing)
+  - [x] Integration with compiler dispatcher in compile/mod.rs
+- [x] **Match Exhaustiveness** ✅ COMPLETE (Alpha.3)
+  - [x] Added wildcard patterns to 20+ files for new TLExpr variants
+  - [x] Optimize directory: 11 files (algebraic, constant_folding, distributivity, etc.)
+  - [x] Passes directory: 5 files (cse, diagnostics, strategy_selection, etc.)
+  - [x] Updated symbol_table.rs, scope_analysis.rs, type_checking.rs
+  - [x] Zero compilation errors, 356/356 tests passing
+- [ ] **Higher-Order Logic** 🔄 NOT IMPLEMENTED
+  - Lambda expressions with closure tracking
+  - Apply with beta reduction
+  - Requires significant IR and runtime changes
+- [ ] **Set Theory Operations** 🔄 NOT IMPLEMENTED
+  - SetMembership, SetUnion, SetIntersection, SetDifference
+  - SetCardinality, EmptySet, SetComprehension
+  - Pending implementation (error handlers added)
+- [ ] **Fixed-Point Operators** 🔄 NOT IMPLEMENTED
+  - LeastFixpoint (μ), GreatestFixpoint (ν)
+  - Requires iterative computation until convergence
+- [ ] **Hybrid Logic** 🔄 NOT IMPLEMENTED
+  - Nominal, At, Somewhere, Everywhere
+  - Requires named state tracking and reachability
+- [ ] **Constraint Programming** 🔄 NOT IMPLEMENTED
+  - AllDifferent, GlobalCardinality
+  - Can be encoded with existing quantifiers (workaround available)
+- [ ] **Abductive Reasoning** 🔄 NOT IMPLEMENTED
+  - Abducible, Explain
+  - Requires explanation search and cost optimization
 - [ ] First-class functions/predicates
 - [ ] Higher-order quantification
 - [x] Modal logic operators (□, ◇) ✅ COMPLETE

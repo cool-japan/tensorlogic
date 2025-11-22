@@ -302,6 +302,9 @@ fn optimize_quantifiers_impl(expr: &TLExpr, stats: &mut QuantifierOptStats) -> T
         | TLExpr::Release { .. }
         | TLExpr::WeakUntil { .. }
         | TLExpr::StrongRelease { .. } => expr.clone(),
+
+        // All other expression types (alpha.3 enhancements)
+        _ => expr.clone(),
     }
 }
 
@@ -432,6 +435,9 @@ fn collect_free_vars(expr: &TLExpr, bound: &mut HashSet<String>, free: &mut Hash
         }
 
         TLExpr::Constant(_) => {}
+
+        // All other expression types (alpha.3 enhancements)
+        _ => {}
     }
 }
 

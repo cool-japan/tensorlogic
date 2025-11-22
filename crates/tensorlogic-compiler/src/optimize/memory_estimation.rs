@@ -490,6 +490,12 @@ fn estimate_memory_impl(
 
             max_bytes
         }
+
+        // All other expression types (alpha.3 enhancements)
+        _ => {
+            const ELEM_SIZE: usize = 8;
+            ELEM_SIZE
+        }
     }
 }
 

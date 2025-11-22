@@ -24,8 +24,7 @@
 //! # Example
 //!
 //! ```rust
-//! use tensorlogic_adapters::{SymbolTable, PredicateInfo};
-//! use tensorlogic_adapters::query_planner::{QueryPlanner, PredicateQuery};
+//! use tensorlogic_adapters::{SymbolTable, PredicateInfo, QueryPlanner, PredicateQuery};
 //!
 //! let mut table = SymbolTable::new();
 //! // ... populate table ...

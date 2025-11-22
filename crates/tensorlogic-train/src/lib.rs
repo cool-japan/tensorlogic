@@ -49,8 +49,8 @@ mod transfer;
 mod utils;
 
 pub use augmentation::{
-    CompositeAugmenter, DataAugmenter, MixupAugmenter, NoAugmentation, NoiseAugmenter,
-    RotationAugmenter, ScaleAugmenter,
+    CompositeAugmenter, CutMixAugmenter, DataAugmenter, MixupAugmenter, NoAugmentation,
+    NoiseAugmenter, RotationAugmenter, ScaleAugmenter,
 };
 pub use batch::{extract_batch, BatchConfig, BatchIterator, DataShuffler};
 pub use callbacks::{
@@ -71,16 +71,17 @@ pub use loss::{
     PolyLoss, RuleSatisfactionLoss, TripletLoss, TverskyLoss,
 };
 pub use metrics::{
-    Accuracy, BalancedAccuracy, CohensKappa, ConfusionMatrix, DiceCoefficient, F1Score, IoU,
-    MatthewsCorrelationCoefficient, MeanAveragePrecision, MeanIoU, Metric, MetricTracker,
-    PerClassMetrics, Precision, Recall, RocCurve, TopKAccuracy,
+    Accuracy, BalancedAccuracy, CohensKappa, ConfusionMatrix, DiceCoefficient,
+    ExpectedCalibrationError, F1Score, IoU, MatthewsCorrelationCoefficient,
+    MaximumCalibrationError, MeanAveragePrecision, MeanIoU, Metric, MetricTracker,
+    NormalizedDiscountedCumulativeGain, PerClassMetrics, Precision, Recall, RocCurve, TopKAccuracy,
 };
 pub use model::{AutodiffModel, DynamicModel, LinearModel, Model};
 pub use optimizer::{
-    AdaBeliefOptimizer, AdaMaxOptimizer, AdagradOptimizer, AdamOptimizer, AdamWOptimizer,
-    GradClipMode, LambOptimizer, LarsOptimizer, LionConfig, LionOptimizer, LookaheadOptimizer,
-    NAdamOptimizer, Optimizer, OptimizerConfig, RAdamOptimizer, RMSpropOptimizer, SamOptimizer,
-    SgdOptimizer,
+    AdaBeliefOptimizer, AdaMaxOptimizer, AdagradOptimizer, AdamOptimizer, AdamPOptimizer,
+    AdamWOptimizer, GradClipMode, LambOptimizer, LarsOptimizer, LionConfig, LionOptimizer,
+    LookaheadOptimizer, NAdamOptimizer, Optimizer, OptimizerConfig, RAdamOptimizer,
+    RMSpropOptimizer, SamOptimizer, SgdOptimizer,
 };
 pub use regularization::{
     CompositeRegularization, ElasticNetRegularization, GroupLassoRegularization, L1Regularization,

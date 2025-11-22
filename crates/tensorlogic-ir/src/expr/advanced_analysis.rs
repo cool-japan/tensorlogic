@@ -210,6 +210,83 @@ impl OperatorCounts {
                 self.count_recursive(value);
                 self.count_recursive(body);
             }
+
+            // Alpha.3 enhancements
+            TLExpr::Lambda { body, .. } => {
+                self.control_flow += 1;
+                self.count_recursive(body);
+            }
+            TLExpr::Apply { function, argument } => {
+                self.control_flow += 1;
+                self.count_recursive(function);
+                self.count_recursive(argument);
+            }
+            TLExpr::SetMembership { element, set }
+            | TLExpr::SetUnion {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetIntersection {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetDifference {
+                left: element,
+                right: set,
+            } => {
+                self.logical += 1;
+                self.count_recursive(element);
+                self.count_recursive(set);
+            }
+            TLExpr::SetCardinality { set } => {
+                self.arithmetic += 1;
+                self.count_recursive(set);
+            }
+            TLExpr::EmptySet => {
+                self.constants += 1;
+            }
+            TLExpr::SetComprehension { condition, .. } => {
+                self.quantifiers += 1;
+                self.count_recursive(condition);
+            }
+            TLExpr::CountingExists { body, .. }
+            | TLExpr::CountingForAll { body, .. }
+            | TLExpr::ExactCount { body, .. }
+            | TLExpr::Majority { body, .. } => {
+                self.quantifiers += 1;
+                self.count_recursive(body);
+            }
+            TLExpr::LeastFixpoint { body, .. } | TLExpr::GreatestFixpoint { body, .. } => {
+                self.control_flow += 1;
+                self.count_recursive(body);
+            }
+            TLExpr::Nominal { .. } => {
+                self.constants += 1;
+            }
+            TLExpr::At { formula, .. } => {
+                self.modal += 1;
+                self.count_recursive(formula);
+            }
+            TLExpr::Somewhere { formula } | TLExpr::Everywhere { formula } => {
+                self.modal += 1;
+                self.count_recursive(formula);
+            }
+            TLExpr::AllDifferent { .. } => {
+                self.logical += 1;
+            }
+            TLExpr::GlobalCardinality { values, .. } => {
+                self.logical += 1;
+                for val in values {
+                    self.count_recursive(val);
+                }
+            }
+            TLExpr::Abducible { .. } => {
+                self.predicates += 1;
+            }
+            TLExpr::Explain { formula } => {
+                self.control_flow += 1;
+                self.count_recursive(formula);
+            }
         }
     }
 }
@@ -645,6 +722,99 @@ impl ComplexityMetrics {
                     temporal_depth,
                 );
             }
+
+            // Alpha.3 enhancements - comprehensive coverage
+            TLExpr::Lambda { body, .. }
+            | TLExpr::SetCardinality { set: body }
+            | TLExpr::SetComprehension {
+                condition: body, ..
+            }
+            | TLExpr::CountingExists { body, .. }
+            | TLExpr::CountingForAll { body, .. }
+            | TLExpr::ExactCount { body, .. }
+            | TLExpr::Majority { body, .. }
+            | TLExpr::LeastFixpoint { body, .. }
+            | TLExpr::GreatestFixpoint { body, .. }
+            | TLExpr::At { formula: body, .. }
+            | TLExpr::Somewhere { formula: body }
+            | TLExpr::Everywhere { formula: body }
+            | TLExpr::Explain { formula: body } => {
+                *non_leaf_count += 1;
+                *child_count += 1;
+                self.compute_recursive(
+                    body,
+                    depth + 1,
+                    depth_sum,
+                    non_leaf_count,
+                    child_count,
+                    quantifier_depth + 1,
+                    modal_depth,
+                    temporal_depth,
+                );
+            }
+            TLExpr::Apply { function, argument }
+            | TLExpr::SetMembership {
+                element: function,
+                set: argument,
+            }
+            | TLExpr::SetUnion {
+                left: function,
+                right: argument,
+            }
+            | TLExpr::SetIntersection {
+                left: function,
+                right: argument,
+            }
+            | TLExpr::SetDifference {
+                left: function,
+                right: argument,
+            } => {
+                *non_leaf_count += 1;
+                *child_count += 2;
+                self.compute_recursive(
+                    function,
+                    depth + 1,
+                    depth_sum,
+                    non_leaf_count,
+                    child_count,
+                    quantifier_depth,
+                    modal_depth,
+                    temporal_depth,
+                );
+                self.compute_recursive(
+                    argument,
+                    depth + 1,
+                    depth_sum,
+                    non_leaf_count,
+                    child_count,
+                    quantifier_depth,
+                    modal_depth,
+                    temporal_depth,
+                );
+            }
+            TLExpr::GlobalCardinality { values, .. } => {
+                *non_leaf_count += 1;
+                *child_count += values.len();
+                for val in values {
+                    self.compute_recursive(
+                        val,
+                        depth + 1,
+                        depth_sum,
+                        non_leaf_count,
+                        child_count,
+                        quantifier_depth,
+                        modal_depth,
+                        temporal_depth,
+                    );
+                }
+            }
+            TLExpr::EmptySet
+            | TLExpr::Nominal { .. }
+            | TLExpr::AllDifferent { .. }
+            | TLExpr::Abducible { .. } => {
+                self.leaf_count += 1;
+                *depth_sum += depth;
+            }
         }
     }
 }
@@ -877,6 +1047,54 @@ impl PatternAnalysis {
                 self.detect_recursive(value, _context);
                 self.detect_recursive(body, _context);
             }
+
+            // Alpha.3 enhancements
+            TLExpr::Lambda { body, .. }
+            | TLExpr::SetCardinality { set: body }
+            | TLExpr::SetComprehension {
+                condition: body, ..
+            }
+            | TLExpr::CountingExists { body, .. }
+            | TLExpr::CountingForAll { body, .. }
+            | TLExpr::ExactCount { body, .. }
+            | TLExpr::Majority { body, .. }
+            | TLExpr::LeastFixpoint { body, .. }
+            | TLExpr::GreatestFixpoint { body, .. }
+            | TLExpr::At { formula: body, .. }
+            | TLExpr::Somewhere { formula: body }
+            | TLExpr::Everywhere { formula: body }
+            | TLExpr::Explain { formula: body } => {
+                self.detect_recursive(body, _context);
+            }
+            TLExpr::Apply { function, argument }
+            | TLExpr::SetMembership {
+                element: function,
+                set: argument,
+            }
+            | TLExpr::SetUnion {
+                left: function,
+                right: argument,
+            }
+            | TLExpr::SetIntersection {
+                left: function,
+                right: argument,
+            }
+            | TLExpr::SetDifference {
+                left: function,
+                right: argument,
+            } => {
+                self.detect_recursive(function, _context);
+                self.detect_recursive(argument, _context);
+            }
+            TLExpr::GlobalCardinality { values, .. } => {
+                for val in values {
+                    self.detect_recursive(val, _context);
+                }
+            }
+            TLExpr::EmptySet
+            | TLExpr::Nominal { .. }
+            | TLExpr::AllDifferent { .. }
+            | TLExpr::Abducible { .. } => {}
 
             // Leaves
             TLExpr::Pred { .. } | TLExpr::Constant(_) => {}

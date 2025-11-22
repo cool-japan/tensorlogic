@@ -219,22 +219,22 @@ cargo nextest run -p tensorlogic --all-features
 
 ## Version Compatibility
 
-This meta crate version `0.1.0-alpha.1` includes:
+This meta crate version `0.1.0-alpha.2` includes:
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| tensorlogic-ir | 0.1.0-alpha.1 | ✅ Production Ready |
-| tensorlogic-compiler | 0.1.0-alpha.1 | ✅ Production Ready |
-| tensorlogic-infer | 0.1.0-alpha.1 | ✅ Production Ready |
-| tensorlogic-scirs-backend | 0.1.0-alpha.1 | ✅ Production Ready |
-| tensorlogic-train | 0.1.0-alpha.1 | ✅ Complete |
-| tensorlogic-adapters | 0.1.0-alpha.1 | ✅ Complete |
-| tensorlogic-oxirs-bridge | 0.1.0-alpha.1 | ✅ Complete |
-| tensorlogic-sklears-kernels | 0.1.0-alpha.1 | ✅ Core Features |
-| tensorlogic-quantrs-hooks | 0.1.0-alpha.1 | ✅ Core Features |
-| tensorlogic-trustformers | 0.1.0-alpha.1 | ✅ Complete |
+| tensorlogic-ir | 0.1.0-alpha.2 | ✅ Production Ready |
+| tensorlogic-compiler | 0.1.0-alpha.2 | ✅ Production Ready |
+| tensorlogic-infer | 0.1.0-alpha.2 | ✅ Production Ready |
+| tensorlogic-scirs-backend | 0.1.0-alpha.2 | ✅ Production Ready |
+| tensorlogic-train | 0.1.0-alpha.2 | ✅ Complete |
+| tensorlogic-adapters | 0.1.0-alpha.2 | ✅ Complete |
+| tensorlogic-oxirs-bridge | 0.1.0-alpha.2 | ✅ Complete |
+| tensorlogic-sklears-kernels | 0.1.0-alpha.2 | ✅ Core Features |
+| tensorlogic-quantrs-hooks | 0.1.0-alpha.2 | ✅ Core Features |
+| tensorlogic-trustformers | 0.1.0-alpha.2 | ✅ Complete |
 
-All components are synchronized to version `0.1.0-alpha.1`.
+All components are synchronized to version `0.1.0-alpha.2`.
 
 ## Migration from Individual Crates
 

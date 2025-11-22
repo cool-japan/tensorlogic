@@ -361,6 +361,8 @@ fn cse_recursive(
                 releaser: Box::new(releaser_opt),
             }
         }
+        // All other expression types (alpha.3 enhancements)
+        _ => expr.clone(),
     };
 
     // Cache this result

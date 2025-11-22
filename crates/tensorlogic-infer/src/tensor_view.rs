@@ -413,8 +413,11 @@ mod tests {
         // Range exceeds dimension
         assert!(SliceSpec::Range(10..200).size(100).is_err());
 
-        // Invalid range
-        assert!(SliceSpec::Range(20..10).size(100).is_err());
+        // Invalid range (intentionally reversed to test error handling)
+        #[allow(clippy::reversed_empty_ranges)]
+        {
+            assert!(SliceSpec::Range(20..10).size(100).is_err());
+        }
 
         // Zero stride
         assert!(SliceSpec::Strided {

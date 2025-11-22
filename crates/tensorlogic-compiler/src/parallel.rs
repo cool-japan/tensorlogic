@@ -376,6 +376,13 @@ fn estimate_complexity(expr: &TLExpr) -> usize {
         }
         TLExpr::Aggregate { body, .. } => 2 + estimate_complexity(body),
         TLExpr::Score(e) => estimate_complexity(e),
+        // Counting quantifiers
+        TLExpr::CountingExists { body, .. }
+        | TLExpr::CountingForAll { body, .. }
+        | TLExpr::ExactCount { body, .. }
+        | TLExpr::Majority { body, .. } => 2 + estimate_complexity(body),
+        // All other expression types (alpha.3 enhancements) - conservative complexity estimate
+        _ => 3,
     }
 }
 

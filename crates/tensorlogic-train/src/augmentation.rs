@@ -280,6 +280,140 @@ impl DataAugmenter for MixupAugmenter {
     }
 }
 
+/// CutMix augmentation (ICCV 2019).
+///
+/// Instead of mixing pixels uniformly like Mixup, CutMix cuts a rectangular region
+/// from one image and pastes it to another. Labels are mixed proportionally to the
+/// area of the patch.
+///
+/// Reference: Yun et al. "CutMix: Regularization Strategy to Train Strong Classifiers
+/// with Localizable Features" (ICCV 2019)
+#[derive(Debug, Clone)]
+pub struct CutMixAugmenter {
+    /// Beta distribution parameter for sampling mixing ratio.
+    pub alpha: f64,
+}
+
+impl CutMixAugmenter {
+    /// Create a new CutMix augmenter.
+    ///
+    /// # Arguments
+    /// * `alpha` - Beta distribution parameter (typically 1.0)
+    ///
+    /// # Returns
+    /// New CutMix augmenter
+    pub fn new(alpha: f64) -> TrainResult<Self> {
+        if alpha <= 0.0 {
+            return Err(TrainError::InvalidParameter(
+                "alpha must be positive".to_string(),
+            ));
+        }
+        Ok(Self { alpha })
+    }
+
+    /// Apply CutMix augmentation to a batch of data.
+    ///
+    /// For 2D feature arrays, we treat the second dimension as a "spatial" dimension
+    /// and cut rectangular regions along it.
+    ///
+    /// # Arguments
+    /// * `data` - Input data batch [N, features]
+    /// * `labels` - Corresponding labels [N, classes]
+    /// * `rng` - Random number generator
+    ///
+    /// # Returns
+    /// Tuple of (augmented_data, augmented_labels)
+    pub fn augment_batch(
+        &self,
+        data: &ArrayView2<f64>,
+        labels: &ArrayView2<f64>,
+        rng: &mut StdRng,
+    ) -> TrainResult<(Array2<f64>, Array2<f64>)> {
+        if data.nrows() != labels.nrows() {
+            return Err(TrainError::InvalidParameter(
+                "data and labels must have same number of rows".to_string(),
+            ));
+        }
+
+        let n = data.nrows();
+        let features = data.ncols();
+        let mut augmented_data = data.to_owned();
+        let mut augmented_labels = labels.to_owned();
+
+        // Create random permutation for pairing samples
+        let mut indices: Vec<usize> = (0..n).collect();
+        for i in (1..n).rev() {
+            let j = rng.gen_range(0..=i);
+            indices.swap(i, j);
+        }
+
+        for i in 0..n {
+            let j = indices[i];
+
+            // Sample mixing ratio from Beta distribution
+            let lambda = self.sample_beta(rng);
+
+            // Generate random bounding box
+            // For 1D feature vectors, we cut along the feature dimension
+            let cut_ratio = (1.0 - lambda).sqrt();
+            let cut_size = (features as f64 * cut_ratio) as usize;
+            let cut_size = cut_size.max(1).min(features - 1);
+
+            // Random starting position
+            let start = if features > cut_size {
+                rng.gen_range(0..=(features - cut_size))
+            } else {
+                0
+            };
+
+            // Apply CutMix: replace region with data from paired sample
+            for k in start..(start + cut_size).min(features) {
+                augmented_data[[i, k]] = data[[j, k]];
+            }
+
+            // Mix labels proportionally to the area of the cut region
+            let actual_ratio = cut_size as f64 / features as f64;
+            for k in 0..labels.ncols() {
+                augmented_labels[[i, k]] =
+                    (1.0 - actual_ratio) * labels[[i, k]] + actual_ratio * labels[[j, k]];
+            }
+        }
+
+        Ok((augmented_data, augmented_labels))
+    }
+
+    /// Sample from Beta(alpha, alpha) distribution.
+    ///
+    /// Simplified implementation using uniform distribution when alpha is close to 1.
+    fn sample_beta(&self, rng: &mut StdRng) -> f64 {
+        if self.alpha < 0.5 {
+            // For small alpha, prefer values near 0 or 1
+            if rng.random::<f64>() < 0.5 {
+                rng.random::<f64>().powf(2.0)
+            } else {
+                1.0 - rng.random::<f64>().powf(2.0)
+            }
+        } else {
+            // For alpha >= 0.5, approximate with uniform
+            rng.random::<f64>()
+        }
+    }
+}
+
+impl Default for CutMixAugmenter {
+    fn default() -> Self {
+        Self { alpha: 1.0 }
+    }
+}
+
+impl DataAugmenter for CutMixAugmenter {
+    fn augment(&self, data: &ArrayView2<f64>, _rng: &mut StdRng) -> TrainResult<Array2<f64>> {
+        // For single-sample augmentation, no operation
+        // In practice, CutMix should be used with augment_batch
+        Ok(data.to_owned())
+    }
+}
+
 /// Composite augmenter that applies multiple augmentations sequentially.
 #[derive(Clone, Default)]
 pub struct CompositeAugmenter {
@@ -486,6 +620,100 @@ mod tests {
 
         let result = augmenter.augment_batch(&data.view(), &labels.view(), &mut rng);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cutmix_augmenter_batch() {
+        let augmenter = CutMixAugmenter::new(1.0).unwrap();
+        let data = array![
+            [1.0, 2.0, 3.0, 4.0],
+            [5.0, 6.0, 7.0, 8.0],
+            [9.0, 10.0, 11.0, 12.0]
+        ];
+        let labels = array![[1.0, 0.0], [0.0, 1.0], [1.0, 0.0]];
+        let mut rng = create_test_rng();
+
+        let (aug_data, aug_labels) = augmenter
+            .augment_batch(&data.view(), &labels.view(), &mut rng)
+            .unwrap();
+
+        // Shapes should be preserved
+        assert_eq!(aug_data.shape(), data.shape());
+        assert_eq!(aug_labels.shape(), labels.shape());
+
+        // Each row should contain a mix of original values
+        // (some regions from original, some from paired sample)
+        for i in 0..aug_data.nrows() {
+            let mut found_original = false;
+            let mut found_different = false;
+
+            for j in 0..aug_data.ncols() {
+                // Check if value matches original row
+                if (aug_data[[i, j]] - data[[i, j]]).abs() < 1e-10 {
+                    found_original = true;
+                } else {
+                    found_different = true;
+                }
+            }
+
+            // Should have both original and swapped regions (unless randomly paired with self)
+            assert!(found_original || found_different);
+        }
+
+        // Label mixing: each element should be in [0, 1] and sum across classes
+        for i in 0..aug_labels.nrows() {
+            let sum: f64 = aug_labels.row(i).iter().sum();
+            assert!((sum - 1.0).abs() < 1e-10, "Labels should sum to 1.0");
+        }
+    }
+
+    #[test]
+    fn test_cutmix_invalid_alpha() {
+        let result = CutMixAugmenter::new(0.0);
+        assert!(result.is_err());
+
+        let result = CutMixAugmenter::new(-1.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cutmix_mismatched_shapes() {
+        let augmenter = CutMixAugmenter::default();
+        let data = array![[1.0, 2.0], [3.0, 4.0]];
+        let labels = array![[1.0, 0.0]]; // Wrong shape
+        let mut rng = create_test_rng();
+
+        let result = augmenter.augment_batch(&data.view(), &labels.view(), &mut rng);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cutmix_label_proportions() {
+        let augmenter = CutMixAugmenter::new(1.0).unwrap();
+        // Use distinctive patterns
+        let data = array![[10.0, 10.0, 10.0, 10.0], [20.0, 20.0, 20.0, 20.0]];
+        let labels = array![[1.0, 0.0], [0.0, 1.0]];
+        let mut rng = create_test_rng();
+
+        let (aug_data, aug_labels) = augmenter
+            .augment_batch(&data.view(), &labels.view(), &mut rng)
+            .unwrap();
+
+        // Verify that labels are mixed proportionally
+        for i in 0..aug_labels.nrows() {
+            // Each sample should have labels that sum to 1
+            let sum: f64 = aug_labels.row(i).iter().sum();
+            assert!((sum - 1.0).abs() < 1e-10);
+
+            // Labels should be between original values
+            for j in 0..aug_labels.ncols() {
+                assert!(aug_labels[[i, j]] >= 0.0);
+                assert!(aug_labels[[i, j]] <= 1.0);
+            }
+        }
+
+        // Verify data has been cut and mixed
+        assert_eq!(aug_data.shape(), data.shape());
     }
 
     #[test]

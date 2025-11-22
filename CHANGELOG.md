@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Provenance API in Python bindings
 - Additional fuzzy logic variants
 
-## [0.1.0-alpha.1] - 2025-11-04
+## [0.1.0-alpha.2] - 2025-11-04
 
 ### Added - Session 3 Continuation
 
@@ -315,7 +315,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Version Number Convention
 - **Major.Minor.Patch-PreRelease**
-- Example: `0.1.0-alpha.1`
+- Example: `0.1.0-alpha.2`
 - Pre-release tags: `dev`, `alpha`, `beta`, `rc`
 
 ### Section Categories

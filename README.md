@@ -22,7 +22,7 @@ TensorLogic compiles logical rules (predicates, quantifiers, implications) into 
 
 ## 🎉 Production Ready
 
-**Version**: 0.1.0-alpha.1 | **Status**: Production Ready
+**Version**: 0.1.0-alpha.2 | **Status**: Production Ready
 
 TensorLogic has reached production-ready status with comprehensive testing, benchmarking, and documentation:
 

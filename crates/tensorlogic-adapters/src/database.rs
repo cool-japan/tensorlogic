@@ -1065,14 +1065,15 @@ mod postgres_backend {
     /// # {
     /// use tensorlogic_adapters::{PostgreSQLDatabase, SymbolTable, DomainInfo};
     ///
-    /// # tokio_test::block_on(async {
-    /// let mut db = PostgreSQLDatabase::new("host=localhost user=postgres").await.unwrap();
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut db = PostgreSQLDatabase::new("host=localhost user=postgres").await?;
     /// let mut table = SymbolTable::new();
-    /// table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+    /// table.add_domain(DomainInfo::new("Person", 100))?;
     ///
-    /// let id = db.store_schema_async("test", &table).await.unwrap();
-    /// let loaded = db.load_schema_async(id).await.unwrap();
-    /// # })
+    /// let id = db.store_schema_async("test", &table).await?;
+    /// let loaded = db.load_schema_async(id).await?;
+    /// # Ok(())
+    /// # }
     /// # }
     /// ```
     pub struct PostgreSQLDatabase {

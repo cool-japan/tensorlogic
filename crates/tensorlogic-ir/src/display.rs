@@ -166,6 +166,91 @@ impl fmt::Display for TLExpr {
             TLExpr::StrongRelease { released, releaser } => {
                 write!(f, "({} M {})", released, releaser)
             }
+            // Alpha.3 enhancements
+            TLExpr::Lambda {
+                var,
+                var_type,
+                body,
+            } => {
+                if let Some(ty) = var_type {
+                    write!(f, "λ{}:{}. {}", var, ty, body)
+                } else {
+                    write!(f, "λ{}. {}", var, body)
+                }
+            }
+            TLExpr::Apply { function, argument } => write!(f, "({} {})", function, argument),
+            TLExpr::SetMembership { element, set } => write!(f, "({} ∈ {})", element, set),
+            TLExpr::SetUnion { left, right } => write!(f, "({} ∪ {})", left, right),
+            TLExpr::SetIntersection { left, right } => write!(f, "({} ∩ {})", left, right),
+            TLExpr::SetDifference { left, right } => write!(f, "({} \\ {})", left, right),
+            TLExpr::SetCardinality { set } => write!(f, "|{}|", set),
+            TLExpr::EmptySet => write!(f, "∅"),
+            TLExpr::SetComprehension {
+                var,
+                domain,
+                condition,
+            } => write!(f, "{{ {}:{} | {} }}", var, domain, condition),
+            TLExpr::CountingExists {
+                var,
+                domain,
+                body,
+                min_count,
+            } => write!(f, "∃≥{}{}:{}. {}", min_count, var, domain, body),
+            TLExpr::CountingForAll {
+                var,
+                domain,
+                body,
+                min_count,
+            } => write!(f, "∀≥{}{}:{}. {}", min_count, var, domain, body),
+            TLExpr::ExactCount {
+                var,
+                domain,
+                body,
+                count,
+            } => write!(f, "∃={}{}:{}. {}", count, var, domain, body),
+            TLExpr::Majority { var, domain, body } => {
+                write!(f, "Majority {}:{}. {}", var, domain, body)
+            }
+            TLExpr::LeastFixpoint { var, body } => write!(f, "μ{}. {}", var, body),
+            TLExpr::GreatestFixpoint { var, body } => write!(f, "ν{}. {}", var, body),
+            TLExpr::Nominal { name } => write!(f, "@{}", name),
+            TLExpr::At { nominal, formula } => write!(f, "@{} {}", nominal, formula),
+            TLExpr::Somewhere { formula } => write!(f, "E {}", formula),
+            TLExpr::Everywhere { formula } => write!(f, "A {}", formula),
+            TLExpr::AllDifferent { variables } => {
+                write!(f, "alldiff([")?;
+                for (i, var) in variables.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", var)?;
+                }
+                write!(f, "])")
+            }
+            TLExpr::GlobalCardinality {
+                variables,
+                values,
+                min_occurrences,
+                max_occurrences,
+            } => {
+                write!(f, "gcc([")?;
+                for (i, var) in variables.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", var)?;
+                }
+                write!(f, "], [")?;
+                for (i, val) in values.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}:[{},{}]", val, min_occurrences[i], max_occurrences[i])?;
+                }
+                write!(f, "])")
+            }
+            TLExpr::Abducible { name, cost } => write!(f, "abd({}:{})", name, cost),
+            TLExpr::Explain { formula } => write!(f, "explain({})", formula),
             TLExpr::Constant(value) => write!(f, "{}", value),
         }
     }

@@ -15,6 +15,10 @@ pub fn print_info(message: &str) {
     println!("{} {}", "ℹ".blue().bold(), message);
 }
 
+pub fn print_warning(message: &str) {
+    println!("{} {}", "⚠".yellow().bold(), message);
+}
+
 pub fn print_header(title: &str) {
     println!("\n{}", title.cyan().bold());
     println!("{}", "=".repeat(title.len()).cyan());

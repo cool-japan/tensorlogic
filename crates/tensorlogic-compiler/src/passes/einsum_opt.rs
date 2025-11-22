@@ -136,22 +136,52 @@ fn merge_consecutive_einsums(graph: &mut EinsumGraph) -> Result<usize> {
     let mut merged = 0;
     let mut changed = true;
 
+    // Track processed nodes to avoid infinite loops
+    use std::collections::HashSet;
+    let mut processed_nodes: HashSet<usize> = HashSet::new();
+
     // Keep trying to merge until no more merges are possible
-    while changed {
+    // Add a safety limit to prevent infinite loops
+    let max_iterations = graph.nodes.len() * 2;
+    let mut iteration = 0;
+
+    while changed && iteration < max_iterations {
         changed = false;
+        iteration += 1;
 
         // Build a dependency graph
         let dependencies = build_dependency_graph(graph);
 
         // Find pairs of consecutive einsums - collect merge candidates first
-        let mut merge_candidate: Option<(usize, String, Vec<usize>)> = None;
+        // Store (consumer_idx, producer_idx, merged_spec, merged_inputs)
+        let mut merge_candidate: Option<(usize, usize, String, Vec<usize>)> = None;
 
         for (idx, node) in graph.nodes.iter().enumerate() {
+            // Skip already processed nodes
+            if processed_nodes.contains(&idx) {
+                continue;
+            }
+
             if let OpType::Einsum { spec } = &node.op {
+                // Skip identity operations
+                if is_identity_op(node) {
+                    continue;
+                }
+
                 // Check if any input is produced by another einsum
                 for &input_tensor in &node.inputs {
                     if let Some(&producer_idx) = dependencies.get(&input_tensor) {
+                        // Skip already processed producers
+                        if processed_nodes.contains(&producer_idx) {
+                            continue;
+                        }
+
                         if let OpType::Einsum { spec: prev_spec } = &graph.nodes[producer_idx].op {
+                            // Skip identity operations
+                            if is_identity_op(&graph.nodes[producer_idx]) {
+                                continue;
+                            }
+
                             let prev_inputs = &graph.nodes[producer_idx].inputs;
 
                             // Try to merge these two einsums
@@ -166,7 +196,8 @@ fn merge_consecutive_einsums(graph: &mut EinsumGraph) -> Result<usize> {
                                     }
                                 }
 
-                                merge_candidate = Some((idx, merged_spec, merged_inputs));
+                                merge_candidate =
+                                    Some((idx, producer_idx, merged_spec, merged_inputs));
                                 break;
                             }
                         }
@@ -180,9 +211,14 @@ fn merge_consecutive_einsums(graph: &mut EinsumGraph) -> Result<usize> {
         }
 
         // Apply the merge if we found one
-        if let Some((idx, merged_spec, merged_inputs)) = merge_candidate {
-            graph.nodes[idx].op = OpType::Einsum { spec: merged_spec };
-            graph.nodes[idx].inputs = merged_inputs;
+        if let Some((consumer_idx, producer_idx, merged_spec, merged_inputs)) = merge_candidate {
+            // Update the consumer node with merged spec and inputs
+            graph.nodes[consumer_idx].op = OpType::Einsum { spec: merged_spec };
+            graph.nodes[consumer_idx].inputs = merged_inputs;
+
+            // Mark producer as processed to prevent infinite loops
+            processed_nodes.insert(producer_idx);
+
             merged += 1;
             changed = true;
         }

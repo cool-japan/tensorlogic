@@ -424,6 +424,102 @@ impl RewriteSystem {
                     .collect(),
             ),
 
+            // Alpha.3 enhancements: recurse into subexpressions
+            TLExpr::Lambda {
+                var,
+                var_type,
+                body,
+            } => TLExpr::lambda(var.clone(), var_type.clone(), self.apply_recursive(body)),
+            TLExpr::Apply { function, argument } => TLExpr::apply(
+                self.apply_recursive(function),
+                self.apply_recursive(argument),
+            ),
+            TLExpr::SetMembership { element, set } => {
+                TLExpr::set_membership(self.apply_recursive(element), self.apply_recursive(set))
+            }
+            TLExpr::SetUnion { left, right } => {
+                TLExpr::set_union(self.apply_recursive(left), self.apply_recursive(right))
+            }
+            TLExpr::SetIntersection { left, right } => {
+                TLExpr::set_intersection(self.apply_recursive(left), self.apply_recursive(right))
+            }
+            TLExpr::SetDifference { left, right } => {
+                TLExpr::set_difference(self.apply_recursive(left), self.apply_recursive(right))
+            }
+            TLExpr::SetCardinality { set } => TLExpr::set_cardinality(self.apply_recursive(set)),
+            TLExpr::EmptySet => expr.clone(),
+            TLExpr::SetComprehension {
+                var,
+                domain,
+                condition,
+            } => TLExpr::set_comprehension(
+                var.clone(),
+                domain.clone(),
+                self.apply_recursive(condition),
+            ),
+            TLExpr::CountingExists {
+                var,
+                domain,
+                body,
+                min_count,
+            } => TLExpr::counting_exists(
+                var.clone(),
+                domain.clone(),
+                self.apply_recursive(body),
+                *min_count,
+            ),
+            TLExpr::CountingForAll {
+                var,
+                domain,
+                body,
+                min_count,
+            } => TLExpr::counting_forall(
+                var.clone(),
+                domain.clone(),
+                self.apply_recursive(body),
+                *min_count,
+            ),
+            TLExpr::ExactCount {
+                var,
+                domain,
+                body,
+                count,
+            } => TLExpr::exact_count(
+                var.clone(),
+                domain.clone(),
+                self.apply_recursive(body),
+                *count,
+            ),
+            TLExpr::Majority { var, domain, body } => {
+                TLExpr::majority(var.clone(), domain.clone(), self.apply_recursive(body))
+            }
+            TLExpr::LeastFixpoint { var, body } => {
+                TLExpr::least_fixpoint(var.clone(), self.apply_recursive(body))
+            }
+            TLExpr::GreatestFixpoint { var, body } => {
+                TLExpr::greatest_fixpoint(var.clone(), self.apply_recursive(body))
+            }
+            TLExpr::Nominal { .. } => expr.clone(),
+            TLExpr::At { nominal, formula } => {
+                TLExpr::at(nominal.clone(), self.apply_recursive(formula))
+            }
+            TLExpr::Somewhere { formula } => TLExpr::somewhere(self.apply_recursive(formula)),
+            TLExpr::Everywhere { formula } => TLExpr::everywhere(self.apply_recursive(formula)),
+            TLExpr::AllDifferent { .. } => expr.clone(),
+            TLExpr::GlobalCardinality {
+                variables,
+                values,
+                min_occurrences,
+                max_occurrences,
+            } => TLExpr::global_cardinality(
+                variables.clone(),
+                values.iter().map(|v| self.apply_recursive(v)).collect(),
+                min_occurrences.clone(),
+                max_occurrences.clone(),
+            ),
+            TLExpr::Abducible { .. } => expr.clone(),
+            TLExpr::Explain { formula } => TLExpr::explain(self.apply_recursive(formula)),
+
             // Leaves - no recursion needed
             TLExpr::Pred { .. } | TLExpr::Constant(_) => expr.clone(),
         }

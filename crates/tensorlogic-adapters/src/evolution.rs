@@ -25,8 +25,7 @@
 //! # Example
 //!
 //! ```rust
-//! use tensorlogic_adapters::{SymbolTable, DomainInfo};
-//! use tensorlogic_adapters::evolution::{EvolutionAnalyzer, ChangeImpact};
+//! use tensorlogic_adapters::{SymbolTable, DomainInfo, EvolutionAnalyzer};
 //!
 //! let mut old_schema = SymbolTable::new();
 //! old_schema.add_domain(DomainInfo::new("Person", 100)).unwrap();

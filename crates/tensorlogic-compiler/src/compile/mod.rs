@@ -3,6 +3,7 @@
 mod arithmetic;
 mod comparison;
 mod conditional;
+mod counting_quantifiers;
 pub mod custom_ops;
 mod fuzzy;
 mod implication;
@@ -26,6 +27,9 @@ pub(crate) use arithmetic::{
 };
 pub(crate) use comparison::{compile_eq, compile_gt, compile_gte, compile_lt, compile_lte};
 pub(crate) use conditional::{compile_constant, compile_if_then_else};
+pub(crate) use counting_quantifiers::{
+    compile_counting_exists, compile_counting_forall, compile_exact_count, compile_majority,
+};
 pub use custom_ops::{
     CustomOpData, CustomOpHandler, CustomOpMetadata, CustomOpRegistry, ExtendedCompilerContext,
 };
@@ -174,6 +178,84 @@ pub(crate) fn compile_expr(
             bail!(
                 "Advanced temporal operators (Release, WeakUntil, StrongRelease) are not yet implemented. \
                    Use the basic temporal operators (Next, Eventually, Always, Until) instead."
+            )
+        }
+
+        // Counting quantifiers
+        TLExpr::CountingExists {
+            var,
+            domain,
+            body,
+            min_count,
+        } => compile_counting_exists(var, domain, body, *min_count, ctx, graph),
+        TLExpr::CountingForAll {
+            var,
+            domain,
+            body,
+            min_count,
+        } => compile_counting_forall(var, domain, body, *min_count, ctx, graph),
+        TLExpr::ExactCount {
+            var,
+            domain,
+            body,
+            count,
+        } => compile_exact_count(var, domain, body, *count, ctx, graph),
+        TLExpr::Majority { var, domain, body } => compile_majority(var, domain, body, ctx, graph),
+
+        // Higher-order logic - not yet implemented
+        TLExpr::Lambda { .. } | TLExpr::Apply { .. } => {
+            bail!(
+                "Higher-order logic (Lambda, Apply) is not yet fully implemented. \
+                   These features require beta reduction and closure tracking."
+            )
+        }
+
+        // Set theory operations - not yet implemented
+        TLExpr::SetMembership { .. }
+        | TLExpr::SetUnion { .. }
+        | TLExpr::SetIntersection { .. }
+        | TLExpr::SetDifference { .. }
+        | TLExpr::SetCardinality { .. }
+        | TLExpr::EmptySet
+        | TLExpr::SetComprehension { .. } => {
+            bail!(
+                "Set theory operations are not yet fully implemented. \
+                   Consider using predicates and quantifiers to express set-theoretic constraints."
+            )
+        }
+
+        // Fixed-point operators - not yet implemented
+        TLExpr::LeastFixpoint { .. } | TLExpr::GreatestFixpoint { .. } => {
+            bail!(
+                "Fixed-point operators (μ, ν) are not yet fully implemented. \
+                   These require iterative computation until convergence."
+            )
+        }
+
+        // Hybrid logic - not yet implemented
+        TLExpr::Nominal { .. }
+        | TLExpr::At { .. }
+        | TLExpr::Somewhere { .. }
+        | TLExpr::Everywhere { .. } => {
+            bail!(
+                "Hybrid logic operators are not yet fully implemented. \
+                   These require named state tracking and reachability analysis."
+            )
+        }
+
+        // Constraint programming - not yet implemented
+        TLExpr::AllDifferent { .. } | TLExpr::GlobalCardinality { .. } => {
+            bail!(
+                "Constraint programming operators are not yet fully implemented. \
+                   Consider encoding constraints using logical expressions and quantifiers."
+            )
+        }
+
+        // Abductive reasoning - not yet implemented
+        TLExpr::Abducible { .. } | TLExpr::Explain { .. } => {
+            bail!(
+                "Abductive reasoning operators are not yet fully implemented. \
+                   These require explanation search and cost optimization."
             )
         }
     }

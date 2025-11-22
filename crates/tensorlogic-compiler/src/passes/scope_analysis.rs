@@ -210,6 +210,66 @@ fn analyze_expr(
                 analyze_expr(alt_expr, bound_vars, result)?;
             }
         }
+        // Counting quantifiers
+        TLExpr::CountingExists {
+            var,
+            domain: _,
+            body,
+            ..
+        }
+        | TLExpr::CountingForAll {
+            var,
+            domain: _,
+            body,
+            ..
+        }
+        | TLExpr::ExactCount {
+            var,
+            domain: _,
+            body,
+            ..
+        }
+        | TLExpr::Majority {
+            var,
+            domain: _,
+            body,
+        } => {
+            // Variable is bound in this scope
+            let was_bound = bound_vars.contains(var);
+            bound_vars.insert(var.clone());
+
+            // Record the binding
+            if !result.variables.contains_key(var) {
+                result.variables.insert(
+                    var.clone(),
+                    VariableScope {
+                        name: var.clone(),
+                        bound_in: ScopeType::Quantifier {
+                            quantifier_type: match expr {
+                                TLExpr::CountingExists { .. } => "counting_exists".to_string(),
+                                TLExpr::CountingForAll { .. } => "counting_forall".to_string(),
+                                TLExpr::ExactCount { .. } => "exact_count".to_string(),
+                                TLExpr::Majority { .. } => "majority".to_string(),
+                                _ => unreachable!(),
+                            },
+                        },
+                        type_annotation: None,
+                    },
+                );
+            }
+
+            // Analyze the body
+            analyze_expr(body, bound_vars, result)?;
+
+            // Unbind if it wasn't previously bound
+            if !was_bound {
+                bound_vars.remove(var);
+            }
+        }
+        // All other expression types (alpha.3 enhancements) - skip for now
+        _ => {
+            // For unimplemented expression types, no scope analysis yet
+        }
     }
 
     Ok(())

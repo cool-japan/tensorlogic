@@ -508,6 +508,9 @@ fn analyze_complexity_impl(
                 analyze_complexity_impl(expr, complexity, depth + 1, var_names, pred_names);
             }
         }
+
+        // All other expression types (alpha.3 enhancements)
+        _ => {}
     }
 }
 

@@ -475,6 +475,9 @@ fn reduce_strength_impl(expr: &TLExpr, stats: &mut StrengthReductionStats) -> TL
         | TLExpr::Release { .. }
         | TLExpr::WeakUntil { .. }
         | TLExpr::StrongRelease { .. } => expr.clone(),
+
+        // All other expression types (alpha.3 enhancements)
+        _ => expr.clone(),
     }
 }
 

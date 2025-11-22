@@ -19,10 +19,7 @@
 //! # Example
 //!
 //! ```rust
-//! use tensorlogic_adapters::{SymbolTable, DomainInfo};
-//! use tensorlogic_adapters::incremental_validation::{
-//!     ChangeTracker, IncrementalValidator
-//! };
+//! use tensorlogic_adapters::{SymbolTable, DomainInfo, ChangeTracker, IncrementalValidator};
 //!
 //! let mut table = SymbolTable::new();
 //! let mut tracker = ChangeTracker::new();
@@ -31,15 +28,16 @@
 //! table.add_domain(DomainInfo::new("Person", 100)).unwrap();
 //! tracker.record_domain_addition("Person");
 //!
-//! let validator = IncrementalValidator::new(&table, &tracker);
+//! let mut validator = IncrementalValidator::new(&table, &tracker);
 //! let report = validator.validate_incremental().unwrap();
 //! assert!(report.is_valid());
 //!
 //! // Incremental update - only validates affected parts
-//! table.add_domain(DomainInfo::new("Location", 50)).unwrap();
 //! tracker.record_domain_addition("Location");
+//! table.add_domain(DomainInfo::new("Location", 50)).unwrap();
 //!
-//! let report = validator.validate_incremental().unwrap();
+//! let mut validator2 = IncrementalValidator::new(&table, &tracker);
+//! let report = validator2.validate_incremental().unwrap();
 //! assert!(report.is_valid());
 //! ```
 

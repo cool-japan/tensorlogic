@@ -355,6 +355,8 @@ fn optimize_negations_impl(expr: &TLExpr, stats: &mut NegationOptStats) -> TLExp
         },
 
         TLExpr::Pred { .. } | TLExpr::Score { .. } | TLExpr::Constant(_) => expr.clone(),
+        // All other expression types (alpha.3 enhancements) - no negation optimization
+        _ => expr.clone(),
     }
 }
 

@@ -1324,6 +1324,339 @@ impl Metric for MeanAveragePrecision {
     }
 }
 
+/// Expected Calibration Error (ECE) metric.
+///
+/// Measures the difference between predicted probabilities and actual accuracy.
+/// ECE divides predictions into bins and computes the average difference between
+/// confidence and accuracy across bins, weighted by bin frequency.
+///
+/// Lower ECE indicates better calibration.
+///
+/// Reference: Guo et al. "On Calibration of Modern Neural Networks" (ICML 2017)
+#[derive(Debug, Clone)]
+pub struct ExpectedCalibrationError {
+    /// Number of bins for calibration
+    pub num_bins: usize,
+}
+
+impl Default for ExpectedCalibrationError {
+    fn default() -> Self {
+        Self { num_bins: 10 }
+    }
+}
+
+impl ExpectedCalibrationError {
+    /// Create with custom number of bins.
+    pub fn new(num_bins: usize) -> Self {
+        Self { num_bins }
+    }
+}
+
+impl Metric for ExpectedCalibrationError {
+    fn compute(
+        &self,
+        predictions: &ArrayView<f64, Ix2>,
+        targets: &ArrayView<f64, Ix2>,
+    ) -> TrainResult<f64> {
+        if predictions.shape() != targets.shape() {
+            return Err(TrainError::MetricsError(format!(
+                "Shape mismatch: predictions {:?} vs targets {:?}",
+                predictions.shape(),
+                targets.shape()
+            )));
+        }
+
+        let n_samples = predictions.nrows();
+        if n_samples == 0 {
+            return Ok(0.0);
+        }
+
+        // Initialize bins
+        let mut bin_counts = vec![0usize; self.num_bins];
+        let mut bin_confidences = vec![0.0; self.num_bins];
+        let mut bin_accuracies = vec![0.0; self.num_bins];
+
+        for i in 0..n_samples {
+            // Get predicted class and confidence
+            let mut pred_class = 0;
+            let mut max_confidence = predictions[[i, 0]];
+            for j in 1..predictions.ncols() {
+                if predictions[[i, j]] > max_confidence {
+                    max_confidence = predictions[[i, j]];
+                    pred_class = j;
+                }
+            }
+
+            // Get true class
+            let mut true_class = 0;
+            let mut max_target = targets[[i, 0]];
+            for j in 1..targets.ncols() {
+                if targets[[i, j]] > max_target {
+                    max_target = targets[[i, j]];
+                    true_class = j;
+                }
+            }
+
+            // Determine bin index
+            let bin_idx =
+                ((max_confidence * self.num_bins as f64).floor() as usize).min(self.num_bins - 1);
+
+            // Update bin statistics
+            bin_counts[bin_idx] += 1;
+            bin_confidences[bin_idx] += max_confidence;
+            if pred_class == true_class {
+                bin_accuracies[bin_idx] += 1.0;
+            }
+        }
+
+        // Compute ECE
+        let mut ece = 0.0;
+        for i in 0..self.num_bins {
+            if bin_counts[i] > 0 {
+                let bin_confidence = bin_confidences[i] / bin_counts[i] as f64;
+                let bin_accuracy = bin_accuracies[i] / bin_counts[i] as f64;
+                let weight = bin_counts[i] as f64 / n_samples as f64;
+
+                ece += weight * (bin_confidence - bin_accuracy).abs();
+            }
+        }
+
+        Ok(ece)
+    }
+
+    fn name(&self) -> &str {
+        "expected_calibration_error"
+    }
+}
+
+/// Maximum Calibration Error (MCE) metric.
+///
+/// Measures the worst-case calibration error across all bins.
+/// MCE is the maximum absolute difference between confidence and accuracy
+/// in any bin.
+///
+/// Lower MCE indicates better calibration.
+///
+/// Reference: Guo et al. "On Calibration of Modern Neural Networks" (ICML 2017)
+#[derive(Debug, Clone)]
+pub struct MaximumCalibrationError {
+    /// Number of bins for calibration
+    pub num_bins: usize,
+}
+
+impl Default for MaximumCalibrationError {
+    fn default() -> Self {
+        Self { num_bins: 10 }
+    }
+}
+
+impl MaximumCalibrationError {
+    /// Create with custom number of bins.
+    pub fn new(num_bins: usize) -> Self {
+        Self { num_bins }
+    }
+}
+
+impl Metric for MaximumCalibrationError {
+    fn compute(
+        &self,
+        predictions: &ArrayView<f64, Ix2>,
+        targets: &ArrayView<f64, Ix2>,
+    ) -> TrainResult<f64> {
+        if predictions.shape() != targets.shape() {
+            return Err(TrainError::MetricsError(format!(
+                "Shape mismatch: predictions {:?} vs targets {:?}",
+                predictions.shape(),
+                targets.shape()
+            )));
+        }
+
+        let n_samples = predictions.nrows();
+        if n_samples == 0 {
+            return Ok(0.0);
+        }
+
+        // Initialize bins
+        let mut bin_counts = vec![0usize; self.num_bins];
+        let mut bin_confidences = vec![0.0; self.num_bins];
+        let mut bin_accuracies = vec![0.0; self.num_bins];
+
+        for i in 0..n_samples {
+            // Get predicted class and confidence
+            let mut pred_class = 0;
+            let mut max_confidence = predictions[[i, 0]];
+            for j in 1..predictions.ncols() {
+                if predictions[[i, j]] > max_confidence {
+                    max_confidence = predictions[[i, j]];
+                    pred_class = j;
+                }
+            }
+
+            // Get true class
+            let mut true_class = 0;
+            let mut max_target = targets[[i, 0]];
+            for j in 1..targets.ncols() {
+                if targets[[i, j]] > max_target {
+                    max_target = targets[[i, j]];
+                    true_class = j;
+                }
+            }
+
+            // Determine bin index
+            let bin_idx =
+                ((max_confidence * self.num_bins as f64).floor() as usize).min(self.num_bins - 1);
+
+            // Update bin statistics
+            bin_counts[bin_idx] += 1;
+            bin_confidences[bin_idx] += max_confidence;
+            if pred_class == true_class {
+                bin_accuracies[bin_idx] += 1.0;
+            }
+        }
+
+        // Compute MCE (maximum calibration error)
+        let mut mce: f64 = 0.0;
+        for i in 0..self.num_bins {
+            if bin_counts[i] > 0 {
+                let bin_confidence = bin_confidences[i] / bin_counts[i] as f64;
+                let bin_accuracy = bin_accuracies[i] / bin_counts[i] as f64;
+                let calibration_error = (bin_confidence - bin_accuracy).abs();
+
+                mce = mce.max(calibration_error);
+            }
+        }
+
+        Ok(mce)
+    }
+
+    fn name(&self) -> &str {
+        "maximum_calibration_error"
+    }
+}
+
+/// Normalized Discounted Cumulative Gain (NDCG) metric for ranking.
+///
+/// NDCG measures the quality of ranking by comparing the predicted order
+/// with the ideal order. It accounts for position: items ranked higher
+/// contribute more to the score.
+///
+/// # Formula
+/// DCG@k = Σᵢ₌₁ᵏ (2^relᵢ - 1) / log₂(i + 1)
+/// NDCG@k = DCG@k / IDCG@k
+///
+/// where IDCG is the DCG of the ideal ranking.
+///
+/// # Use Cases
+/// - Recommendation systems
+/// - Search engine ranking
+/// - Information retrieval
+/// - Learning to rank
+///
+/// Reference: Järvelin & Kekäläinen "Cumulated gain-based evaluation of IR techniques" (ACM TOIS 2002)
+#[derive(Debug, Clone)]
+pub struct NormalizedDiscountedCumulativeGain {
+    /// Number of top results to consider (k).
+    pub k: usize,
+}
+
+impl Default for NormalizedDiscountedCumulativeGain {
+    fn default() -> Self {
+        Self { k: 10 }
+    }
+}
+
+impl NormalizedDiscountedCumulativeGain {
+    /// Create NDCG metric with custom k value.
+    ///
+    /// # Arguments
+    /// * `k` - Number of top results to consider
+    pub fn new(k: usize) -> Self {
+        Self { k }
+    }
+
+    /// Compute DCG (Discounted Cumulative Gain) for a single ranking.
+    ///
+    /// # Arguments
+    /// * `relevances` - Relevance scores in the predicted order
+    /// * `k` - Number of positions to consider
+    fn compute_dcg(relevances: &[f64], k: usize) -> f64 {
+        let k = k.min(relevances.len());
+        let mut dcg = 0.0;
+
+        for (i, &rel) in relevances.iter().take(k).enumerate() {
+            let position = (i + 2) as f64; // i+2 because positions start at 1 and log₂(1) = 0
+            dcg += (2.0_f64.powf(rel) - 1.0) / position.log2();
+        }
+
+        dcg
+    }
+
+    /// Compute IDCG (Ideal DCG) by sorting relevances in descending order.
+    fn compute_idcg(relevances: &[f64], k: usize) -> f64 {
+        let mut sorted_rel = relevances.to_vec();
+        sorted_rel.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
+        Self::compute_dcg(&sorted_rel, k)
+    }
+}
+
+impl Metric for NormalizedDiscountedCumulativeGain {
+    fn compute(
+        &self,
+        predictions: &ArrayView<f64, Ix2>,
+        targets: &ArrayView<f64, Ix2>,
+    ) -> TrainResult<f64> {
+        if predictions.shape() != targets.shape() {
+            return Err(crate::TrainError::MetricsError(format!(
+                "Shape mismatch: predictions {:?} vs targets {:?}",
+                predictions.shape(),
+                targets.shape()
+            )));
+        }
+
+        let n_samples = predictions.nrows();
+        if n_samples == 0 {
+            return Ok(0.0);
+        }
+
+        let mut ndcg_sum = 0.0;
+
+        for i in 0..n_samples {
+            // Get predicted scores and true relevances for this sample
+            let pred_scores: Vec<f64> = predictions.row(i).iter().copied().collect();
+            let true_relevances: Vec<f64> = targets.row(i).iter().copied().collect();
+
+            // Create indices and sort by predicted scores (descending)
+            let mut indices: Vec<usize> = (0..pred_scores.len()).collect();
+            indices.sort_by(|&a, &b| {
+                pred_scores[b]
+                    .partial_cmp(&pred_scores[a])
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+
+            // Reorder relevances according to predicted ranking
+            let ranked_relevances: Vec<f64> =
+                indices.iter().map(|&idx| true_relevances[idx]).collect();
+
+            // Compute DCG for this ranking
+            let dcg = Self::compute_dcg(&ranked_relevances, self.k);
+
+            // Compute IDCG (ideal ranking)
+            let idcg = Self::compute_idcg(&true_relevances, self.k);
+
+            // Compute NDCG (handle division by zero)
+            let ndcg = if idcg > 1e-12 { dcg / idcg } else { 0.0 };
+
+            ndcg_sum += ndcg;
+        }
+
+        Ok(ndcg_sum / n_samples as f64)
+    }
+
+    fn name(&self) -> &str {
+        "ndcg"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1708,5 +2041,300 @@ mod tests {
             .compute(&predictions.view(), &targets.view())
             .unwrap();
         assert!((0.0..=1.0).contains(&map));
+    }
+
+    #[test]
+    fn test_expected_calibration_error_perfect() {
+        let metric = ExpectedCalibrationError::default();
+
+        // Perfect calibration: confidence matches accuracy
+        // All predictions at 100% confidence and all correct
+        let predictions = array![[0.95, 0.05], [0.05, 0.95], [0.95, 0.05], [0.05, 0.95]];
+        let targets = array![[1.0, 0.0], [0.0, 1.0], [1.0, 0.0], [0.0, 1.0]];
+
+        let ece = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // Should be very small for perfectly calibrated predictions
+        assert!(ece < 0.1);
+    }
+
+    #[test]
+    fn test_expected_calibration_error_poor() {
+        let metric = ExpectedCalibrationError::default();
+
+        // Poor calibration: high confidence but wrong predictions
+        let predictions = array![[0.9, 0.1], [0.9, 0.1], [0.9, 0.1], [0.9, 0.1]];
+        let targets = array![[0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0]];
+
+        let ece = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // Should be high for poorly calibrated predictions
+        assert!(ece > 0.5);
+    }
+
+    #[test]
+    fn test_expected_calibration_error_custom_bins() {
+        let metric = ExpectedCalibrationError::new(5); // Use 5 bins instead of 10
+
+        let predictions = array![[0.9, 0.1], [0.8, 0.2], [0.7, 0.3], [0.6, 0.4]];
+        let targets = array![[1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0]];
+
+        let ece = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        assert!((0.0..=1.0).contains(&ece));
+    }
+
+    #[test]
+    fn test_maximum_calibration_error_perfect() {
+        let metric = MaximumCalibrationError::default();
+
+        // Perfect calibration
+        let predictions = array![[0.95, 0.05], [0.05, 0.95], [0.95, 0.05], [0.05, 0.95]];
+        let targets = array![[1.0, 0.0], [0.0, 1.0], [1.0, 0.0], [0.0, 1.0]];
+
+        let mce = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // Should be small for well-calibrated predictions
+        assert!(mce < 0.15);
+    }
+
+    #[test]
+    fn test_maximum_calibration_error_poor() {
+        let metric = MaximumCalibrationError::default();
+
+        // One bin with very poor calibration
+        let predictions = array![[0.9, 0.1], [0.9, 0.1], [0.9, 0.1], [0.9, 0.1]];
+        let targets = array![[0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0]];
+
+        let mce = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // MCE should capture the worst bin
+        assert!(mce > 0.5);
+    }
+
+    #[test]
+    fn test_calibration_metrics_empty() {
+        let ece_metric = ExpectedCalibrationError::default();
+        let mce_metric = MaximumCalibrationError::default();
+
+        use scirs2_core::ndarray::Array;
+        let empty_predictions: Array<f64, _> = Array::zeros((0, 2));
+        let empty_targets: Array<f64, _> = Array::zeros((0, 2));
+
+        let ece = ece_metric
+            .compute(&empty_predictions.view(), &empty_targets.view())
+            .unwrap();
+        let mce = mce_metric
+            .compute(&empty_predictions.view(), &empty_targets.view())
+            .unwrap();
+
+        assert_eq!(ece, 0.0);
+        assert_eq!(mce, 0.0);
+    }
+
+    #[test]
+    fn test_calibration_metrics_shape_mismatch() {
+        let metric = ExpectedCalibrationError::default();
+
+        let predictions = array![[0.9, 0.1], [0.8, 0.2]];
+        let targets = array![[1.0, 0.0, 0.0]]; // Wrong shape
+
+        let result = metric.compute(&predictions.view(), &targets.view());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ndcg_perfect_ranking() {
+        let metric = NormalizedDiscountedCumulativeGain::new(5);
+
+        // Perfect ranking: predicted order matches true relevance order
+        let predictions = array![
+            [5.0, 4.0, 3.0, 2.0, 1.0], // Pred scores: highest to lowest
+        ];
+        let targets = array![
+            [5.0, 4.0, 3.0, 2.0, 1.0], // True relevances: match pred order
+        ];
+
+        let ndcg = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // Perfect ranking should give NDCG = 1.0
+        assert!(
+            (ndcg - 1.0).abs() < 1e-6,
+            "Perfect ranking should have NDCG ≈ 1.0, got {}",
+            ndcg
+        );
+    }
+
+    #[test]
+    fn test_ndcg_worst_ranking() {
+        let metric = NormalizedDiscountedCumulativeGain::new(5);
+
+        // Worst ranking: predicted order is reverse of true relevance
+        let predictions = array![
+            [1.0, 2.0, 3.0, 4.0, 5.0], // Pred scores: lowest to highest
+        ];
+        let targets = array![
+            [5.0, 4.0, 3.0, 2.0, 1.0], // True relevances: highest to lowest
+        ];
+
+        let ndcg = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // Worst ranking should give low NDCG
+        assert!(
+            ndcg < 0.8,
+            "Worst ranking should have low NDCG, got {}",
+            ndcg
+        );
+    }
+
+    #[test]
+    fn test_ndcg_partial_match() {
+        let metric = NormalizedDiscountedCumulativeGain::new(3);
+
+        // Partial match: some items ranked correctly
+        let predictions = array![
+            [4.0, 5.0, 2.0, 3.0, 1.0], // Pred order: [1, 0, 3, 2, 4]
+        ];
+        let targets = array![
+            [3.0, 5.0, 1.0, 2.0, 0.0], // True relevances
+        ];
+
+        let ndcg = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // Should be between 0 and 1
+        assert!(
+            (0.0..=1.0).contains(&ndcg),
+            "NDCG should be in [0, 1], got {}",
+            ndcg
+        );
+
+        // Should be reasonably high since highest relevance (5.0) is predicted correctly
+        assert!(
+            ndcg > 0.7,
+            "NDCG should be > 0.7 for this ranking, got {}",
+            ndcg
+        );
+    }
+
+    #[test]
+    fn test_ndcg_multiple_samples() {
+        let metric = NormalizedDiscountedCumulativeGain::new(3);
+
+        // Two samples: one perfect, one reversed
+        let predictions = array![[5.0, 4.0, 3.0, 2.0], [2.0, 3.0, 4.0, 5.0],];
+        let targets = array![[5.0, 4.0, 3.0, 2.0], [5.0, 4.0, 3.0, 2.0],];
+
+        let ndcg = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // Average of perfect (1.0) and poor ranking
+        assert!((0.0..=1.0).contains(&ndcg));
+        assert!(ndcg > 0.4 && ndcg < 0.9); // Should be somewhere in between
+    }
+
+    #[test]
+    fn test_ndcg_different_k_values() {
+        let metric_k3 = NormalizedDiscountedCumulativeGain::new(3);
+        let metric_k5 = NormalizedDiscountedCumulativeGain::new(5);
+
+        let predictions = array![[5.0, 4.0, 3.0, 1.0, 2.0]];
+        let targets = array![[5.0, 4.0, 3.0, 2.0, 1.0]];
+
+        let ndcg_k3 = metric_k3
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+        let ndcg_k5 = metric_k5
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // k=3 should be perfect (top 3 are correct)
+        assert!((ndcg_k3 - 1.0).abs() < 1e-6);
+
+        // k=5 should be lower (last 2 are swapped)
+        assert!(ndcg_k5 < ndcg_k3);
+        assert!(ndcg_k5 > 0.9); // Still very good
+    }
+
+    #[test]
+    fn test_ndcg_zero_relevances() {
+        let metric = NormalizedDiscountedCumulativeGain::new(5);
+
+        // All zero relevances
+        let predictions = array![[1.0, 2.0, 3.0]];
+        let targets = array![[0.0, 0.0, 0.0]];
+
+        let ndcg = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // Should handle gracefully (IDCG = 0)
+        assert!(ndcg.is_finite());
+        assert_eq!(ndcg, 0.0);
+    }
+
+    #[test]
+    fn test_ndcg_empty_input() {
+        let metric = NormalizedDiscountedCumulativeGain::default();
+
+        use scirs2_core::ndarray::Array;
+        let empty_predictions: Array<f64, _> = Array::zeros((0, 5));
+        let empty_targets: Array<f64, _> = Array::zeros((0, 5));
+
+        let ndcg = metric
+            .compute(&empty_predictions.view(), &empty_targets.view())
+            .unwrap();
+
+        assert_eq!(ndcg, 0.0);
+    }
+
+    #[test]
+    fn test_ndcg_shape_mismatch() {
+        let metric = NormalizedDiscountedCumulativeGain::default();
+
+        let predictions = array![[1.0, 2.0, 3.0]];
+        let targets = array![[1.0, 2.0]]; // Different shape
+
+        let result = metric.compute(&predictions.view(), &targets.view());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ndcg_binary_relevance() {
+        let metric = NormalizedDiscountedCumulativeGain::new(5);
+
+        // Binary relevance (0 or 1)
+        let predictions = array![[0.9, 0.7, 0.5, 0.3, 0.1]];
+        let targets = array![[1.0, 1.0, 0.0, 1.0, 0.0]];
+
+        let ndcg = metric
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // Should be in valid range
+        assert!((0.0..=1.0).contains(&ndcg));
+
+        // Top 2 are relevant, so should have decent NDCG
+        assert!(
+            ndcg > 0.6,
+            "Should have decent NDCG with top-2 relevant, got {}",
+            ndcg
+        );
     }
 }

@@ -252,7 +252,7 @@ fn compile_mode(cli: &Cli, config: &Config) -> Result<()> {
     };
 
     // Try to get from cache first
-    let graph = if let Some(ref cache_instance) = cache {
+    let graph = if let Some(ref mut cache_instance) = cache {
         if let Some(cached_graph) = cache_instance.get(&expr, &context) {
             if config.debug {
                 eprintln!("Using cached compilation result");
@@ -264,9 +264,7 @@ fn compile_mode(cli: &Cli, config: &Config) -> Result<()> {
                 .context("Compilation failed")?;
 
             // Store in cache
-            if let Some(ref mut cache_instance) = cache {
-                cache_instance.put(&expr, &context, &compiled_graph)?;
-            }
+            cache_instance.put(&expr, &context, &compiled_graph)?;
 
             compiled_graph
         }

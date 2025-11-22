@@ -239,7 +239,18 @@ impl TrainingCheckpoint {
     }
 }
 
-/// Callback for model checkpointing.
+/// Checkpoint metadata for tracking saved checkpoints.
+#[derive(Debug, Clone, PartialEq)]
+struct CheckpointMetadata {
+    /// Epoch number.
+    epoch: usize,
+    /// Validation loss (if available).
+    val_loss: Option<f64>,
+    /// File path.
+    path: PathBuf,
+}
+
+/// Callback for model checkpointing with auto-cleanup.
 pub struct CheckpointCallback {
     /// Directory to save checkpoints.
     pub checkpoint_dir: PathBuf,
@@ -247,8 +258,12 @@ pub struct CheckpointCallback {
     pub save_frequency: usize,
     /// Whether to save only the best model.
     pub save_best_only: bool,
+    /// Maximum number of checkpoints to keep (None = keep all).
+    pub keep_top_k: Option<usize>,
     /// Best validation loss seen so far.
     best_val_loss: Option<f64>,
+    /// Metadata of saved checkpoints for cleanup.
+    saved_checkpoints: Vec<CheckpointMetadata>,
 }
 
 impl CheckpointCallback {
@@ -258,12 +273,105 @@ impl CheckpointCallback {
             checkpoint_dir,
             save_frequency,
             save_best_only,
+            keep_top_k: None,
             best_val_loss: None,
+            saved_checkpoints: Vec::new(),
         }
     }
 
+    /// Create a new checkpoint callback with auto-cleanup.
+    ///
+    /// This will automatically delete old checkpoints when the number exceeds `keep_top_k`,
+    /// keeping only the checkpoints with the best (lowest) validation loss.
+    ///
+    /// # Arguments
+    /// * `checkpoint_dir` - Directory to save checkpoints
+    /// * `save_frequency` - Save every N epochs
+    /// * `save_best_only` - Only save when validation loss improves
+    /// * `keep_top_k` - Maximum number of checkpoints to keep (keeps best by validation loss)
+    ///
+    /// # Example
+    /// ```no_run
+    /// use tensorlogic_train::CheckpointCallback;
+    /// use std::path::PathBuf;
+    ///
+    /// // Keep only the top 5 best checkpoints
+    /// let callback = CheckpointCallback::with_cleanup(
+    ///     PathBuf::from("/tmp/checkpoints"),
+    ///     1,    // save every epoch
+    ///     false, // save all, not just best
+    ///     5     // keep top 5
+    /// );
+    /// ```
+    pub fn with_cleanup(
+        checkpoint_dir: PathBuf,
+        save_frequency: usize,
+        save_best_only: bool,
+        keep_top_k: usize,
+    ) -> Self {
+        Self {
+            checkpoint_dir,
+            save_frequency,
+            save_best_only,
+            keep_top_k: Some(keep_top_k),
+            best_val_loss: None,
+            saved_checkpoints: Vec::new(),
+        }
+    }
+
+    /// Get the number of saved checkpoints being tracked.
+    pub fn num_saved_checkpoints(&self) -> usize {
+        self.saved_checkpoints.len()
+    }
+
+    /// Manually cleanup checkpoints, keeping only the top-k best.
+    ///
+    /// This can be called manually to trigger cleanup if you've changed the
+    /// `keep_top_k` setting.
+    pub fn cleanup_checkpoints(&mut self) -> TrainResult<usize> {
+        let keep_top_k = match self.keep_top_k {
+            Some(k) => k,
+            None => return Ok(0), // No cleanup needed
+        };
+
+        if self.saved_checkpoints.len() <= keep_top_k {
+            return Ok(0); // Don't need to clean up yet
+        }
+
+        // Sort by validation loss (ascending - best first)
+        // For checkpoints without val_loss, prefer more recent epochs
+        self.saved_checkpoints.sort_by(|a, b| {
+            match (a.val_loss, b.val_loss) {
+                (Some(a_loss), Some(b_loss)) => a_loss
+                    .partial_cmp(&b_loss)
+                    .unwrap_or(std::cmp::Ordering::Equal),
+                (Some(_), None) => std::cmp::Ordering::Less, // Prefer checkpoints with val_loss
+                (None, Some(_)) => std::cmp::Ordering::Greater, // Prefer checkpoints with val_loss
+                (None, None) => b.epoch.cmp(&a.epoch),       // Prefer newer epochs (descending)
+            }
+        });
+
+        // Remove checkpoints beyond top-k
+        let to_remove: Vec<CheckpointMetadata> =
+            self.saved_checkpoints.drain(keep_top_k..).collect();
+
+        let mut deleted_count = 0;
+        for checkpoint in to_remove {
+            if let Err(e) = std::fs::remove_file(&checkpoint.path) {
+                eprintln!(
+                    "Warning: Failed to delete checkpoint {:?}: {}",
+                    checkpoint.path, e
+                );
+            } else {
+                deleted_count += 1;
+            }
+        }
+
+        Ok(deleted_count)
+    }
+
     /// Save checkpoint to disk (legacy simple format).
-    fn save_checkpoint(&self, epoch: usize, state: &TrainingState) -> TrainResult<()> {
+    fn save_checkpoint(&mut self, epoch: usize, state: &TrainingState) -> TrainResult<()> {
         let checkpoint_path = self
             .checkpoint_dir
             .join(format!("checkpoint_epoch_{}.json", epoch));
@@ -289,7 +397,29 @@ impl CheckpointCallback {
             TrainError::CheckpointError(format!("Failed to write checkpoint: {}", e))
         })?;
 
-        println!("Checkpoint saved to {:?}", checkpoint_path);
+        // Track checkpoint metadata
+        let metadata = CheckpointMetadata {
+            epoch,
+            val_loss: state.val_loss,
+            path: checkpoint_path.clone(),
+        };
+        self.saved_checkpoints.push(metadata);
+
+        // Auto-cleanup if needed
+        if self.keep_top_k.is_some() {
+            let deleted = self.cleanup_checkpoints()?;
+            if deleted > 0 {
+                println!(
+                    "Checkpoint saved to {:?} (deleted {} old checkpoints)",
+                    checkpoint_path, deleted
+                );
+            } else {
+                println!("Checkpoint saved to {:?}", checkpoint_path);
+            }
+        } else {
+            println!("Checkpoint saved to {:?}", checkpoint_path);
+        }
+
         Ok(())
     }
 }
@@ -640,5 +770,140 @@ mod tests {
         // Clean up
         std::fs::remove_file(uncompressed_path).ok();
         std::fs::remove_file(compressed_path).ok();
+    }
+
+    #[test]
+    fn test_checkpoint_auto_cleanup() {
+        let checkpoint_dir = temp_dir().join("tensorlogic_test_auto_cleanup");
+        std::fs::create_dir_all(&checkpoint_dir).ok();
+
+        // Create callback with keep_top_k = 3
+        let mut callback = CheckpointCallback::with_cleanup(checkpoint_dir.clone(), 1, false, 3);
+
+        // Save 5 checkpoints with different validation losses
+        let val_losses = [0.9, 0.7, 0.8, 0.6, 0.5]; // Best is 0.5, then 0.6, then 0.7
+
+        for (epoch, &val_loss) in val_losses.iter().enumerate() {
+            let mut state = create_test_state();
+            state.val_loss = Some(val_loss);
+            callback.save_checkpoint(epoch, &state).unwrap();
+        }
+
+        // Should only have 3 checkpoints remaining (top 3 best)
+        assert_eq!(callback.num_saved_checkpoints(), 3);
+
+        // Verify the best 3 checkpoints exist
+        assert!(checkpoint_dir.join("checkpoint_epoch_4.json").exists()); // val_loss = 0.5
+        assert!(checkpoint_dir.join("checkpoint_epoch_3.json").exists()); // val_loss = 0.6
+        assert!(checkpoint_dir.join("checkpoint_epoch_1.json").exists()); // val_loss = 0.7
+
+        // Verify the worst 2 were deleted
+        assert!(!checkpoint_dir.join("checkpoint_epoch_0.json").exists()); // val_loss = 0.9
+        assert!(!checkpoint_dir.join("checkpoint_epoch_2.json").exists()); // val_loss = 0.8
+
+        // Clean up
+        std::fs::remove_dir_all(checkpoint_dir).ok();
+    }
+
+    #[test]
+    fn test_checkpoint_no_cleanup_when_disabled() {
+        let checkpoint_dir = temp_dir().join("tensorlogic_test_no_cleanup");
+        std::fs::create_dir_all(&checkpoint_dir).ok();
+
+        // Create callback without cleanup (keep_top_k = None)
+        let mut callback = CheckpointCallback::new(checkpoint_dir.clone(), 1, false);
+
+        // Save 5 checkpoints
+        for epoch in 0..5 {
+            let state = create_test_state();
+            callback.save_checkpoint(epoch, &state).unwrap();
+        }
+
+        // All 5 checkpoints should still exist
+        for epoch in 0..5 {
+            let path = checkpoint_dir.join(format!("checkpoint_epoch_{}.json", epoch));
+            assert!(path.exists(), "Checkpoint {} should exist", epoch);
+        }
+
+        // Clean up
+        std::fs::remove_dir_all(checkpoint_dir).ok();
+    }
+
+    #[test]
+    fn test_checkpoint_manual_cleanup() {
+        let checkpoint_dir = temp_dir().join("tensorlogic_test_manual_cleanup");
+        std::fs::create_dir_all(&checkpoint_dir).ok();
+
+        // Create callback with keep_top_k = 2
+        let mut callback = CheckpointCallback::with_cleanup(checkpoint_dir.clone(), 1, false, 2);
+
+        // Save 4 checkpoints
+        let val_losses = [0.8, 0.6, 0.9, 0.5];
+        for (epoch, &val_loss) in val_losses.iter().enumerate() {
+            let mut state = create_test_state();
+            state.val_loss = Some(val_loss);
+            callback.save_checkpoint(epoch, &state).unwrap();
+        }
+
+        // Should have only top 2
+        assert_eq!(callback.num_saved_checkpoints(), 2);
+
+        // Manually trigger cleanup (should do nothing since we're already at top-2)
+        let deleted = callback.cleanup_checkpoints().unwrap();
+        assert_eq!(deleted, 0);
+        assert_eq!(callback.num_saved_checkpoints(), 2);
+
+        // Clean up
+        std::fs::remove_dir_all(checkpoint_dir).ok();
+    }
+
+    #[test]
+    fn test_checkpoint_cleanup_without_val_loss() {
+        let checkpoint_dir = temp_dir().join("tensorlogic_test_cleanup_no_val_loss");
+        std::fs::create_dir_all(&checkpoint_dir).ok();
+
+        // Create callback with keep_top_k = 2
+        let mut callback = CheckpointCallback::with_cleanup(checkpoint_dir.clone(), 1, false, 2);
+
+        // Save 4 checkpoints without validation loss
+        for epoch in 0..4 {
+            let mut state = create_test_state();
+            state.val_loss = None; // No validation loss
+            callback.save_checkpoint(epoch, &state).unwrap();
+        }
+
+        // Should keep top 2 (most recent by epoch)
+        assert_eq!(callback.num_saved_checkpoints(), 2);
+
+        // Verify most recent 2 epochs exist
+        assert!(checkpoint_dir.join("checkpoint_epoch_3.json").exists());
+        assert!(checkpoint_dir.join("checkpoint_epoch_2.json").exists());
+
+        // Clean up
+        std::fs::remove_dir_all(checkpoint_dir).ok();
+    }
+
+    #[test]
+    fn test_checkpoint_with_save_best_only_and_cleanup() {
+        let checkpoint_dir = temp_dir().join("tensorlogic_test_best_and_cleanup");
+        std::fs::create_dir_all(&checkpoint_dir).ok();
+
+        // Create callback with both save_best_only and keep_top_k
+        let mut callback = CheckpointCallback::with_cleanup(checkpoint_dir.clone(), 1, true, 2);
+
+        // Try to save checkpoints with improving and non-improving losses
+        let val_losses = [0.9, 0.7, 0.8, 0.6]; // 0.9 -> 0.7 (save), 0.8 (skip), 0.6 (save)
+
+        for (epoch, &val_loss) in val_losses.iter().enumerate() {
+            let mut state = create_test_state();
+            state.val_loss = Some(val_loss);
+            callback.on_epoch_end(epoch, &state).unwrap();
+        }
+
+        // Should only have saved the improving checkpoints (0.9, 0.7, 0.6), then cleaned up to top-2
+        assert!(callback.num_saved_checkpoints() <= 2);
+
+        // Clean up
+        std::fs::remove_dir_all(checkpoint_dir).ok();
     }
 }

@@ -102,7 +102,9 @@ mod evolution;
 mod hierarchy;
 mod incremental_validation;
 mod lazy;
+mod learning;
 mod linear;
+mod locking;
 mod mask;
 mod metadata;
 mod parametric;
@@ -110,6 +112,7 @@ mod performance;
 mod predicate;
 mod product;
 mod query_planner;
+mod recommendation;
 mod refinement;
 mod schema_analysis;
 mod signature_matcher;
@@ -155,6 +158,10 @@ pub use embeddings::{
 pub use error::AdapterError;
 pub use hierarchy::DomainHierarchy;
 pub use lazy::{FileSchemaLoader, LazyLoadStats, LazySymbolTable, LoadStrategy, SchemaLoader};
+pub use learning::{
+    ConfidenceScore, DataSample, InferenceConfig, LearningStatistics, SchemaLearner,
+};
+pub use locking::{LockStats, LockWithTimeout, LockedSymbolTable, Transaction};
 pub use mask::DomainMask;
 pub use metadata::{
     Documentation, Example, Metadata, Provenance, TagCategory, TagRegistry, VersionEntry,
@@ -179,6 +186,10 @@ pub use incremental_validation::{
 };
 pub use query_planner::{
     IndexStrategy, PredicatePattern, PredicateQuery, QueryPlan, QueryPlanner, QueryStatistics,
+};
+pub use recommendation::{
+    PatternMatcher, RecommendationContext, RecommendationStrategy, RecommenderStats,
+    SchemaRecommender, SchemaScore,
 };
 
 // Advanced Type System modules

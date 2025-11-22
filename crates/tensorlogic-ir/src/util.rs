@@ -381,6 +381,163 @@ fn pretty_print_expr_inner(expr: &TLExpr, buf: &mut String, indent: usize) -> fm
             pretty_print_expr_inner(body, buf, indent + 1)?;
             writeln!(buf, "{})", spaces)?;
         }
+        // Alpha.3 enhancements
+        TLExpr::Lambda {
+            var,
+            var_type,
+            body,
+        } => {
+            if let Some(ty) = var_type {
+                writeln!(buf, "{}LAMBDA {}:{} ⇒(", spaces, var, ty)?;
+            } else {
+                writeln!(buf, "{}LAMBDA {} ⇒(", spaces, var)?;
+            }
+            pretty_print_expr_inner(body, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::Apply { function, argument } => {
+            writeln!(buf, "{}APPLY(", spaces)?;
+            pretty_print_expr_inner(function, buf, indent + 1)?;
+            writeln!(buf, "{}TO", spaces)?;
+            pretty_print_expr_inner(argument, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::SetMembership { element, set } => {
+            writeln!(buf, "{}MEMBER(", spaces)?;
+            pretty_print_expr_inner(element, buf, indent + 1)?;
+            writeln!(buf, "{}IN", spaces)?;
+            pretty_print_expr_inner(set, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::SetUnion { left, right } => {
+            writeln!(buf, "{}UNION(", spaces)?;
+            pretty_print_expr_inner(left, buf, indent + 1)?;
+            writeln!(buf, "{},", spaces)?;
+            pretty_print_expr_inner(right, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::SetIntersection { left, right } => {
+            writeln!(buf, "{}INTERSECT(", spaces)?;
+            pretty_print_expr_inner(left, buf, indent + 1)?;
+            writeln!(buf, "{},", spaces)?;
+            pretty_print_expr_inner(right, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::SetDifference { left, right } => {
+            writeln!(buf, "{}DIFFERENCE(", spaces)?;
+            pretty_print_expr_inner(left, buf, indent + 1)?;
+            writeln!(buf, "{},", spaces)?;
+            pretty_print_expr_inner(right, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::SetCardinality { set } => {
+            writeln!(buf, "{}CARDINALITY(", spaces)?;
+            pretty_print_expr_inner(set, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::EmptySet => {
+            writeln!(buf, "{}EMPTY-SET", spaces)?;
+        }
+        TLExpr::SetComprehension {
+            var,
+            domain,
+            condition,
+        } => {
+            writeln!(buf, "{}SET-COMPREHENSION {{ {}:{} | ", spaces, var, domain)?;
+            pretty_print_expr_inner(condition, buf, indent + 1)?;
+            writeln!(buf, "{}}}", spaces)?;
+        }
+        TLExpr::CountingExists {
+            var,
+            domain,
+            body,
+            min_count,
+        } => {
+            writeln!(buf, "{}∃≥{}{}:{}.(", spaces, min_count, var, domain)?;
+            pretty_print_expr_inner(body, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::CountingForAll {
+            var,
+            domain,
+            body,
+            min_count,
+        } => {
+            writeln!(buf, "{}∀≥{}{}:{}.(", spaces, min_count, var, domain)?;
+            pretty_print_expr_inner(body, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::ExactCount {
+            var,
+            domain,
+            body,
+            count,
+        } => {
+            writeln!(buf, "{}∃={}{}:{}.(", spaces, count, var, domain)?;
+            pretty_print_expr_inner(body, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::Majority { var, domain, body } => {
+            writeln!(buf, "{}MAJORITY {}:{}.(", spaces, var, domain)?;
+            pretty_print_expr_inner(body, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::LeastFixpoint { var, body } => {
+            writeln!(buf, "{}μ{}.(", spaces, var)?;
+            pretty_print_expr_inner(body, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::GreatestFixpoint { var, body } => {
+            writeln!(buf, "{}ν{}.(", spaces, var)?;
+            pretty_print_expr_inner(body, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::Nominal { name } => {
+            writeln!(buf, "{}@{}", spaces, name)?;
+        }
+        TLExpr::At { nominal, formula } => {
+            writeln!(buf, "{}AT @{}(", spaces, nominal)?;
+            pretty_print_expr_inner(formula, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::Somewhere { formula } => {
+            writeln!(buf, "{}SOMEWHERE(", spaces)?;
+            pretty_print_expr_inner(formula, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::Everywhere { formula } => {
+            writeln!(buf, "{}EVERYWHERE(", spaces)?;
+            pretty_print_expr_inner(formula, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::AllDifferent { variables } => {
+            writeln!(buf, "{}ALL-DIFFERENT({:?})", spaces, variables)?;
+        }
+        TLExpr::GlobalCardinality {
+            variables,
+            values,
+            min_occurrences,
+            max_occurrences,
+        } => {
+            writeln!(buf, "{}GLOBAL-CARDINALITY(", spaces)?;
+            writeln!(buf, "{}  vars: {:?}", spaces, variables)?;
+            writeln!(buf, "{}  constraints: [", spaces)?;
+            for (i, val) in values.iter().enumerate() {
+                write!(buf, "{}    ", spaces)?;
+                pretty_print_expr_inner(val, buf, 0)?;
+                writeln!(buf, ": [{}, {}]", min_occurrences[i], max_occurrences[i])?;
+            }
+            writeln!(buf, "{}  ]", spaces)?;
+            writeln!(buf, "{})", spaces)?;
+        }
+        TLExpr::Abducible { name, cost } => {
+            writeln!(buf, "{}ABDUCIBLE({}, cost={})", spaces, name, cost)?;
+        }
+        TLExpr::Explain { formula } => {
+            writeln!(buf, "{}EXPLAIN(", spaces)?;
+            pretty_print_expr_inner(formula, buf, indent + 1)?;
+            writeln!(buf, "{})", spaces)?;
+        }
         TLExpr::Constant(value) => {
             writeln!(buf, "{}{}", spaces, value)?;
         }
@@ -580,6 +737,90 @@ impl ExprStats {
                 let rel_depth = Self::compute_recursive(released, stats, depth + 1);
                 let reler_depth = Self::compute_recursive(releaser, stats, depth + 1);
                 max_child_depth = rel_depth.max(reler_depth);
+            }
+
+            // Alpha.3 enhancements
+            TLExpr::Lambda { body, .. } => {
+                stats.quantifier_count += 1; // Lambda binds a variable
+                max_child_depth = Self::compute_recursive(body, stats, depth + 1);
+            }
+            TLExpr::Apply { function, argument } => {
+                stats.logical_op_count += 1;
+                let func_depth = Self::compute_recursive(function, stats, depth + 1);
+                let arg_depth = Self::compute_recursive(argument, stats, depth + 1);
+                max_child_depth = func_depth.max(arg_depth);
+            }
+            TLExpr::SetMembership { element, set }
+            | TLExpr::SetUnion {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetIntersection {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetDifference {
+                left: element,
+                right: set,
+            } => {
+                stats.logical_op_count += 1;
+                let elem_depth = Self::compute_recursive(element, stats, depth + 1);
+                let set_depth = Self::compute_recursive(set, stats, depth + 1);
+                max_child_depth = elem_depth.max(set_depth);
+            }
+            TLExpr::SetCardinality { set } => {
+                stats.arithmetic_op_count += 1;
+                max_child_depth = Self::compute_recursive(set, stats, depth + 1);
+            }
+            TLExpr::EmptySet => {
+                // Leaf node
+            }
+            TLExpr::SetComprehension { condition, .. } => {
+                stats.quantifier_count += 1;
+                max_child_depth = Self::compute_recursive(condition, stats, depth + 1);
+            }
+            TLExpr::CountingExists { body, .. }
+            | TLExpr::CountingForAll { body, .. }
+            | TLExpr::ExactCount { body, .. }
+            | TLExpr::Majority { body, .. } => {
+                stats.quantifier_count += 1;
+                max_child_depth = Self::compute_recursive(body, stats, depth + 1);
+            }
+            TLExpr::LeastFixpoint { body, .. } | TLExpr::GreatestFixpoint { body, .. } => {
+                stats.logical_op_count += 1;
+                max_child_depth = Self::compute_recursive(body, stats, depth + 1);
+            }
+            TLExpr::Nominal { .. } => {
+                // Leaf node
+            }
+            TLExpr::At { formula, .. } => {
+                stats.logical_op_count += 1;
+                max_child_depth = Self::compute_recursive(formula, stats, depth + 1);
+            }
+            TLExpr::Somewhere { formula } | TLExpr::Everywhere { formula } => {
+                stats.logical_op_count += 1;
+                max_child_depth = Self::compute_recursive(formula, stats, depth + 1);
+            }
+            TLExpr::AllDifferent { .. } => {
+                stats.logical_op_count += 1;
+                // Leaf node (no subexpressions)
+            }
+            TLExpr::GlobalCardinality { values, .. } => {
+                stats.logical_op_count += 1;
+                let mut max_val_depth = depth;
+                for val in values {
+                    let val_depth = Self::compute_recursive(val, stats, depth + 1);
+                    max_val_depth = max_val_depth.max(val_depth);
+                }
+                max_child_depth = max_val_depth;
+            }
+            TLExpr::Abducible { .. } => {
+                stats.predicate_count += 1;
+                // Leaf node
+            }
+            TLExpr::Explain { formula } => {
+                stats.logical_op_count += 1;
+                max_child_depth = Self::compute_recursive(formula, stats, depth + 1);
             }
 
             TLExpr::Constant(_) => {

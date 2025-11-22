@@ -222,6 +222,110 @@ pub fn apply_modal_equivalences(expr: &TLExpr) -> TLExpr {
                 .collect(),
         ),
 
+        // Alpha.3 enhancements - just recurse, no modal-specific optimizations
+        TLExpr::Lambda {
+            var,
+            var_type,
+            body,
+        } => TLExpr::lambda(
+            var.clone(),
+            var_type.clone(),
+            apply_modal_equivalences(body),
+        ),
+        TLExpr::Apply { function, argument } => TLExpr::apply(
+            apply_modal_equivalences(function),
+            apply_modal_equivalences(argument),
+        ),
+        TLExpr::SetMembership { element, set } => TLExpr::set_membership(
+            apply_modal_equivalences(element),
+            apply_modal_equivalences(set),
+        ),
+        TLExpr::SetUnion { left, right } => TLExpr::set_union(
+            apply_modal_equivalences(left),
+            apply_modal_equivalences(right),
+        ),
+        TLExpr::SetIntersection { left, right } => TLExpr::set_intersection(
+            apply_modal_equivalences(left),
+            apply_modal_equivalences(right),
+        ),
+        TLExpr::SetDifference { left, right } => TLExpr::set_difference(
+            apply_modal_equivalences(left),
+            apply_modal_equivalences(right),
+        ),
+        TLExpr::SetCardinality { set } => TLExpr::set_cardinality(apply_modal_equivalences(set)),
+        TLExpr::EmptySet => expr.clone(),
+        TLExpr::SetComprehension {
+            var,
+            domain,
+            condition,
+        } => TLExpr::set_comprehension(
+            var.clone(),
+            domain.clone(),
+            apply_modal_equivalences(condition),
+        ),
+        TLExpr::CountingExists {
+            var,
+            domain,
+            body,
+            min_count,
+        } => TLExpr::counting_exists(
+            var.clone(),
+            domain.clone(),
+            apply_modal_equivalences(body),
+            *min_count,
+        ),
+        TLExpr::CountingForAll {
+            var,
+            domain,
+            body,
+            min_count,
+        } => TLExpr::counting_forall(
+            var.clone(),
+            domain.clone(),
+            apply_modal_equivalences(body),
+            *min_count,
+        ),
+        TLExpr::ExactCount {
+            var,
+            domain,
+            body,
+            count,
+        } => TLExpr::exact_count(
+            var.clone(),
+            domain.clone(),
+            apply_modal_equivalences(body),
+            *count,
+        ),
+        TLExpr::Majority { var, domain, body } => {
+            TLExpr::majority(var.clone(), domain.clone(), apply_modal_equivalences(body))
+        }
+        TLExpr::LeastFixpoint { var, body } => {
+            TLExpr::least_fixpoint(var.clone(), apply_modal_equivalences(body))
+        }
+        TLExpr::GreatestFixpoint { var, body } => {
+            TLExpr::greatest_fixpoint(var.clone(), apply_modal_equivalences(body))
+        }
+        TLExpr::Nominal { .. } => expr.clone(),
+        TLExpr::At { nominal, formula } => {
+            TLExpr::at(nominal.clone(), apply_modal_equivalences(formula))
+        }
+        TLExpr::Somewhere { formula } => TLExpr::somewhere(apply_modal_equivalences(formula)),
+        TLExpr::Everywhere { formula } => TLExpr::everywhere(apply_modal_equivalences(formula)),
+        TLExpr::AllDifferent { .. } => expr.clone(),
+        TLExpr::GlobalCardinality {
+            variables,
+            values,
+            min_occurrences,
+            max_occurrences,
+        } => TLExpr::global_cardinality(
+            variables.clone(),
+            values.iter().map(apply_modal_equivalences).collect(),
+            min_occurrences.clone(),
+            max_occurrences.clone(),
+        ),
+        TLExpr::Abducible { .. } => expr.clone(),
+        TLExpr::Explain { formula } => TLExpr::explain(apply_modal_equivalences(formula)),
+
         // Leaves
         TLExpr::Pred { .. } | TLExpr::Constant(_) => expr.clone(),
     }

@@ -596,4 +596,4 @@ let config = LossConfig {
 ---
 
 **Last Updated**: 2025-11-06
-**Version**: 0.1.0-alpha.1
+**Version**: 0.1.0-alpha.2
