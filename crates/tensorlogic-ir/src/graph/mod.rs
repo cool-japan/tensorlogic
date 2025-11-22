@@ -15,6 +15,7 @@ pub mod optimization;
 mod optype;
 pub mod parallel;
 pub mod pattern;
+pub mod pgo;
 pub mod schedule;
 pub mod tiling;
 pub mod transform;

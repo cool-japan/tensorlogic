@@ -229,7 +229,11 @@ pub mod kernel_transform;
 pub mod kernel_utils;
 pub mod logic_kernel;
 pub mod low_rank;
+pub mod multitask;
+pub mod online;
 pub mod provenance;
+#[cfg(feature = "sklears")]
+pub mod sklears_integration;
 pub mod sparse;
 pub mod string_kernel;
 pub mod symbolic;
@@ -249,10 +253,20 @@ pub use graph_kernel::{
 pub use kernel_transform::NormalizedKernel;
 pub use logic_kernel::{PredicateOverlapKernel, RuleSimilarityKernel};
 pub use low_rank::{NystromApproximation, NystromConfig, SamplingMethod};
+pub use multitask::{
+    HadamardTaskKernel, ICMKernel, ICMKernelWrapper, IndexKernel, LMCKernel, LMCKernelWrapper,
+    MultiTaskConfig, MultiTaskKernelBuilder, TaskInput,
+};
+pub use online::{
+    AdaptiveKernelMatrix, ForgetfulConfig, ForgetfulKernelMatrix, OnlineConfig, OnlineKernelMatrix,
+    OnlineStats, WindowedKernelMatrix,
+};
 pub use provenance::{
     ComputationResult, ProvenanceConfig, ProvenanceId, ProvenanceKernel, ProvenanceRecord,
     ProvenanceStatistics, ProvenanceTracker,
 };
+#[cfg(feature = "sklears")]
+pub use sklears_integration::SklearsKernelAdapter;
 pub use sparse::{SparseKernelMatrix, SparseKernelMatrixBuilder};
 pub use string_kernel::{
     EditDistanceKernel, NGramKernel, NGramKernelConfig, SubsequenceKernel, SubsequenceKernelConfig,
@@ -260,7 +274,8 @@ pub use string_kernel::{
 pub use symbolic::{KernelBuilder, KernelExpr, SymbolicKernel};
 pub use tensor_kernel::{
     ChiSquaredKernel, CosineKernel, HistogramIntersectionKernel, LaplacianKernel, LinearKernel,
-    PolynomialKernel, RbfKernel, SigmoidKernel,
+    MaternKernel, PeriodicKernel, PolynomialKernel, RationalQuadraticKernel, RbfKernel,
+    SigmoidKernel,
 };
 pub use tree_kernel::{
     PartialTreeKernel, PartialTreeKernelConfig, SubsetTreeKernel, SubsetTreeKernelConfig,

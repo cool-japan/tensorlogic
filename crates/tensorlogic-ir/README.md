@@ -4,10 +4,12 @@
 
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic--ir-orange)](https://crates.io/crates/tensorlogic-ir)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-ir)
-[![Tests](https://img.shields.io/badge/tests-161%2F161-brightgreen)](#)
-[![Examples](https://img.shields.io/badge/examples-7-blue)](#)
+[![Tests](https://img.shields.io/badge/tests-623%2F623-brightgreen)](#)
+[![Examples](https://img.shields.io/badge/examples-14-blue)](#)
 [![Benchmarks](https://img.shields.io/badge/benchmarks-40+-orange)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
+[![Version](https://img.shields.io/badge/version-0.1.0--alpha.2-blue)](#)
+[![Zero Warnings](https://img.shields.io/badge/warnings-0-success)](#)
 
 ## Overview
 
@@ -17,14 +19,33 @@ This crate serves as the **lingua franca** between all TensorLogic components, p
 
 ## Features
 
-### ✅ Production Ready
+### ✅ Production Ready (v0.1.0-alpha.2)
 
+#### Advanced Type Systems
+- **Parametric Types**: Type constructors (`List<T>`, `Option<T>`, `Map<K,V>`), unification, generalization
+- **Effect System**: Track computational effects (purity, differentiability, stochasticity, memory access)
+- **Dependent Types**: Value-dependent types (`Vec<n, T>` where n is runtime), dimension constraints
+- **Linear Types**: Resource management, multiplicity tracking, safe in-place operations
+- **Refinement Types**: Logical predicates on types (`{x: Int | x > 0}`), liquid type inference
+
+#### Core Features
 - **Type System**: Static type checking with `TypeAnnotation` and `PredicateSignature`
 - **Domain Constraints**: Comprehensive domain management (`DomainInfo`, `DomainRegistry`)
-- **Graph Optimization**: Dead code elimination, common subexpression elimination, simplification
+- **Graph Optimization**: Dead code elimination, CSE, simplification, PGO, cost models
 - **Metadata Support**: Source tracking, provenance, custom attributes
 - **Expression Extensions**: Arithmetic, comparison, conditional operations, numeric constants
 - **Serialization**: Full serde support for JSON/binary serialization
+
+#### Advanced Logic Systems
+- **Modal Logic**: 6 axiom systems (K, T, S4, S5, D, B), necessity (□) and possibility (◇)
+- **Temporal Logic**: LTL/CTL operators (Next, Eventually, Always, Until), safety/liveness analysis
+- **Probabilistic Reasoning**: Imprecise probabilities, Fréchet bounds, credal sets, MLN semantics
+- **Fuzzy Logic**: 6 defuzzification methods, T-norms, T-conorms, fuzzy implications
+
+#### Graph Optimizations
+- **Profile-Guided Optimization**: Runtime profiling, hot node identification, adaptive optimization
+- **Advanced Rewriting**: AC pattern matching, confluence checking, priority-based rules
+- **Cost Models**: Operation cost estimation, memory footprint tracking, auto-annotation
 
 ### 🚧 Infrastructure Ready
 

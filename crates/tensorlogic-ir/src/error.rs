@@ -61,4 +61,8 @@ pub enum IrError {
     OccursCheckFailure { var: String, ty: String },
     #[error("Kind mismatch: expected {expected}, got {actual}")]
     KindMismatch { expected: String, actual: String },
+    #[error("Linearity violation: {0}")]
+    LinearityViolation(String),
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
 }

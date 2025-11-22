@@ -4,7 +4,7 @@
 
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic--compiler-orange)](https://crates.io/crates/tensorlogic-compiler)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-compiler)
-[![Tests](https://img.shields.io/badge/tests-260%2F260-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-311%2F311-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
 
 ## Overview
@@ -37,11 +37,27 @@ The compiler translates logical rules with quantifiers into optimized tensor ope
 - ✅ **Domain Validation**: Ensures variables are bound to valid domains
 - ✅ **Enhanced Diagnostics**: Rich error messages with source locations and fix suggestions
 
-### Optimization Passes (Production Ready ✅)
-- ✅ **Negation Optimization**: Double negation elimination, De Morgan's laws, quantifier pushing
-- ✅ **Common Subexpression Elimination (CSE)**: Expression-level and graph-level deduplication
+### Optimization Pipeline (Production Ready ✅)
+
+The compiler features a **7-pass optimization pipeline** that can reduce expression complexity by up to 80%:
+
+1. ✅ **Negation Optimization**: Double negation elimination, De Morgan's laws, quantifier negation pushing
+2. ✅ **Constant Folding**: Compile-time evaluation of constant expressions (2.0 * 3.0 → 6.0)
+3. ✅ **Algebraic Simplification**: Identity elimination (x+0=x, x*1=x), annihilation (x*0=0), idempotency
+4. ✅ **Strength Reduction**: Replace expensive ops with cheaper equivalents (x^2→x*x, exp(log(x))→x)
+5. ✅ **Distributivity**: Factor common subexpressions (a*b + a*c → a*(b+c))
+6. ✅ **Quantifier Optimization**: Loop-invariant code motion (∃x.(a+p(x)) → a + ∃x.p(x))
+7. ✅ **Dead Code Elimination**: Remove unreachable branches and short-circuit constant conditions
+
+**Additional Graph-Level Optimizations:**
+- ✅ **Common Subexpression Elimination (CSE)**: Graph-level deduplication of identical operations
 - ✅ **Einsum Optimization**: Operation merging, identity elimination, contraction order optimization
-- ✅ **Dead Code Elimination**: Removes unused operations from the graph
+
+**Pipeline Features:**
+- **Configurable**: Enable/disable individual passes, set iteration limits
+- **Fixed-Point Detection**: Automatically stops when no more optimizations are possible
+- **Performance Tracking**: Detailed statistics on applied optimizations
+- **Hardware-Adaptive**: GPU-optimized, CPU-optimized, and SIMD-optimized cost models
 
 ### Parameterized Compilation (Production Ready ✅)
 - ✅ **26+ Configurable Strategies**: Customize logic-to-tensor mappings for different use cases
@@ -190,39 +206,116 @@ let graph = compile_to_einsum(&rule)?;
 // 3. Apply ReLU(knows[ac] - marginalized_premise[ac])
 ```
 
-## Optimization Passes
+## Optimization Pipeline Usage
 
-The compiler includes powerful optimization passes that can be applied before or after compilation:
+### Unified Pipeline (Recommended)
 
-### Expression-Level Optimizations
+The recommended approach is to use the unified optimization pipeline that applies all 7 passes iteratively:
 
 ```rust
-use tensorlogic_compiler::optimize::optimize_negations;
-use tensorlogic_compiler::passes::cse::optimize_cse;
+use tensorlogic_compiler::optimize::{OptimizationPipeline, PipelineConfig};
+use tensorlogic_ir::{TLExpr, Term};
 
-// Negation optimization: double negation, De Morgan's laws
-let (optimized_expr, neg_stats) = optimize_negations(&expr);
-println!("Eliminated {} double negations", neg_stats.double_negations_eliminated);
-println!("Applied {} De Morgan's laws", neg_stats.demorgans_applied);
+// Create a complex expression
+let x = TLExpr::pred("x", vec![Term::var("i")]);
+let expr = TLExpr::negate(TLExpr::negate(TLExpr::add(
+    TLExpr::pow(x, TLExpr::Constant(2.0)),
+    TLExpr::Constant(0.0),
+)));
 
-// Common subexpression elimination
-let (optimized_expr, cse_stats) = optimize_cse(&expr);
-println!("Eliminated {} subexpressions", cse_stats.eliminated_count);
+// Apply default optimization pipeline
+let pipeline = OptimizationPipeline::new();
+let (optimized, stats) = pipeline.optimize(&expr);
+
+// Check results
+println!("Total optimizations: {}", stats.total_optimizations());
+println!("  Negation: {}", stats.negation.double_negations_eliminated);
+println!("  Constant folding: {}", stats.constant_folding.binary_ops_folded);
+println!("  Algebraic: {}", stats.algebraic.identities_eliminated);
+println!("  Strength reduction: {}", stats.strength_reduction.power_reductions);
+println!("  Iterations: {}", stats.total_iterations);
+println!("  Reached fixed point: {}", stats.reached_fixed_point);
+```
+
+### Configurable Pipeline
+
+Customize which passes run and how many iterations:
+
+```rust
+use tensorlogic_compiler::optimize::PipelineConfig;
+
+// Aggressive optimization (more iterations)
+let config = PipelineConfig::aggressive();
+let pipeline = OptimizationPipeline::with_config(config);
+
+// Custom configuration
+let config = PipelineConfig::default()
+    .with_negation_opt(true)
+    .with_constant_folding(true)
+    .with_algebraic_simplification(true)
+    .with_strength_reduction(true)
+    .with_distributivity(true)
+    .with_quantifier_opt(true)
+    .with_dead_code_elimination(true)
+    .with_max_iterations(15);
+
+let pipeline = OptimizationPipeline::with_config(config);
+let (optimized, stats) = pipeline.optimize(&expr);
+```
+
+### Individual Pass Usage
+
+For fine-grained control, use individual optimization passes:
+
+```rust
+use tensorlogic_compiler::optimize::{
+    optimize_negations, fold_constants, simplify_algebraic,
+    reduce_strength, optimize_distributivity, optimize_quantifiers,
+    eliminate_dead_code,
+};
+
+// Apply specific optimizations
+let (opt1, stats1) = optimize_negations(&expr);
+let (opt2, stats2) = fold_constants(&opt1);
+let (opt3, stats3) = simplify_algebraic(&opt2);
+let (opt4, stats4) = reduce_strength(&opt3);
+```
+
+### Complexity Analysis
+
+Analyze expression complexity to guide optimization decisions:
+
+```rust
+use tensorlogic_compiler::optimize::{analyze_complexity, CostWeights};
+
+let complexity = analyze_complexity(&expr);
+println!("Max depth: {}", complexity.max_depth);
+println!("Total operations: {}", complexity.total_operations());
+println!("Total cost: {}", complexity.total_cost());
+
+// Use GPU-optimized cost weights
+let gpu_weights = CostWeights::gpu_optimized();
+let gpu_cost = complexity.total_cost_with_weights(&gpu_weights);
+println!("GPU-optimized cost: {}", gpu_cost);
+
+// Check optimization potential
+println!("CSE potential: {}", complexity.cse_potential());
+println!("Complexity level: {}", complexity.complexity_level());
 ```
 
 ### Graph-Level Optimizations
 
+After compilation, optimize the resulting graph:
+
 ```rust
 use tensorlogic_ir::graph::optimization::{optimize_graph, OptimizationLevel};
+
+// Compile expression to graph
+let graph = compile_to_einsum(&expr)?;
 
 // Apply graph optimizations (DCE, CSE, identity elimination)
 let (optimized_graph, stats) = optimize_graph(&graph, OptimizationLevel::Aggressive);
 println!("Removed {} nodes", stats.nodes_removed);
-
-// Or use einsum-specific optimizations
-use tensorlogic_compiler::passes::einsum_opt::optimize_einsum_graph;
-let (optimized_graph, einsum_stats) = optimize_einsum_graph(&graph);
-println!("Merged {} einsum operations", einsum_stats.merged_count);
 ```
 
 ## Compiler Architecture

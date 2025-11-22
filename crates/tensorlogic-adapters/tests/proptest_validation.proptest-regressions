@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 217941617745ea6d5b7bd2386593b62a215a6058b1e94921fedb78c7e4f999cb # shrinks to old_table = SymbolTable { domains: {"E": DomainInfo { name: "E", cardinality: 518, elements: None, description: None, metadata: None, parametric_type: None }}, predicates: {}, variables: {} }, new_domain = DomainInfo { name: "E", cardinality: 489, elements: None, description: None, metadata: None, parametric_type: None }

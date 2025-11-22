@@ -6,7 +6,7 @@
 use anyhow::Result;
 use std::collections::HashMap;
 
-use crate::{DomainInfo, PredicateInfo, SymbolTable};
+use crate::{DomainHierarchy, DomainInfo, PredicateConstraints, PredicateInfo, SymbolTable};
 
 /// Export utilities for compiler integration.
 pub struct CompilerExport;
@@ -439,5 +439,326 @@ mod tests {
 
         // Result should include both
         assert_eq!(result.domains.len(), 2);
+    }
+}
+
+/// Advanced export utilities for compiler integration with type systems.
+///
+/// This extends the basic CompilerExport with support for advanced type system
+/// features including refinement types, dependent types, linear types, and effects.
+pub struct CompilerExportAdvanced;
+
+impl CompilerExportAdvanced {
+    /// Export domain hierarchy information for subtype checking.
+    ///
+    /// Returns the complete subtype relationships from the hierarchy.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tensorlogic_adapters::{DomainHierarchy, CompilerExportAdvanced};
+    ///
+    /// let mut hierarchy = DomainHierarchy::new();
+    /// hierarchy.add_subtype("Student", "Person");
+    /// hierarchy.add_subtype("Person", "Agent");
+    ///
+    /// let relationships = CompilerExportAdvanced::export_hierarchy(&hierarchy);
+    /// assert!(relationships.contains_key("Student"));
+    /// ```
+    pub fn export_hierarchy(hierarchy: &DomainHierarchy) -> HashMap<String, Vec<String>> {
+        let mut result = HashMap::new();
+
+        for domain in hierarchy.all_domains() {
+            // Get all ancestors (transitive closure of parent relationships)
+            let ancestors = hierarchy.get_ancestors(&domain);
+            if !ancestors.is_empty() {
+                result.insert(domain, ancestors);
+            }
+        }
+
+        result
+    }
+
+    /// Export predicate constraints for validation and optimization.
+    ///
+    /// Returns a map of predicate names to their constraint specifications.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tensorlogic_adapters::{SymbolTable, DomainInfo, PredicateInfo, PredicateConstraints, CompilerExportAdvanced};
+    ///
+    /// let mut table = SymbolTable::new();
+    /// table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+    ///
+    /// let mut pred = PredicateInfo::new("age", vec!["Person".to_string()]);
+    /// pred.constraints = Some(PredicateConstraints::new());
+    /// table.add_predicate(pred).unwrap();
+    ///
+    /// let constraints = CompilerExportAdvanced::export_constraints(&table);
+    /// assert!(constraints.contains_key("age"));
+    /// ```
+    pub fn export_constraints(table: &SymbolTable) -> HashMap<String, PredicateConstraints> {
+        table
+            .predicates
+            .iter()
+            .filter_map(|(name, info)| info.constraints.as_ref().map(|c| (name.clone(), c.clone())))
+            .collect()
+    }
+
+    /// Export refinement types for compile-time validation.
+    ///
+    /// Returns refinement type specifications that can be used for
+    /// static analysis and runtime validation.
+    pub fn export_refinement_types() -> HashMap<String, String> {
+        // Export built-in refinement types
+        // In a real implementation, this would be populated from a RefinementRegistry
+        let mut types = HashMap::new();
+        types.insert("PositiveInt".to_string(), "{ x: Int | x > 0 }".to_string());
+        types.insert(
+            "Probability".to_string(),
+            "{ x: Float | 0.0 <= x <= 1.0 }".to_string(),
+        );
+        types.insert(
+            "NonZeroFloat".to_string(),
+            "{ x: Float | x != 0.0 }".to_string(),
+        );
+        types
+    }
+
+    /// Export dependent type information for dimension tracking.
+    ///
+    /// Returns dependent type specifications for compile-time dimension checking.
+    pub fn export_dependent_types() -> HashMap<String, String> {
+        // Export common dependent type patterns
+        let mut types = HashMap::new();
+        types.insert("Vector".to_string(), "Vector<T, n>".to_string());
+        types.insert("Matrix".to_string(), "Matrix<T, m, n>".to_string());
+        types.insert("Tensor3D".to_string(), "Tensor<T, i, j, k>".to_string());
+        types.insert("SquareMatrix".to_string(), "Matrix<T, n, n>".to_string());
+        types
+    }
+
+    /// Export linear type resources for lifetime tracking.
+    ///
+    /// Returns linear type specifications for resource management.
+    pub fn export_linear_types() -> HashMap<String, String> {
+        // Export linear type specifications
+        let mut types = HashMap::new();
+        types.insert("GpuTensor".to_string(), "Linear".to_string());
+        types.insert("FileHandle".to_string(), "Linear".to_string());
+        types.insert("NetworkSocket".to_string(), "Linear".to_string());
+        types.insert("MutableReference".to_string(), "Affine".to_string());
+        types.insert("LogMessage".to_string(), "Relevant".to_string());
+        types
+    }
+
+    /// Export effect information for effect tracking.
+    ///
+    /// Returns effect specifications for compile-time effect checking.
+    pub fn export_effects() -> HashMap<String, Vec<String>> {
+        // Export common effect patterns
+        let mut effects = HashMap::new();
+        effects.insert("read_file".to_string(), vec!["IO".to_string()]);
+        effects.insert(
+            "allocate_gpu".to_string(),
+            vec!["GPU".to_string(), "State".to_string()],
+        );
+        effects.insert(
+            "train_model".to_string(),
+            vec!["State".to_string(), "NonDet".to_string()],
+        );
+        effects.insert(
+            "fetch_data".to_string(),
+            vec!["IO".to_string(), "Exception".to_string()],
+        );
+        effects
+    }
+
+    /// Create a complete advanced export bundle.
+    ///
+    /// Returns all advanced type system information in a single structure.
+    pub fn export_all_advanced(
+        table: &SymbolTable,
+        hierarchy: Option<&DomainHierarchy>,
+    ) -> AdvancedExportBundle {
+        AdvancedExportBundle {
+            hierarchy: hierarchy.map(Self::export_hierarchy),
+            constraints: Self::export_constraints(table),
+            refinement_types: Self::export_refinement_types(),
+            dependent_types: Self::export_dependent_types(),
+            linear_types: Self::export_linear_types(),
+            effects: Self::export_effects(),
+        }
+    }
+}
+
+/// Advanced export bundle containing type system information.
+#[derive(Clone, Debug)]
+pub struct AdvancedExportBundle {
+    /// Domain hierarchy (subtype relationships).
+    pub hierarchy: Option<HashMap<String, Vec<String>>>,
+    /// Predicate constraints.
+    pub constraints: HashMap<String, PredicateConstraints>,
+    /// Refinement type specifications.
+    pub refinement_types: HashMap<String, String>,
+    /// Dependent type specifications.
+    pub dependent_types: HashMap<String, String>,
+    /// Linear type specifications.
+    pub linear_types: HashMap<String, String>,
+    /// Effect specifications.
+    pub effects: HashMap<String, Vec<String>>,
+}
+
+impl AdvancedExportBundle {
+    /// Create an empty advanced export bundle.
+    pub fn new() -> Self {
+        Self {
+            hierarchy: None,
+            constraints: HashMap::new(),
+            refinement_types: HashMap::new(),
+            dependent_types: HashMap::new(),
+            linear_types: HashMap::new(),
+            effects: HashMap::new(),
+        }
+    }
+
+    /// Check if the bundle is empty.
+    pub fn is_empty(&self) -> bool {
+        self.hierarchy.is_none()
+            && self.constraints.is_empty()
+            && self.refinement_types.is_empty()
+            && self.dependent_types.is_empty()
+            && self.linear_types.is_empty()
+            && self.effects.is_empty()
+    }
+}
+
+impl Default for AdvancedExportBundle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Complete compiler integration bundle combining basic and advanced exports.
+#[derive(Clone, Debug)]
+pub struct CompleteExportBundle {
+    /// Basic export bundle (domains, predicates, variables).
+    pub basic: CompilerExportBundle,
+    /// Advanced type system export bundle.
+    pub advanced: AdvancedExportBundle,
+}
+
+impl CompleteExportBundle {
+    /// Create a new complete export bundle.
+    pub fn new(basic: CompilerExportBundle, advanced: AdvancedExportBundle) -> Self {
+        Self { basic, advanced }
+    }
+
+    /// Export everything from a symbol table and hierarchy.
+    pub fn from_symbol_table(table: &SymbolTable, hierarchy: Option<&DomainHierarchy>) -> Self {
+        Self {
+            basic: CompilerExport::export_all(table),
+            advanced: CompilerExportAdvanced::export_all_advanced(table, hierarchy),
+        }
+    }
+
+    /// Check if the bundle is completely empty.
+    pub fn is_empty(&self) -> bool {
+        self.basic.is_empty() && self.advanced.is_empty()
+    }
+}
+
+#[cfg(test)]
+mod advanced_tests {
+    use super::*;
+
+    #[test]
+    fn test_export_hierarchy() {
+        let mut hierarchy = DomainHierarchy::new();
+        hierarchy.add_subtype("Student", "Person");
+        hierarchy.add_subtype("Person", "Agent");
+
+        let relationships = CompilerExportAdvanced::export_hierarchy(&hierarchy);
+
+        assert!(relationships.contains_key("Student"));
+        assert!(relationships.contains_key("Person"));
+    }
+
+    #[test]
+    fn test_export_constraints() {
+        let mut table = SymbolTable::new();
+        table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+
+        let mut pred = PredicateInfo::new("age", vec!["Person".to_string()]);
+        pred.constraints = Some(PredicateConstraints::new());
+        table.add_predicate(pred).unwrap();
+
+        let constraints = CompilerExportAdvanced::export_constraints(&table);
+        assert!(constraints.contains_key("age"));
+    }
+
+    #[test]
+    fn test_export_refinement_types() {
+        let types = CompilerExportAdvanced::export_refinement_types();
+        assert!(types.contains_key("PositiveInt"));
+        assert!(types.contains_key("Probability"));
+    }
+
+    #[test]
+    fn test_export_dependent_types() {
+        let types = CompilerExportAdvanced::export_dependent_types();
+        assert!(types.contains_key("Vector"));
+        assert!(types.contains_key("Matrix"));
+    }
+
+    #[test]
+    fn test_export_linear_types() {
+        let types = CompilerExportAdvanced::export_linear_types();
+        assert!(types.contains_key("GpuTensor"));
+        assert!(types.contains_key("FileHandle"));
+    }
+
+    #[test]
+    fn test_export_effects() {
+        let effects = CompilerExportAdvanced::export_effects();
+        assert!(effects.contains_key("read_file"));
+        assert!(effects.contains_key("allocate_gpu"));
+    }
+
+    #[test]
+    fn test_export_all_advanced() {
+        let mut table = SymbolTable::new();
+        table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+
+        let mut hierarchy = DomainHierarchy::new();
+        hierarchy.add_subtype("Student", "Person");
+
+        let bundle = CompilerExportAdvanced::export_all_advanced(&table, Some(&hierarchy));
+
+        assert!(bundle.hierarchy.is_some());
+        assert!(!bundle.refinement_types.is_empty());
+        assert!(!bundle.dependent_types.is_empty());
+    }
+
+    #[test]
+    fn test_complete_export_bundle() {
+        let mut table = SymbolTable::new();
+        table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+
+        let mut hierarchy = DomainHierarchy::new();
+        hierarchy.add_subtype("Student", "Person");
+
+        let bundle = CompleteExportBundle::from_symbol_table(&table, Some(&hierarchy));
+
+        assert!(!bundle.is_empty());
+        assert_eq!(bundle.basic.domains.len(), 1);
+        assert!(bundle.advanced.hierarchy.is_some());
+    }
+
+    #[test]
+    fn test_advanced_bundle_empty() {
+        let bundle = AdvancedExportBundle::new();
+        assert!(bundle.is_empty());
     }
 }

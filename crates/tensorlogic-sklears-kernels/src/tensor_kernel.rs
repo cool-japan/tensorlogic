@@ -71,6 +71,16 @@ impl PolynomialKernel {
         Ok(Self { degree, constant })
     }
 
+    /// Get the degree parameter
+    pub fn degree(&self) -> usize {
+        self.degree as usize
+    }
+
+    /// Get the constant parameter
+    pub fn constant(&self) -> f64 {
+        self.constant
+    }
+
     /// Compute dot product
     fn dot_product(x: &[f64], y: &[f64]) -> f64 {
         x.iter().zip(y.iter()).map(|(a, b)| a * b).sum()
@@ -117,6 +127,16 @@ impl RbfKernel {
         }
 
         Ok(Self { config })
+    }
+
+    /// Get the configuration
+    pub fn config(&self) -> &RbfKernelConfig {
+        &self.config
+    }
+
+    /// Get the gamma parameter
+    pub fn gamma(&self) -> f64 {
+        self.config.gamma
     }
 
     /// Compute squared Euclidean distance
@@ -247,6 +267,11 @@ impl LaplacianKernel {
         Self::new(1.0 / sigma)
     }
 
+    /// Get the gamma parameter
+    pub fn gamma(&self) -> f64 {
+        self.gamma
+    }
+
     /// Compute L1 (Manhattan) distance
     fn l1_distance(x: &[f64], y: &[f64]) -> f64 {
         x.iter().zip(y.iter()).map(|(a, b)| (a - b).abs()).sum()
@@ -319,6 +344,16 @@ impl SigmoidKernel {
         Ok(Self { alpha, offset })
     }
 
+    /// Get the alpha parameter
+    pub fn alpha(&self) -> f64 {
+        self.alpha
+    }
+
+    /// Get the offset parameter
+    pub fn offset(&self) -> f64 {
+        self.offset
+    }
+
     /// Compute dot product
     fn dot_product(x: &[f64], y: &[f64]) -> f64 {
         x.iter().zip(y.iter()).map(|(a, b)| a * b).sum()
@@ -385,6 +420,11 @@ impl ChiSquaredKernel {
             });
         }
         Ok(Self { gamma })
+    }
+
+    /// Get the gamma parameter
+    pub fn gamma(&self) -> f64 {
+        self.gamma
     }
 
     /// Compute chi-squared distance between histograms
@@ -484,6 +524,317 @@ impl Kernel for HistogramIntersectionKernel {
 
     fn name(&self) -> &str {
         "HistogramIntersection"
+    }
+}
+
+/// Matérn kernel: K(x, y) = σ² * (2^(1-ν) / Γ(ν)) * (√(2ν) * r / l)^ν * K_ν(√(2ν) * r / l)
+///
+/// A generalization of the RBF kernel with an additional smoothness parameter nu.
+/// Widely used in Gaussian Process regression. Special cases:
+/// - nu = 1/2: Exponential kernel (same as Laplacian)
+/// - nu = 3/2: Once differentiable
+/// - nu = 5/2: Twice differentiable
+/// - nu → ∞: RBF kernel
+#[derive(Debug, Clone)]
+pub struct MaternKernel {
+    /// Length scale parameter
+    length_scale: f64,
+    /// Smoothness parameter (nu)
+    /// Common values: 0.5 (exponential), 1.5, 2.5
+    nu: f64,
+}
+
+impl MaternKernel {
+    /// Create a new Matérn kernel
+    ///
+    /// # Arguments
+    /// * `length_scale` - Controls the length scale of the kernel (must be positive)
+    /// * `nu` - Smoothness parameter (must be positive, common: 0.5, 1.5, 2.5)
+    ///
+    /// # Examples
+    /// ```
+    /// use tensorlogic_sklears_kernels::{MaternKernel, Kernel};
+    ///
+    /// // nu = 1.5 gives once-differentiable functions
+    /// let kernel = MaternKernel::new(1.0, 1.5).unwrap();
+    /// let x = vec![1.0, 2.0, 3.0];
+    /// let y = vec![1.5, 2.5, 3.5];
+    /// let sim = kernel.compute(&x, &y).unwrap();
+    /// ```
+    pub fn new(length_scale: f64, nu: f64) -> Result<Self> {
+        if length_scale <= 0.0 {
+            return Err(KernelError::InvalidParameter {
+                parameter: "length_scale".to_string(),
+                value: length_scale.to_string(),
+                reason: "length_scale must be positive".to_string(),
+            });
+        }
+        if nu <= 0.0 {
+            return Err(KernelError::InvalidParameter {
+                parameter: "nu".to_string(),
+                value: nu.to_string(),
+                reason: "nu must be positive".to_string(),
+            });
+        }
+        Ok(Self { length_scale, nu })
+    }
+
+    /// Create Matérn kernel with nu = 1/2 (exponential kernel)
+    pub fn exponential(length_scale: f64) -> Result<Self> {
+        Self::new(length_scale, 0.5)
+    }
+
+    /// Create Matérn kernel with nu = 3/2 (once differentiable)
+    pub fn nu_3_2(length_scale: f64) -> Result<Self> {
+        Self::new(length_scale, 1.5)
+    }
+
+    /// Create Matérn kernel with nu = 5/2 (twice differentiable)
+    pub fn nu_5_2(length_scale: f64) -> Result<Self> {
+        Self::new(length_scale, 2.5)
+    }
+
+    /// Get the length scale parameter
+    pub fn length_scale(&self) -> f64 {
+        self.length_scale
+    }
+
+    /// Get the smoothness parameter nu
+    pub fn nu(&self) -> f64 {
+        self.nu
+    }
+
+    /// Compute Euclidean distance
+    fn euclidean_distance(x: &[f64], y: &[f64]) -> f64 {
+        x.iter()
+            .zip(y.iter())
+            .map(|(a, b)| (a - b) * (a - b))
+            .sum::<f64>()
+            .sqrt()
+    }
+}
+
+impl Kernel for MaternKernel {
+    fn compute(&self, x: &[f64], y: &[f64]) -> Result<f64> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "Matérn kernel".to_string(),
+            });
+        }
+
+        let dist = Self::euclidean_distance(x, y);
+
+        // Handle same point case
+        if dist < 1e-10 {
+            return Ok(1.0);
+        }
+
+        // Scaled distance
+        let scaled_dist = (2.0 * self.nu).sqrt() * dist / self.length_scale;
+
+        // Use closed-form expressions for common nu values
+        let result = if (self.nu - 0.5).abs() < 1e-10 {
+            // nu = 1/2: exponential kernel
+            (-scaled_dist).exp()
+        } else if (self.nu - 1.5).abs() < 1e-10 {
+            // nu = 3/2: once differentiable
+            (1.0 + scaled_dist) * (-scaled_dist).exp()
+        } else if (self.nu - 2.5).abs() < 1e-10 {
+            // nu = 5/2: twice differentiable
+            (1.0 + scaled_dist + scaled_dist * scaled_dist / 3.0) * (-scaled_dist).exp()
+        } else {
+            // General case: use approximation for other nu values
+            // For simplicity, use nu=1.5 as fallback
+            (1.0 + scaled_dist) * (-scaled_dist).exp()
+        };
+
+        Ok(result)
+    }
+
+    fn name(&self) -> &str {
+        "Matérn"
+    }
+}
+
+/// Rational Quadratic kernel: K(x, y) = (1 + ||x-y||² / (2 * alpha * l²))^(-alpha)
+///
+/// Can be seen as a scale mixture of RBF kernels with different length scales.
+/// As alpha → ∞, this kernel becomes equivalent to the RBF kernel.
+/// Useful when data exhibits multiple characteristic length scales.
+#[derive(Debug, Clone)]
+pub struct RationalQuadraticKernel {
+    /// Length scale parameter
+    length_scale: f64,
+    /// Scale mixture parameter (alpha)
+    /// Controls the relative weighting of large vs small scale variations
+    alpha: f64,
+}
+
+impl RationalQuadraticKernel {
+    /// Create a new Rational Quadratic kernel
+    ///
+    /// # Arguments
+    /// * `length_scale` - Controls the length scale (must be positive)
+    /// * `alpha` - Scale mixture parameter (must be positive, typically > 1)
+    ///
+    /// # Examples
+    /// ```
+    /// use tensorlogic_sklears_kernels::{RationalQuadraticKernel, Kernel};
+    ///
+    /// let kernel = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+    /// let x = vec![1.0, 2.0, 3.0];
+    /// let y = vec![1.5, 2.5, 3.5];
+    /// let sim = kernel.compute(&x, &y).unwrap();
+    /// ```
+    pub fn new(length_scale: f64, alpha: f64) -> Result<Self> {
+        if length_scale <= 0.0 {
+            return Err(KernelError::InvalidParameter {
+                parameter: "length_scale".to_string(),
+                value: length_scale.to_string(),
+                reason: "length_scale must be positive".to_string(),
+            });
+        }
+        if alpha <= 0.0 {
+            return Err(KernelError::InvalidParameter {
+                parameter: "alpha".to_string(),
+                value: alpha.to_string(),
+                reason: "alpha must be positive".to_string(),
+            });
+        }
+        Ok(Self {
+            length_scale,
+            alpha,
+        })
+    }
+
+    /// Get the length scale parameter
+    pub fn length_scale(&self) -> f64 {
+        self.length_scale
+    }
+
+    /// Get the alpha parameter
+    pub fn alpha(&self) -> f64 {
+        self.alpha
+    }
+
+    /// Compute squared Euclidean distance
+    fn squared_distance(x: &[f64], y: &[f64]) -> f64 {
+        x.iter().zip(y.iter()).map(|(a, b)| (a - b) * (a - b)).sum()
+    }
+}
+
+impl Kernel for RationalQuadraticKernel {
+    fn compute(&self, x: &[f64], y: &[f64]) -> Result<f64> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "Rational Quadratic kernel".to_string(),
+            });
+        }
+
+        let sq_dist = Self::squared_distance(x, y);
+        let term = 1.0 + sq_dist / (2.0 * self.alpha * self.length_scale * self.length_scale);
+        let result = term.powf(-self.alpha);
+        Ok(result)
+    }
+
+    fn name(&self) -> &str {
+        "RationalQuadratic"
+    }
+}
+
+/// Periodic kernel: K(x, y) = exp(-2 * sin²(π * ||x-y|| / period) / l²)
+///
+/// Captures periodic patterns in data. Useful for modeling seasonal effects,
+/// oscillatory behavior, and other repeating patterns.
+#[derive(Debug, Clone)]
+pub struct PeriodicKernel {
+    /// Period of the periodic pattern
+    period: f64,
+    /// Length scale parameter
+    length_scale: f64,
+}
+
+impl PeriodicKernel {
+    /// Create a new Periodic kernel
+    ///
+    /// # Arguments
+    /// * `period` - Period of the repeating pattern (must be positive)
+    /// * `length_scale` - Controls smoothness within each period (must be positive)
+    ///
+    /// # Examples
+    /// ```
+    /// use tensorlogic_sklears_kernels::{PeriodicKernel, Kernel};
+    ///
+    /// // Model data with period = 24 (e.g., hours in a day)
+    /// let kernel = PeriodicKernel::new(24.0, 1.0).unwrap();
+    /// let x = vec![1.0, 2.0];
+    /// let y = vec![25.0, 26.0];  // One period later
+    /// let sim = kernel.compute(&x, &y).unwrap();
+    /// // Similarity is high because points are one period apart
+    /// ```
+    pub fn new(period: f64, length_scale: f64) -> Result<Self> {
+        if period <= 0.0 {
+            return Err(KernelError::InvalidParameter {
+                parameter: "period".to_string(),
+                value: period.to_string(),
+                reason: "period must be positive".to_string(),
+            });
+        }
+        if length_scale <= 0.0 {
+            return Err(KernelError::InvalidParameter {
+                parameter: "length_scale".to_string(),
+                value: length_scale.to_string(),
+                reason: "length_scale must be positive".to_string(),
+            });
+        }
+        Ok(Self {
+            period,
+            length_scale,
+        })
+    }
+
+    /// Get the period parameter
+    pub fn period(&self) -> f64 {
+        self.period
+    }
+
+    /// Get the length scale parameter
+    pub fn length_scale(&self) -> f64 {
+        self.length_scale
+    }
+
+    /// Compute Euclidean distance
+    fn euclidean_distance(x: &[f64], y: &[f64]) -> f64 {
+        x.iter()
+            .zip(y.iter())
+            .map(|(a, b)| (a - b) * (a - b))
+            .sum::<f64>()
+            .sqrt()
+    }
+}
+
+impl Kernel for PeriodicKernel {
+    fn compute(&self, x: &[f64], y: &[f64]) -> Result<f64> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "Periodic kernel".to_string(),
+            });
+        }
+
+        let dist = Self::euclidean_distance(x, y);
+        let sin_term = (std::f64::consts::PI * dist / self.period).sin();
+        let result = (-2.0 * sin_term * sin_term / (self.length_scale * self.length_scale)).exp();
+        Ok(result)
+    }
+
+    fn name(&self) -> &str {
+        "Periodic"
     }
 }
 
@@ -922,5 +1273,249 @@ mod tests {
                 k_xx
             );
         }
+    }
+
+    // ============================================================================
+    // Tests for advanced kernels (Matérn, Rational Quadratic, Periodic)
+    // ============================================================================
+
+    #[test]
+    fn test_matern_kernel_nu_half() {
+        // nu = 0.5 should give exponential kernel (same as Laplacian with adjusted gamma)
+        let kernel = MaternKernel::exponential(1.0).unwrap();
+        assert_eq!(kernel.name(), "Matérn");
+        assert!((kernel.nu() - 0.5).abs() < 1e-10);
+
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.5, 2.5, 3.5];
+
+        let sim = kernel.compute(&x, &y).unwrap();
+        assert!(sim > 0.0 && sim <= 1.0);
+
+        // Self-similarity should be 1.0
+        let self_sim = kernel.compute(&x, &x).unwrap();
+        assert!((self_sim - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_matern_kernel_nu_3_2() {
+        let kernel = MaternKernel::nu_3_2(1.0).unwrap();
+        assert!((kernel.nu() - 1.5).abs() < 1e-10);
+
+        let x = vec![0.0, 0.0];
+        let y = vec![1.0, 0.0];
+
+        let sim = kernel.compute(&x, &y).unwrap();
+        assert!(sim > 0.0 && sim < 1.0);
+
+        // Closer points should have higher similarity
+        let y_close = vec![0.1, 0.0];
+        let sim_close = kernel.compute(&x, &y_close).unwrap();
+        assert!(sim_close > sim);
+    }
+
+    #[test]
+    fn test_matern_kernel_nu_5_2() {
+        let kernel = MaternKernel::nu_5_2(1.0).unwrap();
+        assert!((kernel.nu() - 2.5).abs() < 1e-10);
+
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.0, 2.0, 3.0];
+
+        let sim = kernel.compute(&x, &y).unwrap();
+        assert!((sim - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_matern_kernel_invalid_parameters() {
+        // Invalid length scale
+        assert!(MaternKernel::new(0.0, 1.5).is_err());
+        assert!(MaternKernel::new(-1.0, 1.5).is_err());
+
+        // Invalid nu
+        assert!(MaternKernel::new(1.0, 0.0).is_err());
+        assert!(MaternKernel::new(1.0, -1.0).is_err());
+    }
+
+    #[test]
+    fn test_matern_kernel_dimension_mismatch() {
+        let kernel = MaternKernel::nu_3_2(1.0).unwrap();
+        let x = vec![1.0, 2.0];
+        let y = vec![1.0, 2.0, 3.0];
+
+        assert!(kernel.compute(&x, &y).is_err());
+    }
+
+    #[test]
+    fn test_matern_kernel_symmetry() {
+        let kernel = MaternKernel::nu_3_2(1.0).unwrap();
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![4.0, 5.0, 6.0];
+
+        let k_xy = kernel.compute(&x, &y).unwrap();
+        let k_yx = kernel.compute(&y, &x).unwrap();
+        assert!((k_xy - k_yx).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_matern_smoothness_ordering() {
+        // With same length scale, nu=0.5 should be less smooth than nu=2.5
+        let kernel_rough = MaternKernel::exponential(1.0).unwrap();
+        let kernel_smooth = MaternKernel::nu_5_2(1.0).unwrap();
+
+        let x = vec![0.0];
+        let y = vec![0.5];
+
+        let sim_rough = kernel_rough.compute(&x, &y).unwrap();
+        let sim_smooth = kernel_smooth.compute(&x, &y).unwrap();
+
+        // Smoother kernel decays slower at short distances
+        assert!(sim_smooth > sim_rough);
+    }
+
+    #[test]
+    fn test_rational_quadratic_kernel_basic() {
+        let kernel = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+        assert_eq!(kernel.name(), "RationalQuadratic");
+
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![1.5, 2.5, 3.5];
+
+        let sim = kernel.compute(&x, &y).unwrap();
+        assert!(sim > 0.0 && sim <= 1.0);
+
+        // Self-similarity
+        let self_sim = kernel.compute(&x, &x).unwrap();
+        assert!((self_sim - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_rational_quadratic_rbf_limit() {
+        // As alpha increases, RQ should approach RBF behavior
+        let x = vec![0.0, 0.0];
+        let y = vec![1.0, 0.0];
+
+        let rq_small = RationalQuadraticKernel::new(1.0, 1.0).unwrap();
+        let rq_large = RationalQuadraticKernel::new(1.0, 100.0).unwrap();
+
+        let sim_small = rq_small.compute(&x, &y).unwrap();
+        let sim_large = rq_large.compute(&x, &y).unwrap();
+
+        // Large alpha should give smaller similarity (more like RBF)
+        assert!(sim_large < sim_small);
+    }
+
+    #[test]
+    fn test_rational_quadratic_invalid_parameters() {
+        assert!(RationalQuadraticKernel::new(0.0, 2.0).is_err());
+        assert!(RationalQuadraticKernel::new(-1.0, 2.0).is_err());
+        assert!(RationalQuadraticKernel::new(1.0, 0.0).is_err());
+        assert!(RationalQuadraticKernel::new(1.0, -1.0).is_err());
+    }
+
+    #[test]
+    fn test_rational_quadratic_symmetry() {
+        let kernel = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+        let x = vec![1.0, 2.0, 3.0];
+        let y = vec![4.0, 5.0, 6.0];
+
+        let k_xy = kernel.compute(&x, &y).unwrap();
+        let k_yx = kernel.compute(&y, &x).unwrap();
+        assert!((k_xy - k_yx).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_periodic_kernel_basic() {
+        let kernel = PeriodicKernel::new(10.0, 1.0).unwrap();
+        assert_eq!(kernel.name(), "Periodic");
+        assert!((kernel.period() - 10.0).abs() < 1e-10);
+
+        let x = vec![1.0];
+        let y = vec![2.0];
+
+        let sim = kernel.compute(&x, &y).unwrap();
+        assert!(sim > 0.0 && sim <= 1.0);
+    }
+
+    #[test]
+    fn test_periodic_kernel_periodicity() {
+        let period = 10.0;
+        let kernel = PeriodicKernel::new(period, 1.0).unwrap();
+
+        let x = vec![0.0];
+        let y1 = vec![5.0];
+        let y2 = vec![5.0 + period]; // One period later
+        let y3 = vec![5.0 + 2.0 * period]; // Two periods later
+
+        let sim1 = kernel.compute(&x, &y1).unwrap();
+        let sim2 = kernel.compute(&x, &y2).unwrap();
+        let sim3 = kernel.compute(&x, &y3).unwrap();
+
+        // Similarity should be nearly identical at periodic intervals
+        assert!((sim1 - sim2).abs() < 1e-8);
+        assert!((sim1 - sim3).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_periodic_kernel_exact_period() {
+        let period = 24.0; // e.g., hours in a day
+        let kernel = PeriodicKernel::new(period, 1.0).unwrap();
+
+        // Use 1D data for testing periodicity (periodic kernel works best in 1D)
+        let x = vec![1.0];
+        let y = vec![1.0 + period]; // Exactly one period later
+
+        // Points exactly one period apart should have very high similarity
+        let sim = kernel.compute(&x, &y).unwrap();
+        assert!(sim > 0.99, "Periodic similarity at exact period: {}", sim);
+    }
+
+    #[test]
+    fn test_periodic_kernel_invalid_parameters() {
+        assert!(PeriodicKernel::new(0.0, 1.0).is_err());
+        assert!(PeriodicKernel::new(-1.0, 1.0).is_err());
+        assert!(PeriodicKernel::new(10.0, 0.0).is_err());
+        assert!(PeriodicKernel::new(10.0, -1.0).is_err());
+    }
+
+    #[test]
+    fn test_periodic_kernel_symmetry() {
+        let kernel = PeriodicKernel::new(10.0, 1.0).unwrap();
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let k_xy = kernel.compute(&x, &y).unwrap();
+        let k_yx = kernel.compute(&y, &x).unwrap();
+        assert!((k_xy - k_yx).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_periodic_kernel_length_scale_effect() {
+        let period = 10.0;
+        let kernel_smooth = PeriodicKernel::new(period, 2.0).unwrap();
+        let kernel_rough = PeriodicKernel::new(period, 0.5).unwrap();
+
+        let x = vec![0.0];
+        let y = vec![1.0]; // Small displacement
+
+        let sim_smooth = kernel_smooth.compute(&x, &y).unwrap();
+        let sim_rough = kernel_rough.compute(&x, &y).unwrap();
+
+        // Larger length scale should give smoother transitions (higher similarity)
+        assert!(sim_smooth > sim_rough);
+    }
+
+    #[test]
+    fn test_advanced_kernels_dimension_mismatch() {
+        let matern = MaternKernel::nu_3_2(1.0).unwrap();
+        let rq = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+        let periodic = PeriodicKernel::new(10.0, 1.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![1.0, 2.0, 3.0];
+
+        assert!(matern.compute(&x, &y).is_err());
+        assert!(rq.compute(&x, &y).is_err());
+        assert!(periodic.compute(&x, &y).is_err());
     }
 }

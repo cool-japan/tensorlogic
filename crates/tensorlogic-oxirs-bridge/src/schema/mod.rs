@@ -2,13 +2,15 @@
 
 mod analyzer;
 pub mod cache;
-mod converter;
+pub mod converter;
 pub mod index;
 pub mod inference;
 pub mod jsonld;
 pub mod metadata;
+pub mod nquads;
 mod ntriples;
 pub mod owl;
+pub mod streaming;
 
 #[cfg(test)]
 mod inference_tests;

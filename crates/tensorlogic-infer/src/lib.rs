@@ -39,6 +39,24 @@
 //! - **PipelineParallelCoordinator**: Pipeline parallelism across stages
 //! - **CommunicationBackend**: Abstract interface for device communication
 //!
+//! ## Zero-Copy Operations (Alpha.2) 🆕
+//! - **TensorView**: Zero-copy tensor views and slicing
+//! - **SliceSpec**: Flexible slicing specifications
+//! - **ViewBuilder**: Ergonomic view construction
+//! - **TensorViewable**: Trait for zero-copy tensor operations
+//!
+//! ## Async Execution (Alpha.2) 🆕
+//! - **TlAsyncExecutor**: Async/await-based non-blocking execution
+//! - **TlAsyncBatchExecutor**: Asynchronous batch processing
+//! - **TlAsyncStreamExecutor**: Async streaming with backpressure
+//! - **AsyncExecutorPool**: Load-balanced executor pool
+//!
+//! ## Enhanced Diagnostics (Alpha.2) 🆕
+//! - **Diagnostic**: Rich error messages with suggestions
+//! - **DiagnosticCollector**: Error aggregation and reporting
+//! - **ShapeMismatchDiagnostic**: Helpful shape error messages
+//! - **PerformanceDiagnostic**: Performance issue detection
+//!
 //! ## Analysis and Validation
 //! - **GraphValidator**: Graph validation and diagnostics
 //! - **MemoryEstimator**: Memory usage estimation and lifetime analysis
@@ -67,6 +85,7 @@
 //! - **Variable**: Variables with gradient tracking
 //! - **EagerTape**: Dynamic computation graph recording
 
+pub mod async_exec;
 pub mod autodiff;
 pub mod backend_tests;
 pub mod batch;
@@ -75,6 +94,7 @@ pub mod capabilities;
 pub mod compilation;
 pub mod context;
 pub mod debug;
+pub mod diagnostics;
 pub mod distributed;
 mod dummy_executor;
 mod dummy_tensor;
@@ -93,6 +113,7 @@ pub mod scheduling;
 pub mod shape;
 pub mod strategy;
 pub mod streaming;
+pub mod tensor_view;
 mod traits;
 pub mod typesafe;
 pub mod validation;
@@ -107,6 +128,11 @@ mod validation_tests;
 #[cfg(test)]
 mod memory_tests;
 
+#[cfg(feature = "async")]
+pub use async_exec::{
+    AsyncConfig, AsyncExecutionError, AsyncExecutionHandle, AsyncExecutorPool, AsyncStats,
+    AsyncStreamResults, BoxFuture, TlAsyncBatchExecutor, TlAsyncExecutor, TlAsyncStreamExecutor,
+};
 pub use autodiff::{
     AccumulationConfig, ClippingStrategy, CustomGradientRegistry, GradientAccumulationStrategy,
     GradientAccumulator, GradientClipper, GradientConfig, GradientScaler, GradientScaling,
@@ -131,6 +157,11 @@ pub use debug::{
     Breakpoint, BreakpointHit, BreakpointManager, ExecutionRecorder, ExecutionReport,
     ExecutionTrace, ExecutionTracer, OperationHandle, TensorInspector, TensorStats,
     TraceEntry as DebugTraceEntry, TraceSummary,
+};
+pub use diagnostics::{
+    Diagnostic, DiagnosticCollector, MemoryDiagnostic, NodeExecutionDiagnostic,
+    PerformanceDiagnostic, Severity, ShapeMismatchDiagnostic, SourceLocation,
+    TypeMismatchDiagnostic,
 };
 pub use distributed::{
     CommunicationBackend, CommunicationOp, DataParallelCoordinator, DistributedConfig,
@@ -180,6 +211,9 @@ pub use strategy::{
 pub use streaming::{
     ChunkIterator, ChunkMetadata, StreamProcessor, StreamResult, StreamingConfig, StreamingMode,
     TlStreamingExecutor,
+};
+pub use tensor_view::{
+    InPlaceMode, InPlaceOps, SliceSpec, TensorView, TensorViewable, ViewBuilder,
 };
 pub use traits::{TlAutodiff, TlExecutor};
 pub use typesafe::{

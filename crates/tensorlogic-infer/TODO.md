@@ -217,9 +217,9 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - ✅ **JIT Compilation with Hot Path Detection** (NEW!)
 - ✅ **Distributed Execution (Data/Model/Pipeline Parallelism)** (NEW!)
 
-**Test Coverage:** 267 tests (all passing ✅) (+26 from previous)
+**Test Coverage:** 285 tests (all passing ✅) (+18 from Alpha.1)
 **Build Status:** ✅ **ZERO WARNINGS** (all warnings fixed)
-**Total Lines of Code:** 13,699 lines Rust code (+981 from previous session, ~15,157 total with docs)
+**Total Lines of Code:** ~15,700 lines Rust code (+2,000 from Alpha.1)
 **Examples:** 1 working example (jit_demo.rs)
 
 **Key Features Added (Latest Session):**
@@ -279,3 +279,166 @@ The tensorlogic-infer crate is now **100% complete** with all planned features i
 8. **Developer tools** for debugging, profiling, and visualization
 
 The crate is ready for integration with backend implementations and production use! 🚀
+
+---
+
+## Alpha.2 Enhancement Roadmap 🚧
+
+### Completed in Alpha.2 ✅
+
+#### 1. Zero-Copy Tensor Operations (COMPLETE)
+- [x] **Zero-copy tensor views and slicing** ✨ **NEW**
+  - TensorView with flexible SliceSpec
+  - ViewBuilder for ergonomic API
+  - In-place operation support
+  - 10 comprehensive tests
+  - ~320 lines of production code
+
+#### 2. Async Execution Support (COMPLETE)
+- [x] **Async execution traits** ✨ **NEW**
+  - TlAsyncExecutor trait for non-blocking execution
+  - TlAsyncBatchExecutor for async batching
+  - TlAsyncStreamExecutor for streaming
+  - AsyncExecutorPool for load balancing
+  - AsyncExecutionHandle for cancellation
+  - 4 comprehensive tests
+  - ~370 lines of production code
+  - Feature-gated with "async" flag
+
+#### 3. Enhanced Diagnostics (COMPLETE)
+- [x] **Rich error messages with suggestions** ✨ **NEW**
+  - Diagnostic with severity levels
+  - DiagnosticCollector for aggregation
+  - ShapeMismatchDiagnostic builder
+  - TypeMismatchDiagnostic builder
+  - MemoryDiagnostic builder
+  - PerformanceDiagnostic builder
+  - Source location tracking
+  - 10 comprehensive tests
+  - ~550 lines of production code
+
+### High Priority Enhancements (TODO)
+
+#### 1. Performance Optimizations
+- [x] **Zero-copy tensor operations** ✅ COMPLETE
+- [ ] **Parallel execution improvements**
+  - Work-stealing scheduler for better load balancing
+  - NUMA-aware memory allocation
+  - Cache-line aligned data structures
+- [ ] **Parallel execution improvements**
+  - Work-stealing scheduler for better load balancing
+  - NUMA-aware memory allocation
+  - Cache-line aligned data structures
+- [ ] **SIMD optimizations**
+  - Explicit SIMD code paths for common operations
+  - Auto-vectorization hints
+  - Platform-specific optimizations (AVX2, AVX-512, NEON)
+
+#### 2. Advanced Features
+- [ ] **Quantization support**
+  - INT8/INT16 quantized execution
+  - Dynamic quantization for inference
+  - Quantization-aware training support
+- [ ] **Mixed precision training**
+  - FP16/BF16 computation modes
+  - Automatic loss scaling
+  - Gradient checkpointing integration
+- [ ] **Sparse tensor support**
+  - CSR/CSC/COO sparse formats
+  - Sparse-dense hybrid operations
+  - Automatic sparsity detection
+
+#### 3. Distributed Improvements
+- [ ] **Advanced communication backends**
+  - NCCL integration for multi-GPU
+  - Gloo backend for CPU clusters
+  - Custom collective operations
+- [ ] **Fault tolerance enhancements**
+  - Automatic failover and recovery
+  - Elastic training (dynamic worker scaling)
+  - Distributed checkpointing
+- [ ] **Performance monitoring**
+  - Per-device profiling
+  - Communication bottleneck detection
+  - Load balancing metrics
+
+#### 4. Developer Experience
+- [ ] **Improved error messages**
+  - More descriptive validation errors
+  - Helpful suggestions for common mistakes
+  - Better shape mismatch diagnostics
+- [ ] **Enhanced debugging**
+  - Step-through execution mode
+  - Intermediate value logging
+  - Memory leak detection
+- [ ] **Performance profiling tools**
+  - Flamegraph generation
+  - Critical path analysis
+  - Memory bandwidth profiling
+
+### Medium Priority Enhancements
+
+#### 5. Execution Modes
+- [ ] **Asynchronous execution**
+  - Async/await trait variants
+  - Stream-based processing
+  - Future-based operations
+- [ ] **Dynamic graph optimization**
+  - Runtime graph rewriting
+  - Adaptive fusion decisions
+  - Online profiling and tuning
+
+#### 6. Backend Integration
+- [ ] **Hardware-specific backends**
+  - Apple Silicon optimizations (Metal)
+  - AMD ROCm support
+  - Intel oneAPI integration
+- [ ] **Cloud execution**
+  - AWS SageMaker integration
+  - Google TPU support
+  - Azure ML integration
+
+### Low Priority / Future Work
+
+#### 7. Advanced Optimizations
+- [ ] **Automatic differentiation improvements**
+  - Higher-order derivatives
+  - Jacobian/Hessian computation
+  - Sparse gradient support
+- [ ] **Graph fusion enhancements**
+  - Cross-operator fusion
+  - Vertical fusion for memory reduction
+  - Template-based kernel generation
+
+#### 8. Documentation & Testing
+- [ ] **Expanded documentation**
+  - Performance tuning guide
+  - Backend development cookbook
+  - Common patterns and idioms
+- [ ] **Extended test coverage**
+  - Property-based testing for all traits
+  - Fuzz testing for robustness
+  - Integration tests with real backends
+
+### Experimental Features
+
+#### 9. Research Directions
+- [ ] **Automatic parallelization**
+  - Graph-level parallelism detection
+  - Cost model for parallel execution
+  - Dynamic work partitioning
+- [ ] **Speculative execution**
+  - Branch prediction for conditional graphs
+  - Prefetching for data dependencies
+  - Rollback mechanisms
+- [ ] **Learned optimizations**
+  - ML-based fusion decisions
+  - Learned cost models
+  - Reinforcement learning for scheduling
+
+---
+
+**Version**: 0.1.0-alpha.2 (planned)
+**Target Date**: TBD
+**Priority**: Medium-High
+**Backward Compatibility**: Maintained

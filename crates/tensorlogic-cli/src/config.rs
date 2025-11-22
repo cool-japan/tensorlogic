@@ -11,6 +11,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::macros::MacroDef;
+
 /// Configuration structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -38,6 +40,44 @@ pub struct Config {
 
     /// Watch settings
     pub watch: WatchConfig,
+
+    /// Cache settings
+    pub cache: CacheConfig,
+
+    /// Macro definitions
+    pub macros: Vec<MacroDef>,
+}
+
+/// Cache configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CacheConfig {
+    /// Enable compilation caching
+    pub enabled: bool,
+
+    /// Maximum number of cached entries (in-memory REPL cache)
+    pub max_entries: usize,
+
+    /// Enable persistent disk cache
+    pub disk_cache_enabled: bool,
+
+    /// Maximum disk cache size in MB
+    pub disk_cache_max_size_mb: usize,
+
+    /// Custom disk cache directory (None = use default)
+    pub disk_cache_dir: Option<PathBuf>,
+}
+
+impl Default for CacheConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_entries: 100,
+            disk_cache_enabled: true,
+            disk_cache_max_size_mb: 500,
+            disk_cache_dir: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -83,6 +123,8 @@ impl Default for Config {
             colored: true,
             repl: ReplConfig::default(),
             watch: WatchConfig::default(),
+            cache: CacheConfig::default(),
+            macros: Vec::new(),
         }
     }
 }

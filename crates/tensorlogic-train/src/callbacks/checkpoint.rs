@@ -2,8 +2,27 @@
 
 use crate::callbacks::core::Callback;
 use crate::{TrainError, TrainResult, TrainingState};
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::{Read, Write};
 use std::path::PathBuf;
+
+/// Compression method for checkpoints.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CheckpointCompression {
+    /// No compression (plain JSON).
+    #[default]
+    None,
+    /// Gzip compression (good balance of speed and ratio).
+    Gzip,
+    /// Fast gzip compression (faster but lower ratio).
+    GzipFast,
+    /// Best gzip compression (slower but better ratio).
+    GzipBest,
+}
 
 /// Comprehensive checkpoint data structure.
 ///
@@ -72,6 +91,35 @@ impl TrainingCheckpoint {
 
     /// Save checkpoint to a file.
     pub fn save(&self, path: &PathBuf) -> TrainResult<()> {
+        self.save_with_compression(path, CheckpointCompression::None)
+    }
+
+    /// Save checkpoint to a file with compression.
+    ///
+    /// # Arguments
+    /// * `path` - Path to save the checkpoint
+    /// * `compression` - Compression method to use
+    ///
+    /// # Example
+    /// ```no_run
+    /// use tensorlogic_train::TrainingCheckpoint;
+    /// use tensorlogic_train::CheckpointCompression;
+    /// use std::path::PathBuf;
+    ///
+    /// // Assuming you have a checkpoint...
+    /// # let checkpoint: TrainingCheckpoint = unimplemented!();
+    ///
+    /// // Save with gzip compression
+    /// checkpoint.save_with_compression(
+    ///     &PathBuf::from("/tmp/checkpoint.json.gz"),
+    ///     CheckpointCompression::Gzip
+    /// ).unwrap();
+    /// ```
+    pub fn save_with_compression(
+        &self,
+        path: &PathBuf,
+        compression: CheckpointCompression,
+    ) -> TrainResult<()> {
         let json = serde_json::to_string_pretty(self).map_err(|e| {
             TrainError::CheckpointError(format!("Failed to serialize checkpoint: {}", e))
         })?;
@@ -82,15 +130,65 @@ impl TrainingCheckpoint {
             })?;
         }
 
-        std::fs::write(path, json).map_err(|e| {
-            TrainError::CheckpointError(format!("Failed to write checkpoint: {}", e))
-        })?;
+        match compression {
+            CheckpointCompression::None => {
+                std::fs::write(path, json).map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to write checkpoint: {}", e))
+                })?;
+            }
+            CheckpointCompression::Gzip => {
+                let file = File::create(path).map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to create checkpoint file: {}", e))
+                })?;
+                let mut encoder = GzEncoder::new(file, Compression::default());
+                encoder.write_all(json.as_bytes()).map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to compress checkpoint: {}", e))
+                })?;
+                encoder.finish().map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to finish compression: {}", e))
+                })?;
+            }
+            CheckpointCompression::GzipFast => {
+                let file = File::create(path).map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to create checkpoint file: {}", e))
+                })?;
+                let mut encoder = GzEncoder::new(file, Compression::fast());
+                encoder.write_all(json.as_bytes()).map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to compress checkpoint: {}", e))
+                })?;
+                encoder.finish().map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to finish compression: {}", e))
+                })?;
+            }
+            CheckpointCompression::GzipBest => {
+                let file = File::create(path).map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to create checkpoint file: {}", e))
+                })?;
+                let mut encoder = GzEncoder::new(file, Compression::best());
+                encoder.write_all(json.as_bytes()).map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to compress checkpoint: {}", e))
+                })?;
+                encoder.finish().map_err(|e| {
+                    TrainError::CheckpointError(format!("Failed to finish compression: {}", e))
+                })?;
+            }
+        }
 
         Ok(())
     }
 
     /// Load checkpoint from a file.
     pub fn load(path: &PathBuf) -> TrainResult<Self> {
+        // Auto-detect compression based on file extension
+        if path.to_string_lossy().ends_with(".gz") {
+            Self::load_compressed(path)
+        } else {
+            Self::load_uncompressed(path)
+        }
+    }
+
+    /// Load uncompressed checkpoint from a file.
+    fn load_uncompressed(path: &PathBuf) -> TrainResult<Self> {
         let json = std::fs::read_to_string(path).map_err(|e| {
             TrainError::CheckpointError(format!("Failed to read checkpoint: {}", e))
         })?;
@@ -100,6 +198,44 @@ impl TrainingCheckpoint {
         })?;
 
         Ok(checkpoint)
+    }
+
+    /// Load compressed checkpoint from a file.
+    pub fn load_compressed(path: &PathBuf) -> TrainResult<Self> {
+        let file = File::open(path).map_err(|e| {
+            TrainError::CheckpointError(format!("Failed to open checkpoint file: {}", e))
+        })?;
+
+        let mut decoder = GzDecoder::new(file);
+        let mut json = String::new();
+        decoder.read_to_string(&mut json).map_err(|e| {
+            TrainError::CheckpointError(format!("Failed to decompress checkpoint: {}", e))
+        })?;
+
+        let checkpoint: Self = serde_json::from_str(&json).map_err(|e| {
+            TrainError::CheckpointError(format!("Failed to deserialize checkpoint: {}", e))
+        })?;
+
+        Ok(checkpoint)
+    }
+
+    /// Get the size of the checkpoint in bytes (estimated).
+    pub fn estimated_size(&self) -> usize {
+        // Rough estimate: parameters + optimizer_state + histories
+        let param_size: usize = self
+            .parameters
+            .values()
+            .map(|v| v.len() * std::mem::size_of::<f64>())
+            .sum();
+        let optimizer_size: usize = self
+            .optimizer_state
+            .values()
+            .map(|v| v.len() * std::mem::size_of::<f64>())
+            .sum();
+        let history_size = (self.train_loss_history.len() + self.val_loss_history.len())
+            * std::mem::size_of::<f64>();
+
+        param_size + optimizer_size + history_size
     }
 }
 
@@ -326,5 +462,183 @@ mod tests {
         assert_eq!(loaded.metrics_history["accuracy"].len(), 3);
 
         std::fs::remove_file(checkpoint_path).ok();
+    }
+
+    #[test]
+    fn test_checkpoint_compression_gzip() {
+        let mut parameters = HashMap::new();
+        parameters.insert("weights".to_string(), Array2::from_elem((100, 100), 1.5));
+
+        let state = create_test_state();
+        let optimizer_state = HashMap::new();
+
+        let checkpoint = TrainingCheckpoint::new(
+            10,
+            &parameters,
+            &optimizer_state,
+            None,
+            &state,
+            &vec![1.0; 100],
+            &vec![0.9; 100],
+            &HashMap::new(),
+            Some(0.5),
+        );
+
+        // Save with gzip compression
+        let compressed_path = temp_dir().join("test_checkpoint_compressed.json.gz");
+        checkpoint
+            .save_with_compression(&compressed_path, CheckpointCompression::Gzip)
+            .unwrap();
+
+        // Verify compressed file exists
+        assert!(compressed_path.exists());
+
+        // Load compressed checkpoint
+        let loaded = TrainingCheckpoint::load(&compressed_path).unwrap();
+
+        // Verify data
+        assert_eq!(loaded.epoch, 10);
+        assert_eq!(loaded.parameters.len(), 1);
+        assert_eq!(loaded.parameters["weights"].len(), 10000); // 100x100
+
+        // Compare file sizes
+        let uncompressed_path = temp_dir().join("test_checkpoint_uncompressed.json");
+        checkpoint.save(&uncompressed_path).unwrap();
+
+        let compressed_size = std::fs::metadata(&compressed_path).unwrap().len();
+        let uncompressed_size = std::fs::metadata(&uncompressed_path).unwrap().len();
+
+        // Compressed should be smaller
+        assert!(
+            compressed_size < uncompressed_size,
+            "Compressed size {} should be less than uncompressed size {}",
+            compressed_size,
+            uncompressed_size
+        );
+
+        // Clean up
+        std::fs::remove_file(compressed_path).ok();
+        std::fs::remove_file(uncompressed_path).ok();
+    }
+
+    #[test]
+    fn test_checkpoint_compression_fast_vs_best() {
+        let mut parameters = HashMap::new();
+        parameters.insert("weights".to_string(), Array2::from_elem((50, 50), 2.0));
+
+        let state = create_test_state();
+        let optimizer_state = HashMap::new();
+
+        let checkpoint = TrainingCheckpoint::new(
+            5,
+            &parameters,
+            &optimizer_state,
+            None,
+            &state,
+            &vec![1.0; 50],
+            &vec![0.8; 50],
+            &HashMap::new(),
+            None,
+        );
+
+        // Save with fast compression
+        let fast_path = temp_dir().join("test_checkpoint_fast.json.gz");
+        checkpoint
+            .save_with_compression(&fast_path, CheckpointCompression::GzipFast)
+            .unwrap();
+
+        // Save with best compression
+        let best_path = temp_dir().join("test_checkpoint_best.json.gz");
+        checkpoint
+            .save_with_compression(&best_path, CheckpointCompression::GzipBest)
+            .unwrap();
+
+        // Both should be loadable
+        let loaded_fast = TrainingCheckpoint::load(&fast_path).unwrap();
+        let loaded_best = TrainingCheckpoint::load(&best_path).unwrap();
+
+        assert_eq!(loaded_fast.epoch, 5);
+        assert_eq!(loaded_best.epoch, 5);
+        assert_eq!(
+            loaded_fast.parameters["weights"],
+            loaded_best.parameters["weights"]
+        );
+
+        // Clean up
+        std::fs::remove_file(fast_path).ok();
+        std::fs::remove_file(best_path).ok();
+    }
+
+    #[test]
+    fn test_checkpoint_estimated_size() {
+        let mut parameters = HashMap::new();
+        parameters.insert("w1".to_string(), Array2::from_elem((10, 10), 1.0));
+        parameters.insert("w2".to_string(), Array2::from_elem((5, 5), 1.0));
+
+        let state = create_test_state();
+        let optimizer_state = HashMap::new();
+
+        let train_loss_history: [f64; 10] = [1.0; 10];
+        let val_loss_history: [f64; 10] = [0.9; 10];
+        let checkpoint = TrainingCheckpoint::new(
+            1,
+            &parameters,
+            &optimizer_state,
+            None,
+            &state,
+            &train_loss_history,
+            &val_loss_history,
+            &HashMap::new(),
+            None,
+        );
+
+        let size = checkpoint.estimated_size();
+        // 100 + 25 = 125 parameters * 8 bytes + 20 history entries * 8 bytes
+        assert!(size > 0);
+        assert_eq!(
+            size,
+            (100 + 25) * std::mem::size_of::<f64>() + 20 * std::mem::size_of::<f64>()
+        );
+    }
+
+    #[test]
+    fn test_checkpoint_auto_detect_compression() {
+        let mut parameters = HashMap::new();
+        parameters.insert("w".to_string(), Array2::from_elem((5, 5), 1.0));
+
+        let state = create_test_state();
+
+        let checkpoint = TrainingCheckpoint::new(
+            1,
+            &parameters,
+            &HashMap::new(),
+            None,
+            &state,
+            &[1.0],
+            &[0.9],
+            &HashMap::new(),
+            None,
+        );
+
+        // Save uncompressed
+        let uncompressed_path = temp_dir().join("test_auto_detect.json");
+        checkpoint.save(&uncompressed_path).unwrap();
+
+        // Save compressed
+        let compressed_path = temp_dir().join("test_auto_detect.json.gz");
+        checkpoint
+            .save_with_compression(&compressed_path, CheckpointCompression::Gzip)
+            .unwrap();
+
+        // Load both using auto-detection
+        let loaded_uncompressed = TrainingCheckpoint::load(&uncompressed_path).unwrap();
+        let loaded_compressed = TrainingCheckpoint::load(&compressed_path).unwrap();
+
+        assert_eq!(loaded_uncompressed.epoch, loaded_compressed.epoch);
+        assert_eq!(loaded_uncompressed.parameters, loaded_compressed.parameters);
+
+        // Clean up
+        std::fs::remove_file(uncompressed_path).ok();
+        std::fs::remove_file(compressed_path).ok();
     }
 }

@@ -51,6 +51,9 @@
 //! - Generalization and instantiation for polymorphic types
 //! - **Effect system** for tracking computational effects (purity, differentiability, stochasticity)
 //! - Effect polymorphism and inference
+//! - **Dependent types** with value-dependent types (e.g., `Vec<n, T>` where n is a runtime value)
+//! - **Linear types** for resource management and safe in-place operations
+//! - **Refinement types** for constraint-based type checking (e.g., `{x: Int | x > 0}`)
 //! - Arity validation ensures consistent predicate usage
 //! - Type inference and compatibility checking
 //!
@@ -77,6 +80,7 @@
 //! - Expression statistics with [`ExprStats`]
 //! - Pretty printing and DOT export for visualization
 //! - Expression and graph diffing with [`diff_exprs`] and [`diff_graphs`]
+//! - **Profile-guided optimization (PGO)** for runtime-informed optimization decisions
 //!
 //! ## Quick Start
 //!
@@ -142,6 +146,10 @@
 //! - `06_visualization`: Pretty printing and DOT export
 //! - `07_parametric_types`: Parametric types, unification, and polymorphic signatures
 //! - `08_effect_system`: Effect tracking, polymorphism, and annotations
+//! - `09_dependent_types`: Dependent types with value-dependent dimensions
+//! - `10_linear_types`: Linear types for resource management
+//! - `11_refinement_types`: Refinement types with predicates
+//! - `12_profile_guided_optimization`: Profile-guided optimization with runtime profiling
 //!
 //! ## Architecture
 //!
@@ -153,10 +161,14 @@
 //! - **signature**: Type signatures for predicates
 //! - **[`parametric_types`]**: Parametric types, type constructors, and unification
 //! - **[`effect_system`]**: Effect tracking, polymorphism, and annotations
+//! - **[`dependent`]**: Dependent types with value-dependent dimensions
+//! - **[`linear`]**: Linear types for resource management and multiplicity tracking
+//! - **[`refinement`]**: Refinement types with logical predicates
 //! - **metadata**: Provenance and source tracking
 //! - **[`serialization`]**: Versioned JSON/binary formats
 //! - **[`util`]**: Pretty printing and statistics
 //! - **[`diff`]**: Expression and graph comparison
+//! - **graph::pgo**: Profile-guided optimization with runtime profiling
 //! - **error**: Comprehensive error types
 //!
 //! ## Logic-to-Tensor Mapping
@@ -185,6 +197,7 @@
 //! - **tensorlogic-scirs-backend**: SciRS2-powered runtime execution
 //! - **tensorlogic-adapters**: Symbol tables and axis metadata
 
+pub mod dependent;
 pub mod diff;
 mod display;
 mod domain;
@@ -193,8 +206,10 @@ mod error;
 mod expr;
 pub mod fuzzing;
 mod graph;
+pub mod linear;
 mod metadata;
 pub mod parametric_types;
+pub mod refinement;
 pub mod serialization;
 mod signature;
 mod term;
@@ -203,6 +218,7 @@ pub mod util;
 #[cfg(test)]
 mod tests;
 
+pub use dependent::{DependentType, DependentTypeContext, DimConstraint, IndexExpr};
 pub use diff::{diff_exprs, diff_graphs, ExprDiff, GraphDiff, NodeDiff};
 pub use domain::{DomainInfo, DomainRegistry, DomainType};
 pub use effect_system::{
@@ -281,6 +297,9 @@ pub use graph::pattern::{
     GraphPattern, GraphRewriteRule, PatternMatch, PatternMatcher,
     RewriteStats as PatternRewriteStats,
 };
+pub use graph::pgo::{
+    ExecutionProfile, NodeStats, OptimizationHint, ProfileGuidedOptimizer, TensorStats,
+};
 pub use graph::schedule::{ExecutionSchedule, GraphScheduler, SchedulingObjective};
 pub use graph::tiling::{
     apply_multilevel_tiling, apply_register_tiling, apply_tiling, recommend_tiling_strategy,
@@ -292,11 +311,15 @@ pub use graph::{
     GraphValidationStats, OpType, ValidationError, ValidationErrorKind, ValidationReport,
     ValidationWarning, ValidationWarningKind,
 };
+pub use linear::{
+    Capability, LinearContext, LinearResource, LinearType, LinearityChecker, Multiplicity, Usage,
+};
 pub use metadata::{Metadata, Provenance, SourceLocation, SourceSpan};
 pub use parametric_types::{
     compose_substitutions, generalize, instantiate, unify, Kind, ParametricType, TypeConstructor,
     TypeSubstitution,
 };
+pub use refinement::{LiquidTypeInference, Refinement, RefinementContext, RefinementType};
 pub use serialization::{VersionedExpr, VersionedGraph, FORMAT_VERSION};
 pub use signature::{PredicateSignature, SignatureRegistry};
 pub use term::{Term, TypeAnnotation};

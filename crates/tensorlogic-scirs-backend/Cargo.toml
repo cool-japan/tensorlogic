@@ -24,6 +24,7 @@ scirs2-core.workspace = true
 scirs2-linalg = { workspace = true, features = ["tensor_contraction"] }
 anyhow.workspace = true
 thiserror.workspace = true
+serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
 [dev-dependencies]
@@ -53,4 +54,8 @@ harness = false
 
 [[bench]]
 name = "parallel_performance"
+harness = false
+
+[[bench]]
+name = "operation_benchmarks"
 harness = false

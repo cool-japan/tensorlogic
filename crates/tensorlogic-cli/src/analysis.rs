@@ -179,7 +179,7 @@ fn estimate_memory(graph: &EinsumGraph) -> u64 {
     (graph.tensors.len() as u64) * bytes_per_tensor
 }
 
-fn format_number(n: u64) -> String {
+pub fn format_number(n: u64) -> String {
     if n >= 1_000_000_000 {
         format!("{:.2}B", n as f64 / 1_000_000_000.0)
     } else if n >= 1_000_000 {
@@ -191,7 +191,7 @@ fn format_number(n: u64) -> String {
     }
 }
 
-fn format_bytes(bytes: u64) -> String {
+pub fn format_bytes(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
     const GB: u64 = MB * 1024;

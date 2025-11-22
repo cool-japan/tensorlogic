@@ -1,7 +1,7 @@
 # tensorlogic-oxirs-bridge
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic-oxirs-bridge-orange)](https://crates.io/crates/tensorlogic-oxirs-bridge)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-oxirs-bridge)
-[![Tests](https://img.shields.io/badge/tests-114%2F114-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-167%2F167-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
 
 Lightweight RDF/SHACL → TensorLogic integration using oxrdf.
@@ -54,10 +54,10 @@ assert_eq!(table.predicates.len(), 1);
 - ✅ **RDF* Export**: Generate provenance statements with metadata
 - ✅ **SHACL Support**: Advanced constraint compilation with 15+ constraint types
 - ✅ **GraphQL Integration**: Convert GraphQL schemas to TensorLogic symbol tables
-- ✅ **SPARQL Compilation**: Basic SELECT query compilation to TensorLogic expressions
+- ✅ **SPARQL 1.1 Compilation**: Comprehensive query support (SELECT, ASK, DESCRIBE, CONSTRUCT) with OPTIONAL, UNION patterns
 - ✅ **OWL Reasoning**: RDFS/OWL inference with class hierarchies and property characteristics
 - ✅ **Validation Reports**: SHACL-compliant validation report generation with Turtle/JSON export
-- ✅ **7 Examples**: Comprehensive examples demonstrating all major features
+- ✅ **9 Examples**: Comprehensive examples demonstrating all major features
 
 ## Architecture
 
@@ -338,7 +338,7 @@ For full SPARQL/federation/GraphQL support, use oxirs-core directly.
 
 ```bash
 cargo nextest run -p tensorlogic-oxirs-bridge
-# 114 tests, all passing, zero warnings
+# 167 tests, all passing, zero warnings
 ```
 
 Key test categories:
@@ -347,7 +347,7 @@ Key test categories:
 - **JSON-LD Tests** (11 tests): Export, context management, IRI compaction, namespace detection
 - **SHACL Tests** (17 tests): All constraint types, logical combinations, complex shapes
 - **GraphQL Tests** (7 tests): Type parsing, field extraction, scalar handling
-- **SPARQL Tests** (8 tests): Query parsing, compilation, filters
+- **SPARQL 1.1 Tests** (24 tests): Query types (SELECT/ASK/DESCRIBE/CONSTRUCT), OPTIONAL/UNION patterns, filter conditions, solution modifiers
 - **Validation Tests** (10 tests): Report generation, severity levels, export formats
 - **RDF* Tests** (18 tests): Provenance tracking, metadata, statistics
 - **OWL Tests** (18 tests): Class hierarchies, property characteristics, restrictions
@@ -356,7 +356,10 @@ Key test categories:
 Notable tests:
 - `test_schema_analyzer_with_simple_rdf`: End-to-end RDF parsing
 - `test_complex_combined_constraints`: Multiple SHACL constraints in one shape
-- `test_parse_simple_query`: SPARQL SELECT query parsing
+- `test_compile_union_pattern`: SPARQL UNION pattern compilation
+- `test_compile_optional_pattern`: SPARQL OPTIONAL pattern compilation
+- `test_parse_construct_query`: SPARQL CONSTRUCT query parsing
+- `test_complex_query_with_optional_and_filter`: Complex SPARQL with multiple features
 - `test_roundtrip_ntriples`: N-Triples export and import
 - `test_to_jsonld_with_custom_context`: JSON-LD context management
 - `test_complex_provenance_scenario`: RDF* metadata tracking
@@ -390,7 +393,7 @@ let provenance = tracker.to_rdf_star();
 
 ## Examples
 
-The crate includes 7 comprehensive examples demonstrating different features:
+The crate includes 9 comprehensive examples demonstrating different features:
 
 ```bash
 # 1. Basic RDF schema analysis
@@ -413,11 +416,17 @@ cargo run --example 06_validation_pipeline -p tensorlogic-oxirs-bridge
 
 # 7. JSON-LD export
 cargo run --example 07_jsonld_export -p tensorlogic-oxirs-bridge
+
+# 8. Performance features (caching, indexing, metadata)
+cargo run --example 08_performance_features -p tensorlogic-oxirs-bridge
+
+# 9. Advanced SPARQL 1.1 queries (NEW!)
+cargo run --example 09_sparql_advanced -p tensorlogic-oxirs-bridge
 ```
 
-## SPARQL Support
+## SPARQL 1.1 Support
 
-Basic SPARQL query compilation to TensorLogic operations:
+Comprehensive SPARQL 1.1 query compilation to TensorLogic operations:
 
 ```rust
 use tensorlogic_oxirs_bridge::SparqlCompiler;
@@ -428,22 +437,74 @@ compiler.add_predicate_mapping(
     "knows".to_string()
 );
 
+// SELECT query with OPTIONAL and FILTER
 let query = r#"
-    SELECT ?x ?y WHERE {
+    SELECT DISTINCT ?x ?y WHERE {
       ?x <http://example.org/knows> ?y .
+      OPTIONAL { ?x <http://example.org/age> ?age }
       FILTER(?x > 18)
-    }
+    } LIMIT 100 ORDER BY ?y
 "#;
 
 let sparql_query = compiler.parse_query(query)?;
 let tl_expr = compiler.compile_to_tensorlogic(&sparql_query)?;
+
+// ASK query (boolean existence check)
+let ask_query = r#"
+    ASK WHERE {
+      ?x <http://example.org/knows> ?y .
+    }
+"#;
+
+// CONSTRUCT query (graph construction)
+let construct_query = r#"
+    CONSTRUCT { ?x <http://example.org/friend> ?y }
+    WHERE { ?x <http://example.org/knows> ?y }
+"#;
+
+// DESCRIBE query (resource description)
+let describe_query = r#"
+    DESCRIBE ?x WHERE {
+      ?x <http://example.org/type> <http://example.org/Person> .
+    }
+"#;
 ```
 
-Supported SPARQL features:
-- Simple SELECT queries
-- Triple patterns with variables and IRIs
-- FILTER conditions (>, <, =, !=)
-- Multiple patterns combined with AND
+Supported SPARQL 1.1 features:
+
+**Query Types**:
+- ✅ SELECT queries (with DISTINCT, LIMIT, OFFSET, ORDER BY)
+- ✅ ASK queries (boolean existence checks)
+- ✅ DESCRIBE queries (resource descriptions)
+- ✅ CONSTRUCT queries (RDF graph construction)
+
+**Graph Patterns**:
+- ✅ Triple patterns with variables and IRIs
+- ✅ Multiple patterns combined with AND
+- ✅ OPTIONAL patterns (left-outer join semantics)
+- ✅ UNION patterns (disjunction)
+- ✅ Nested graph patterns with braces
+
+**Filter Conditions**:
+- ✅ Comparison operators: `>`, `<`, `>=`, `<=`, `=`, `!=`
+- ✅ BOUND(?var) - check if variable is bound
+- ✅ isIRI(?var) / isURI(?var) - check if value is IRI
+- ✅ isLiteral(?var) - check if value is literal
+- ✅ regex(?var, "pattern") - regular expression matching
+
+**Solution Modifiers**:
+- ✅ DISTINCT - remove duplicate solutions
+- ✅ LIMIT N - limit number of results
+- ✅ OFFSET N - skip first N results
+- ✅ ORDER BY ?var - sort results
+
+**Planned (FUTURE)**:
+- ⏳ FILTER advanced functions (str, lang, datatype, etc.)
+- ⏳ Property paths (e.g., `?x foaf:knows+ ?y`)
+- ⏳ GRAPH patterns for named graphs
+- ⏳ BIND and VALUES clauses
+- ⏳ Aggregates (COUNT, SUM, AVG, etc.)
+- ⏳ Subqueries
 
 ## N-Triples Support
 
@@ -526,15 +587,16 @@ JSON-LD features:
 ## Limitations
 
 Current limitations:
-- SPARQL: Only SELECT queries, no CONSTRUCT/ASK/DESCRIBE
-- SPARQL: No OPTIONAL, UNION, or complex graph patterns
+- SPARQL: Advanced features not yet implemented (property paths, aggregates, subqueries)
 - N-Triples: Simplified parser, doesn't handle all edge cases
 - GraphQL parsing is simplified (use dedicated parser for production)
 - RDF list parsing may not work with all Turtle variants
 
 Planned features (FUTURE):
-- ⏳ Full SPARQL 1.1 support with CONSTRUCT/ASK
-- ⏳ SPARQL OPTIONAL and UNION operators
+- ⏳ SPARQL property paths (e.g., `?x foaf:knows+ ?y`)
+- ⏳ SPARQL aggregates (COUNT, SUM, AVG, etc.) and GROUP BY
+- ⏳ SPARQL BIND and VALUES clauses
+- ⏳ SPARQL subqueries and named graphs
 - ⏳ GraphQL directives → constraint rules
 - ⏳ GraphQL interfaces → domain hierarchies
 - ⏳ RDF/XML format support
@@ -550,8 +612,9 @@ Apache-2.0
 
 ---
 
-**Status**: 🎉 Production Ready (v0.1.0-alpha.1)
-**Last Updated**: 2025-01-07 (Session 7)
-**Tests**: 149/149 passing (100%)
-**Examples**: 8 comprehensive examples
+**Status**: 🎉 Production Ready (v0.1.0-alpha.2)
+**Last Updated**: 2025-01-17 (Session 8)
+**Tests**: 167/167 passing (100%)
+**Examples**: 9 comprehensive examples
+**Features**: Full SPARQL 1.1 query support (SELECT/ASK/DESCRIBE/CONSTRUCT + OPTIONAL/UNION)
 **Part of**: [TensorLogic Ecosystem](https://github.com/cool-japan/tensorlogic)

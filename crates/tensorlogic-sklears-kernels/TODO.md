@@ -76,16 +76,29 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Caching performance benchmarks (8 groups)
   - [x] Composite kernels benchmarks (10 groups)
   - [x] Graph kernels benchmarks (9 groups)
+- [x] **Online kernel updates** ✅ NEW
+  - [x] OnlineKernelMatrix - Incremental O(n) updates
+  - [x] WindowedKernelMatrix - Sliding window for time series
+  - [x] ForgetfulKernelMatrix - Exponential decay for concept drift
+  - [x] AdaptiveKernelMatrix - Automatic bandwidth adjustment
+  - [x] Comprehensive tests (25 tests)
+  - [x] Example: online_kernel_updates.rs
 - [ ] GPU acceleration (FUTURE)
-- [ ] Online kernel updates (FUTURE)
 
 ## Medium Priority 🟡 ✅ COMPLETE
 
 ### Advanced Kernel Methods
 - [x] **String kernels for text data** (NGram, Subsequence, EditDistance) ✅
 - [x] **Tree kernels for structured data** (Subtree, Subset, Partial) ✅
+- [x] **Multi-task kernel learning** ✅ NEW
+  - [x] IndexKernel - Task-based similarity
+  - [x] ICMKernel - Intrinsic Coregionalization Model (B ⊗ K)
+  - [x] LMCKernel - Linear Model of Coregionalization (Σ B_q ⊗ K_q)
+  - [x] HadamardTaskKernel - Element-wise product
+  - [x] MultiTaskKernelBuilder - Builder pattern
+  - [x] Comprehensive tests (30 tests)
+  - [x] Example: multitask_learning.rs
 - [ ] Deep kernel learning (FUTURE)
-- [ ] Multi-task kernel learning (FUTURE)
 
 ### Integration Enhancements
 - [x] **Automatic feature extraction** from TLExpr (FeatureExtractor) ✅
@@ -117,10 +130,28 @@ See main [TODO.md](../../TODO.md) for overall project status.
 
 ---
 
-**Total Items:** 36 tasks
-**Completion:** 🎉 **100% (36/36)** 🎉 **ALL TASKS COMPLETE!**
+**Total Items:** 38 tasks
+**Completion:** 🎉 **100% (38/38)** 🎉 **ALL TASKS COMPLETE!**
 
 **Latest Features Added:**
+- ✅ **Multi-task Kernel Learning** (comprehensive multi-task support, 30 tests)
+  - IndexKernel - Pure task-based similarity with covariance matrix
+  - ICMKernel - Intrinsic Coregionalization Model (B ⊗ K)
+  - LMCKernel - Linear Model of Coregionalization (Σ B_q ⊗ K_q)
+  - HadamardTaskKernel - Element-wise product of task kernels
+  - MultiTaskKernelBuilder - Declarative builder pattern
+  - Wrappers for standard Kernel trait compatibility
+  - Example: multitask_learning.rs with 4 usage scenarios
+
+**Previous Features:**
+- ✅ **Online Kernel Updates** (comprehensive streaming support, 25 tests)
+  - OnlineKernelMatrix - Incremental O(n) updates for streaming data
+  - WindowedKernelMatrix - Sliding window for bounded memory in time series
+  - ForgetfulKernelMatrix - Exponential decay for concept drift adaptation
+  - AdaptiveKernelMatrix - Automatic bandwidth adjustment based on data statistics
+  - Example: online_kernel_updates.rs with 4 usage scenarios (basic, windowed, forgetful, streaming classification)
+
+**Previous Features:**
 - ✅ **Symbolic Kernel Composition** (comprehensive composition module, 14 tests)
   - KernelExpr - Algebraic kernel expressions with operations (scale, add, multiply, power)
   - SymbolicKernel - Evaluates expressions for any input
@@ -129,7 +160,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - PSD property checking - Verify positive semi-definiteness
   - Method chaining - Fluent API for complex compositions
   - Example: symbolic_kernels.rs with 7 usage scenarios (scaled, sum, product, complex, builder, power, hybrid)
-- ✅ **195 comprehensive tests** (100% passing, zero warnings) **UPDATED**
+- ✅ **250 comprehensive tests** (100% passing, zero warnings) **UPDATED**
 
 **Previous Features:**
 - ✅ **Provenance Tracking System** (comprehensive tracking module, 15 tests)

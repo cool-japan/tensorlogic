@@ -515,15 +515,16 @@ Run the test suite:
 cargo nextest run -p tensorlogic-adapters
 ```
 
-**Current Test Stats**: 209 tests (+30 new), all passing, zero warnings
-**Lines of Code**: 10,491 (+1,777 new)
-**Examples**: 12 complete examples in `examples/`
-**Benchmarks**: 18 benchmark groups for performance tracking
+**Current Test Stats**: 223 tests (+14 new property tests), all passing, zero warnings
+**Lines of Code**: 11,875 (production code)
+**Examples**: 13 complete examples in `examples/`
+**Benchmarks**: 4 comprehensive benchmark suites
 **New Features**:
 - Incremental validation with change tracking
 - Cost-based query planning and optimization
 - Schema evolution with breaking change detection
 - Product domains, computed domains, lazy loading
+- CLI integration tests for schema tools
 
 ## Performance Considerations
 
@@ -560,16 +561,17 @@ Licensed under the Apache License, Version 2.0. See [LICENSE](../../LICENSE) for
 ---
 
 **Status**: 🎉 Production Ready (v0.1.0-alpha.2)
-**Last Updated**: 2025-11-17 (Advanced Features Release)
-**Tests**: 209/209 passing (100%) ⬆️ +30 tests
-**Lines of Code**: 10,491 (+1,777 new)
-**Examples**: 12 comprehensive examples
-**Benchmarks**: 18 benchmark groups
+**Last Updated**: 2025-11-17 (Enhanced Testing Release)
+**Tests**: 223/223 passing (100%) ⬆️ +14 property tests
+**Lines of Code**: 11,875 (production code)
+**Examples**: 13 comprehensive examples
+**Benchmarks**: 4 comprehensive benchmark suites
 **Completion**: ~99% (Advanced production features)
-**CLI Tools**: 2 production-ready binaries
+**CLI Tools**: 2 production-ready binaries with integration tests
 **Code Quality**: Zero warnings, zero clippy issues
 **New in 0.1.0-alpha.2**:
 - ✨ **Incremental Validation** - 10-100x faster revalidation
 - ✨ **Query Planner** - Cost-based query optimization
 - ✨ **Schema Evolution** - Breaking change detection & migration planning
+- ✨ **Enhanced Testing** - Property tests for evolution & query planning
 **Part of**: [TensorLogic Ecosystem](https://github.com/cool-japan/tensorlogic)

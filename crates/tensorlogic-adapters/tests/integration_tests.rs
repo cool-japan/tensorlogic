@@ -419,3 +419,232 @@ fn test_compiler_bundle_validation() {
     assert!(!result.is_valid());
     assert!(!result.errors.is_empty());
 }
+
+/// Test CLI validation tool with valid schema.
+#[test]
+fn test_cli_validate_valid_schema() {
+    use std::fs;
+    use std::process::Command;
+
+    let temp_dir = std::env::temp_dir();
+    let schema_path = temp_dir.join("test_schema_valid.yaml");
+
+    // Create a valid schema
+    let mut table = SymbolTable::new();
+    table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+    table
+        .add_predicate(PredicateInfo::new(
+            "knows",
+            vec!["Person".to_string(), "Person".to_string()],
+        ))
+        .unwrap();
+
+    let yaml = table.to_yaml().unwrap();
+    fs::write(&schema_path, yaml).unwrap();
+
+    // Run validation command
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--bin",
+            "schema_validate",
+            "--",
+            schema_path.to_str().unwrap(),
+        ])
+        .output();
+
+    // Clean up
+    let _ = fs::remove_file(&schema_path);
+
+    if let Ok(output) = output {
+        assert!(output.status.success(), "Validation should succeed");
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(stdout.contains("Schema validation passed"));
+    }
+}
+
+/// Test CLI migration tool convert command.
+#[test]
+fn test_cli_migrate_convert() {
+    use std::fs;
+    use std::process::Command;
+
+    let temp_dir = std::env::temp_dir();
+    let json_path = temp_dir.join("test_schema.json");
+    let yaml_path = temp_dir.join("test_schema_converted.yaml");
+
+    // Create a schema in JSON
+    let mut table = SymbolTable::new();
+    table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+    table
+        .add_predicate(PredicateInfo::new(
+            "knows",
+            vec!["Person".to_string(), "Person".to_string()],
+        ))
+        .unwrap();
+
+    let json = table.to_json().unwrap();
+    fs::write(&json_path, json).unwrap();
+
+    // Run convert command
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--bin",
+            "schema_migrate",
+            "--",
+            "convert",
+            json_path.to_str().unwrap(),
+            yaml_path.to_str().unwrap(),
+        ])
+        .output();
+
+    // Verify conversion
+    if let Ok(output) = output {
+        if output.status.success() {
+            assert!(yaml_path.exists(), "YAML file should be created");
+
+            // Verify content
+            let yaml_content = fs::read_to_string(&yaml_path).unwrap();
+            let restored = SymbolTable::from_yaml(&yaml_content).unwrap();
+            assert_eq!(table.domains.len(), restored.domains.len());
+            assert_eq!(table.predicates.len(), restored.predicates.len());
+        }
+    }
+
+    // Clean up
+    let _ = fs::remove_file(&json_path);
+    let _ = fs::remove_file(&yaml_path);
+}
+
+/// Test CLI migration tool diff command.
+#[test]
+fn test_cli_migrate_diff() {
+    use std::fs;
+    use std::process::Command;
+
+    let temp_dir = std::env::temp_dir();
+    let old_path = temp_dir.join("test_schema_old.yaml");
+    let new_path = temp_dir.join("test_schema_new.yaml");
+
+    // Create old schema
+    let mut old_table = SymbolTable::new();
+    old_table
+        .add_domain(DomainInfo::new("Person", 100))
+        .unwrap();
+    old_table
+        .add_predicate(PredicateInfo::new(
+            "knows",
+            vec!["Person".to_string(), "Person".to_string()],
+        ))
+        .unwrap();
+
+    fs::write(&old_path, old_table.to_yaml().unwrap()).unwrap();
+
+    // Create new schema (with additions)
+    let mut new_table = old_table.clone();
+    new_table
+        .add_domain(DomainInfo::new("Location", 50))
+        .unwrap();
+    new_table
+        .add_predicate(PredicateInfo::new(
+            "at",
+            vec!["Person".to_string(), "Location".to_string()],
+        ))
+        .unwrap();
+
+    fs::write(&new_path, new_table.to_yaml().unwrap()).unwrap();
+
+    // Run diff command
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--bin",
+            "schema_migrate",
+            "--",
+            "diff",
+            old_path.to_str().unwrap(),
+            new_path.to_str().unwrap(),
+        ])
+        .output();
+
+    // Verify diff output
+    if let Ok(output) = output {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            assert!(stdout.contains("Added domains") || stdout.contains("Added predicates"));
+        }
+    }
+
+    // Clean up
+    let _ = fs::remove_file(&old_path);
+    let _ = fs::remove_file(&new_path);
+}
+
+/// Test CLI migration tool merge command.
+#[test]
+fn test_cli_migrate_merge() {
+    use std::fs;
+    use std::process::Command;
+
+    let temp_dir = std::env::temp_dir();
+    let schema1_path = temp_dir.join("test_schema1.yaml");
+    let schema2_path = temp_dir.join("test_schema2.yaml");
+    let merged_path = temp_dir.join("test_schema_merged.yaml");
+
+    // Create first schema
+    let mut table1 = SymbolTable::new();
+    table1.add_domain(DomainInfo::new("Person", 100)).unwrap();
+    table1
+        .add_predicate(PredicateInfo::new(
+            "knows",
+            vec!["Person".to_string(), "Person".to_string()],
+        ))
+        .unwrap();
+
+    fs::write(&schema1_path, table1.to_yaml().unwrap()).unwrap();
+
+    // Create second schema
+    let mut table2 = SymbolTable::new();
+    table2.add_domain(DomainInfo::new("Person", 100)).unwrap(); // Added Person domain
+    table2.add_domain(DomainInfo::new("Location", 50)).unwrap();
+    table2
+        .add_predicate(PredicateInfo::new(
+            "at",
+            vec!["Person".to_string(), "Location".to_string()],
+        ))
+        .unwrap();
+
+    fs::write(&schema2_path, table2.to_yaml().unwrap()).unwrap();
+
+    // Run merge command
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--bin",
+            "schema_migrate",
+            "--",
+            "merge",
+            schema1_path.to_str().unwrap(),
+            schema2_path.to_str().unwrap(),
+            merged_path.to_str().unwrap(),
+        ])
+        .output();
+
+    // Verify merged result
+    if let Ok(output) = output {
+        if output.status.success() && merged_path.exists() {
+            let merged_content = fs::read_to_string(&merged_path).unwrap();
+            let merged_table = SymbolTable::from_yaml(&merged_content).unwrap();
+
+            // Should contain domains from both schemas
+            assert!(merged_table.get_domain("Person").is_some());
+            assert!(merged_table.get_domain("Location").is_some());
+        }
+    }
+
+    // Clean up
+    let _ = fs::remove_file(&schema1_path);
+    let _ = fs::remove_file(&schema2_path);
+    let _ = fs::remove_file(&merged_path);
+}

@@ -113,6 +113,165 @@ pub enum Commands {
         #[arg(short, long)]
         pretty: bool,
     },
+
+    /// Execute compiled expressions with backend selection
+    Execute {
+        /// Input expression or file path
+        input: String,
+
+        /// Input format
+        #[arg(short = 'f', long, value_enum, default_value = "expr")]
+        input_format: InputFormat,
+
+        /// Backend to use (cpu, simd, gpu, parallel, profiled)
+        #[arg(short, long, default_value = "cpu")]
+        backend: String,
+
+        /// Show performance metrics
+        #[arg(long)]
+        metrics: bool,
+
+        /// Show intermediate tensors
+        #[arg(long)]
+        intermediates: bool,
+
+        /// Enable execution tracing
+        #[arg(long)]
+        trace: bool,
+
+        /// Output format for results
+        #[arg(short = 'F', long, value_enum, default_value = "table")]
+        output_format: ExecutionOutputFormat,
+    },
+
+    /// Optimize compiled graphs
+    Optimize {
+        /// Input expression or file path
+        input: String,
+
+        /// Input format
+        #[arg(short = 'f', long, value_enum, default_value = "expr")]
+        input_format: InputFormat,
+
+        /// Optimization level (none, basic, standard, aggressive)
+        #[arg(short, long, default_value = "standard")]
+        level: String,
+
+        /// Show optimization statistics
+        #[arg(long)]
+        stats: bool,
+
+        /// Verbose output
+        #[arg(short, long)]
+        verbose: bool,
+
+        /// Output file (stdout if not specified)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+
+        /// Output format
+        #[arg(short = 'F', long, value_enum, default_value = "graph")]
+        output_format: OutputFormat,
+    },
+
+    /// List available backends and their capabilities
+    Backends,
+
+    /// Benchmark compilation and execution performance
+    Benchmark {
+        /// Input expression or file path
+        input: String,
+
+        /// Input format
+        #[arg(short = 'f', long, value_enum, default_value = "expr")]
+        input_format: InputFormat,
+
+        /// Number of iterations
+        #[arg(short = 'n', long, default_value = "10")]
+        iterations: usize,
+
+        /// Backend to benchmark (for execution benchmarks)
+        #[arg(short, long, default_value = "cpu")]
+        backend: String,
+
+        /// Include execution benchmarks
+        #[arg(long)]
+        execute: bool,
+
+        /// Include optimization benchmarks
+        #[arg(long)]
+        optimize: bool,
+
+        /// Show detailed timing for each iteration
+        #[arg(short, long)]
+        verbose: bool,
+
+        /// Export results as JSON
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Profile compilation with detailed phase breakdown
+    Profile {
+        /// Input expression or file path
+        input: String,
+
+        /// Input format
+        #[arg(short = 'f', long, value_enum, default_value = "expr")]
+        input_format: InputFormat,
+
+        /// Skip optimization in profile
+        #[arg(long)]
+        no_optimize: bool,
+
+        /// Optimization level (none, basic, standard, aggressive)
+        #[arg(long, default_value = "standard")]
+        opt_level: String,
+
+        /// Include validation in profile
+        #[arg(long)]
+        validate: bool,
+
+        /// Include execution profiling
+        #[arg(long)]
+        execute: bool,
+
+        /// Backend for execution profiling (cpu, parallel, profiled)
+        #[arg(long, default_value = "cpu")]
+        exec_backend: String,
+
+        /// Number of warmup runs
+        #[arg(long, default_value = "1")]
+        warmup: usize,
+
+        /// Number of profiling runs to average
+        #[arg(long, default_value = "3")]
+        runs: usize,
+
+        /// Export results as JSON
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Manage persistent compilation cache
+    Cache {
+        #[command(subcommand)]
+        command: CacheCommand,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum CacheCommand {
+    /// Show cache statistics
+    Stats,
+    /// Clear the entire cache
+    Clear,
+    /// Enable caching
+    Enable,
+    /// Disable caching
+    Disable,
+    /// Show cache directory path
+    Path,
 }
 
 #[derive(Subcommand)]
@@ -157,6 +316,18 @@ pub enum ConvertFormat {
     Json,
     /// YAML format
     Yaml,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum ExecutionOutputFormat {
+    /// Human-readable table
+    Table,
+    /// JSON format
+    Json,
+    /// CSV format
+    Csv,
+    /// NumPy text format
+    Numpy,
 }
 
 fn parse_domain(s: &str) -> Result<(String, usize), String> {

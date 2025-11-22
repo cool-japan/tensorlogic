@@ -82,20 +82,27 @@
 //! assert!(report.errors.is_empty());
 //! ```
 
+mod autocompletion;
 mod axis;
 mod builder;
+mod codegen;
 mod compact;
 mod compiler_integration;
 mod composition;
 mod computed;
 mod constraint;
+mod database;
+mod dependent;
 mod diff;
 mod domain;
+mod effects;
+mod embeddings;
 mod error;
 mod evolution;
 mod hierarchy;
 mod incremental_validation;
 mod lazy;
+mod linear;
 mod mask;
 mod metadata;
 mod parametric;
@@ -103,6 +110,7 @@ mod performance;
 mod predicate;
 mod product;
 mod query_planner;
+mod refinement;
 mod schema_analysis;
 mod signature_matcher;
 mod symbol_table;
@@ -111,20 +119,39 @@ mod validation;
 #[cfg(test)]
 mod tests;
 
+pub use autocompletion::{
+    AutoCompleter, AutoCompleterStats, DomainSuggestion, PredicateSuggestion, SuggestionSource,
+    VariableSuggestion,
+};
 pub use axis::AxisMetadata;
 pub use builder::SchemaBuilder;
+pub use codegen::{GraphQLCodegen, PythonCodegen, RustCodegen, TypeScriptCodegen};
 pub use compact::{CompactSchema, CompressionStats};
 pub use compiler_integration::{
-    CompilerExport, CompilerExportBundle, CompilerImport, SymbolTableSync, ValidationResult,
+    AdvancedExportBundle, CompilerExport, CompilerExportAdvanced, CompilerExportBundle,
+    CompilerImport, CompleteExportBundle, SymbolTableSync, ValidationResult,
 };
 pub use composition::{CompositePredicate, CompositeRegistry, PredicateBody, PredicateTemplate};
 pub use computed::{ComputedDomain, ComputedDomainRegistry, DomainComputation};
 pub use constraint::{FunctionalDependency, PredicateConstraints, PredicateProperty, ValueRange};
+pub use database::{
+    DatabaseStats, MemoryDatabase, SchemaDatabase, SchemaDatabaseSQL, SchemaId, SchemaMetadata,
+    SchemaVersion,
+};
+
+#[cfg(feature = "sqlite")]
+pub use database::SQLiteDatabase;
+
+#[cfg(feature = "postgres")]
+pub use database::PostgreSQLDatabase;
 pub use diff::{
     check_compatibility, compute_diff, merge_tables, CompatibilityLevel, DiffSummary,
     DomainModification, PredicateModification, SchemaDiff, VariableModification,
 };
 pub use domain::DomainInfo;
+pub use embeddings::{
+    Embedding, EmbeddingWeights, SchemaEmbedder, SimilaritySearch, SimilarityStats, EMBEDDING_DIM,
+};
 pub use error::AdapterError;
 pub use hierarchy::DomainHierarchy;
 pub use lazy::{FileSchemaLoader, LazyLoadStats, LazySymbolTable, LoadStrategy, SchemaLoader};
@@ -152,4 +179,21 @@ pub use incremental_validation::{
 };
 pub use query_planner::{
     IndexStrategy, PredicatePattern, PredicateQuery, QueryPlan, QueryPlanner, QueryStatistics,
+};
+
+// Advanced Type System modules
+pub use dependent::{
+    patterns as dependent_patterns, DependentType, DependentTypeContext, DependentTypeRegistry,
+    DimConstraint, DimExpr, DimRelation,
+};
+pub use effects::{
+    infer_effects, Effect, EffectContext, EffectHandler, EffectRegistry, EffectRow, EffectSet,
+    EffectSignature,
+};
+pub use linear::{
+    LinearContext, LinearError, LinearKind, LinearStatistics, LinearType, LinearTypeRegistry,
+    Ownership, Resource,
+};
+pub use refinement::{
+    DependentRelation, RefinementContext, RefinementPredicate, RefinementRegistry, RefinementType,
 };

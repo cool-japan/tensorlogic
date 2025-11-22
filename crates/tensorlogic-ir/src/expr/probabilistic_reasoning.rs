@@ -31,7 +31,7 @@ pub struct ProbabilityInterval {
 impl ProbabilityInterval {
     /// Create a new probability interval.
     ///
-    /// Returns None if bounds are invalid (not in [0,1] or lower > upper).
+    /// Returns None if bounds are invalid (not in \[0,1\] or lower > upper).
     pub fn new(lower: f64, upper: f64) -> Option<Self> {
         if lower < 0.0 || upper > 1.0 || lower > upper {
             None
@@ -104,7 +104,7 @@ impl ProbabilityInterval {
     /// Conditional probability bounds: P(B|A) given P(A) and P(A ∧ B).
     ///
     /// If P(A) > 0, returns P(A ∧ B) / P(A).
-    /// Uses interval division: [a,b] / [c,d] = [a/d, b/c] for positive intervals.
+    /// Uses interval division: \[a,b\] / \[c,d\] = \[a/d, b/c\] for positive intervals.
     pub fn conditional(&self, joint: &Self) -> Option<Self> {
         if self.upper == 0.0 {
             // Cannot condition on zero probability event

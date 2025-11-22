@@ -24,7 +24,7 @@ pub fn compute_gradient_norm(gradients: &HashMap<String, Array<f64, Ix2>>) -> f6
 }
 
 /// Gradient clipping mode.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum GradClipMode {
     /// Clip by value (element-wise).
     Value,

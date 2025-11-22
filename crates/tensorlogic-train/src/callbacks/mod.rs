@@ -13,7 +13,7 @@ pub mod profiling;
 pub use core::{BatchCallback, Callback, CallbackList, EpochCallback, ValidationCallback};
 
 // Re-export checkpoint types
-pub use checkpoint::{CheckpointCallback, TrainingCheckpoint};
+pub use checkpoint::{CheckpointCallback, CheckpointCompression, TrainingCheckpoint};
 
 // Re-export early stopping types
 pub use early_stopping::{EarlyStoppingCallback, ReduceLrOnPlateauCallback};
@@ -22,7 +22,10 @@ pub use early_stopping::{EarlyStoppingCallback, ReduceLrOnPlateauCallback};
 pub use lr_finder::LearningRateFinder;
 
 // Re-export gradient types
-pub use gradient::{GradientAccumulationCallback, GradientMonitor, GradientSummary};
+pub use gradient::{
+    GradientAccumulationCallback, GradientAccumulationStats, GradientMonitor,
+    GradientScalingStrategy, GradientSummary,
+};
 
 // Re-export histogram types
 pub use histogram::{HistogramCallback, HistogramStats};

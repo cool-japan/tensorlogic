@@ -14,12 +14,17 @@
 //! - Hyperparameter optimization (grid search, random search)
 //! - Cross-validation utilities
 //! - Model ensembling
+//! - Model pruning and compression
+//! - Model quantization (int8, int4, int2)
+//! - Mixed precision training (FP16, BF16)
+//! - Advanced sampling strategies
 
 mod augmentation;
 mod batch;
 mod callbacks;
 mod crossval;
 mod curriculum;
+mod data;
 mod distillation;
 mod ensemble;
 mod error;
@@ -27,15 +32,21 @@ mod hyperparameter;
 mod label_smoothing;
 mod logging;
 mod loss;
+mod memory;
 mod metrics;
+mod mixed_precision;
 mod model;
 mod multitask;
 mod optimizer;
 mod optimizers;
+mod pruning;
+mod quantization;
 mod regularization;
+mod sampling;
 mod scheduler;
 mod trainer;
 mod transfer;
+mod utils;
 
 pub use augmentation::{
     CompositeAugmenter, DataAugmenter, MixupAugmenter, NoAugmentation, NoiseAugmenter,
@@ -43,32 +54,38 @@ pub use augmentation::{
 };
 pub use batch::{extract_batch, BatchConfig, BatchIterator, DataShuffler};
 pub use callbacks::{
-    BatchCallback, Callback, CallbackList, CheckpointCallback, EarlyStoppingCallback,
-    EpochCallback, GradientAccumulationCallback, GradientMonitor, GradientSummary,
-    HistogramCallback, HistogramStats, LearningRateFinder, ModelEMACallback, ProfilingCallback,
-    ProfilingStats, ReduceLrOnPlateauCallback, SWACallback, TrainingCheckpoint, ValidationCallback,
+    BatchCallback, Callback, CallbackList, CheckpointCallback, CheckpointCompression,
+    EarlyStoppingCallback, EpochCallback, GradientAccumulationCallback, GradientAccumulationStats,
+    GradientMonitor, GradientScalingStrategy, GradientSummary, HistogramCallback, HistogramStats,
+    LearningRateFinder, ModelEMACallback, ProfilingCallback, ProfilingStats,
+    ReduceLrOnPlateauCallback, SWACallback, TrainingCheckpoint, ValidationCallback,
 };
 pub use error::{TrainError, TrainResult};
-pub use logging::{ConsoleLogger, FileLogger, LoggingBackend, MetricsLogger, TensorBoardLogger};
+pub use logging::{
+    ConsoleLogger, CsvLogger, FileLogger, JsonlLogger, LoggingBackend, MetricsLogger,
+    TensorBoardLogger,
+};
 pub use loss::{
     BCEWithLogitsLoss, ConstraintViolationLoss, ContrastiveLoss, CrossEntropyLoss, DiceLoss,
     FocalLoss, HingeLoss, HuberLoss, KLDivergenceLoss, LogicalLoss, Loss, LossConfig, MseLoss,
-    RuleSatisfactionLoss, TripletLoss, TverskyLoss,
+    PolyLoss, RuleSatisfactionLoss, TripletLoss, TverskyLoss,
 };
 pub use metrics::{
-    Accuracy, BalancedAccuracy, CohensKappa, ConfusionMatrix, F1Score,
-    MatthewsCorrelationCoefficient, Metric, MetricTracker, PerClassMetrics, Precision, Recall,
-    RocCurve, TopKAccuracy,
+    Accuracy, BalancedAccuracy, CohensKappa, ConfusionMatrix, DiceCoefficient, F1Score, IoU,
+    MatthewsCorrelationCoefficient, MeanAveragePrecision, MeanIoU, Metric, MetricTracker,
+    PerClassMetrics, Precision, Recall, RocCurve, TopKAccuracy,
 };
 pub use model::{AutodiffModel, DynamicModel, LinearModel, Model};
 pub use optimizer::{
     AdaBeliefOptimizer, AdaMaxOptimizer, AdagradOptimizer, AdamOptimizer, AdamWOptimizer,
-    GradClipMode, LambOptimizer, LarsOptimizer, LookaheadOptimizer, NAdamOptimizer, Optimizer,
-    OptimizerConfig, RAdamOptimizer, RMSpropOptimizer, SamOptimizer, SgdOptimizer,
+    GradClipMode, LambOptimizer, LarsOptimizer, LionConfig, LionOptimizer, LookaheadOptimizer,
+    NAdamOptimizer, Optimizer, OptimizerConfig, RAdamOptimizer, RMSpropOptimizer, SamOptimizer,
+    SgdOptimizer,
 };
 pub use regularization::{
-    CompositeRegularization, ElasticNetRegularization, L1Regularization, L2Regularization,
-    Regularizer,
+    CompositeRegularization, ElasticNetRegularization, GroupLassoRegularization, L1Regularization,
+    L2Regularization, MaxNormRegularization, OrthogonalRegularization, Regularizer,
+    SpectralNormalization,
 };
 pub use scheduler::{
     CosineAnnealingLrScheduler, CyclicLrMode, CyclicLrScheduler, ExponentialLrScheduler,
@@ -114,3 +131,44 @@ pub use distillation::{AttentionTransferLoss, DistillationLoss, FeatureDistillat
 
 // Label smoothing
 pub use label_smoothing::{LabelSmoothingLoss, MixupLoss};
+
+// Memory management and profiling
+pub use memory::{
+    CheckpointStrategy, GradientCheckpointConfig, MemoryBudgetManager, MemoryEfficientTraining,
+    MemoryProfilerCallback, MemorySettings, MemoryStats,
+};
+
+// Data loading and preprocessing
+pub use data::{
+    CsvLoader, DataPreprocessor, Dataset, LabelEncoder, OneHotEncoder, PreprocessingMethod,
+};
+
+// Utilities for model introspection and analysis
+pub use utils::{
+    compare_models, compute_gradient_stats, format_duration, print_gradient_report, GradientStats,
+    LrRangeTestAnalyzer, ModelSummary, ParameterDifference, ParameterStats, TimeEstimator,
+};
+
+// Model pruning and compression
+pub use pruning::{
+    GlobalPruner, GradientPruner, LayerPruningStats, MagnitudePruner, Pruner, PruningConfig,
+    PruningMask, PruningStats, StructuredPruner, StructuredPruningAxis,
+};
+
+// Advanced sampling strategies
+pub use sampling::{
+    BatchReweighter, ClassBalancedSampler, CurriculumSampler, FocalSampler, HardNegativeMiner,
+    ImportanceSampler, MiningStrategy, OnlineHardExampleMiner, ReweightingStrategy,
+};
+
+// Model quantization and compression
+pub use quantization::{
+    BitWidth, DynamicRangeCalibrator, Granularity, QuantizationAwareTraining, QuantizationConfig,
+    QuantizationMode, QuantizationParams, QuantizedTensor, Quantizer,
+};
+
+// Mixed precision training
+pub use mixed_precision::{
+    AutocastContext, GradientScaler, LossScaler, MixedPrecisionStats, MixedPrecisionTrainer,
+    PrecisionMode,
+};

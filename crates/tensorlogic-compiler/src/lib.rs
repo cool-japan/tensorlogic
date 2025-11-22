@@ -129,8 +129,12 @@ pub mod compile;
 pub mod config;
 mod context;
 pub mod debug;
+pub mod export;
+pub mod import;
 pub mod incremental;
 pub mod optimize;
+#[cfg(feature = "parallel")]
+pub mod parallel;
 pub mod passes;
 
 #[cfg(test)]

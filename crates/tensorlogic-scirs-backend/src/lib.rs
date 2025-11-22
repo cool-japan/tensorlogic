@@ -52,7 +52,9 @@
 pub(crate) mod autodiff;
 pub mod batch_executor;
 pub mod capabilities;
+pub mod checkpoint;
 mod conversion;
+pub mod custom_ops;
 pub mod dependency_analyzer;
 pub mod device;
 pub(crate) mod einsum_grad;
@@ -63,7 +65,10 @@ pub mod fallback;
 pub mod fusion;
 pub mod gradient_check;
 pub mod gradient_ops;
+pub mod graph_optimizer;
+pub mod inplace_ops;
 pub mod memory_pool;
+pub mod metrics;
 mod ops;
 pub mod parallel_executor;
 pub mod precision;
@@ -80,13 +85,18 @@ pub type Scirs2Tensor = ArrayD<f64>;
 
 pub use autodiff::ForwardTape;
 pub use batch_executor::ParallelBatchExecutor;
+pub use checkpoint::{Checkpoint, CheckpointConfig, CheckpointManager, CheckpointMetadata};
+pub use custom_ops::{
+    BinaryCustomOp, CustomOp, CustomOpContext, EluOp, GeluOp, HardSigmoidOp, HardSwishOp,
+    LeakyReluOp, MishOp, OpRegistry, SoftplusOp, SwishOp,
+};
 pub use dependency_analyzer::{DependencyAnalysis, DependencyStats, OperationDependency};
 pub use device::{Device, DeviceError, DeviceManager, DeviceType};
 pub use error::{
     NumericalError, NumericalErrorKind, ShapeMismatchError, TlBackendError, TlBackendResult,
 };
 pub use execution_mode::{
-    CompilationStats, CompiledGraph, ExecutionConfig, ExecutionMode, MemoryPlan,
+    CompilationStats, CompiledGraph, ExecutionConfig, ExecutionMode, MemoryPlan, OptimizationConfig,
 };
 pub use executor::Scirs2Exec;
 pub use fallback::{is_valid, sanitize_tensor, FallbackConfig};
@@ -94,6 +104,14 @@ pub use gradient_ops::{
     gumbel_softmax, gumbel_softmax_backward, soft_exists, soft_exists_backward, soft_forall,
     soft_forall_backward, ste_threshold, ste_threshold_backward, GumbelSoftmaxConfig,
     QuantifierMode, SteConfig,
+};
+pub use graph_optimizer::{
+    GraphOptimizer, GraphOptimizerBuilder, OptimizationPass, OptimizationStats,
+};
+pub use inplace_ops::{can_execute_inplace, is_shape_preserving, InplaceExecutor, InplaceStats};
+pub use metrics::{
+    format_bytes, shared_metrics, AtomicMetrics, MemoryStats, MetricsCollector, MetricsConfig,
+    MetricsSummary, OperationRecord, OperationStats, SharedMetrics, ThroughputStats,
 };
 pub use parallel_executor::{ParallelConfig, ParallelScirs2Exec, ParallelStats};
 pub use precision::{ComputePrecision, Precision, PrecisionConfig, Scalar};

@@ -46,7 +46,7 @@ pub enum AggregateOp {
 }
 
 /// T-norm (triangular norm) kinds for fuzzy AND operations.
-/// A t-norm is a binary operation T: [0,1] × [0,1] → [0,1] that is:
+/// A t-norm is a binary operation T: \[0,1\] × \[0,1\] → \[0,1\] that is:
 /// - Commutative: T(a,b) = T(b,a)
 /// - Associative: T(a,T(b,c)) = T(T(a,b),c)
 /// - Monotonic: If a ≤ b then T(a,c) ≤ T(b,c)
@@ -716,7 +716,7 @@ impl TLExpr {
     /// Create a weighted rule with confidence/probability.
     ///
     /// # Arguments
-    /// * `weight` - Weight/confidence (typically in [0,1] for probabilities)
+    /// * `weight` - Weight/confidence (typically in \[0,1\] for probabilities)
     /// * `rule` - The rule expression
     pub fn weighted_rule(weight: f64, rule: TLExpr) -> Self {
         TLExpr::WeightedRule {

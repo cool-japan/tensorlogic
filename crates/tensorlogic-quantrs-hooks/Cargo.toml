@@ -17,6 +17,21 @@ tensorlogic-ir.workspace = true
 tensorlogic-compiler.workspace = true
 tensorlogic-infer.workspace = true
 scirs2-core = { workspace = true, features = ["random"] }
+rayon = "1.10"
 
 [dev-dependencies]
 approx = "0.5"
+criterion.workspace = true
+proptest.workspace = true
+
+[[bench]]
+name = "inference_algorithms"
+harness = false
+
+[[bench]]
+name = "factor_operations"
+harness = false
+
+[[bench]]
+name = "message_passing"
+harness = false

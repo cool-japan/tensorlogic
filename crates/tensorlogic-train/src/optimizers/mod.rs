@@ -22,6 +22,9 @@
 //! - [`LambOptimizer`]: Layer-wise Adaptive Moments optimizer for Batch training
 //! - [`LarsOptimizer`]: Layer-wise Adaptive Rate Scaling
 //!
+//! ## Modern Optimizers
+//! - [`LionOptimizer`]: EvoLved Sign Momentum (memory-efficient, sign-based updates)
+//!
 //! ## Meta-Optimizers (Wrappers)
 //! - [`LookaheadOptimizer`]: Maintains slow and fast weights
 //! - [`SamOptimizer`]: Sharpness Aware Minimization
@@ -39,6 +42,7 @@ pub mod adamw;
 pub mod common;
 pub mod lamb;
 pub mod lars;
+pub mod lion;
 pub mod lookahead;
 pub mod nadam;
 pub mod radam;
@@ -57,6 +61,7 @@ pub use adamax::AdaMaxOptimizer;
 pub use adamw::AdamWOptimizer;
 pub use lamb::LambOptimizer;
 pub use lars::LarsOptimizer;
+pub use lion::{LionConfig, LionOptimizer};
 pub use lookahead::LookaheadOptimizer;
 pub use nadam::NAdamOptimizer;
 pub use radam::RAdamOptimizer;

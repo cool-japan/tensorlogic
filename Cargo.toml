@@ -47,12 +47,35 @@ log = "0.4"
 criterion = "0.7"
 proptest = "1"
 approx = "0.5"
+rayon = "1.10"
+parking_lot = "0.12"
+prost = "0.13"
+prost-types = "0.13"
+
+# CLI-specific dependencies
+toml = "0.9"
+clap = { version = "4.5", features = ["derive", "cargo", "env"] }
+clap_complete = "4.5"
+rustyline = "17.0"
+colored = "3.0"
+notify = "8.2"
+indicatif = "0.18"
+dirs = "6.0"
+num_cpus = "1.16"
+
+# Dev dependencies
+assert_cmd = "2.0"
+predicates = "3.1"
 
 # SciRS2 dependencies (from crates.io)
 scirs2-core = "0.1.0-rc.2"
 scirs2-linalg = "0.1.0-rc.2"
 scirs2-autograd = "0.1.0-rc.2"
 scirs2-optimize = "0.1.0-rc.2"
+
+# SkleaRS dependencies (local paths for development)
+sklears-core = { version = "0.1.0-alpha.2", path = "../sklears/crates/sklears-core" }
+sklears-kernel-approximation = { version = "0.1.0-alpha.2", path = "../sklears/crates/sklears-kernel-approximation" }
 
 # Internal tensorlogic crates
 tensorlogic-ir = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-ir" }

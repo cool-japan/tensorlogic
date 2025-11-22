@@ -330,6 +330,389 @@ impl Regularizer for CompositeRegularization {
     }
 }
 
+/// Spectral Normalization regularizer.
+///
+/// Normalizes weight matrices by their spectral norm (largest singular value).
+/// Useful for stabilizing GAN training and improving generalization.
+///
+/// # References
+/// - Miyato et al. (2018): "Spectral Normalization for Generative Adversarial Networks"
+#[derive(Debug, Clone)]
+pub struct SpectralNormalization {
+    /// Target spectral norm (usually 1.0)
+    pub target_norm: f64,
+    /// Strength of the regularization
+    pub lambda: f64,
+    /// Number of power iterations for spectral norm estimation
+    pub power_iterations: usize,
+}
+
+impl SpectralNormalization {
+    /// Create a new spectral normalization regularizer.
+    pub fn new(lambda: f64, target_norm: f64, power_iterations: usize) -> Self {
+        Self {
+            lambda,
+            target_norm,
+            power_iterations,
+        }
+    }
+
+    /// Estimate spectral norm using power iteration.
+    fn estimate_spectral_norm(&self, matrix: &Array<f64, Ix2>) -> f64 {
+        if matrix.is_empty() {
+            return 0.0;
+        }
+
+        let (nrows, ncols) = matrix.dim();
+        if nrows == 0 || ncols == 0 {
+            return 0.0;
+        }
+
+        // Initialize random vector
+        let mut v = Array::from_elem((ncols,), 1.0 / (ncols as f64).sqrt());
+
+        // Power iteration to find dominant singular value
+        for _ in 0..self.power_iterations {
+            // u = W * v
+            let u = matrix.dot(&v);
+            let u_norm = u.iter().map(|&x| x * x).sum::<f64>().sqrt();
+            if u_norm < 1e-10 {
+                break;
+            }
+            let u = u / u_norm;
+
+            // v = W^T * u
+            v = matrix.t().dot(&u);
+            let v_norm = v.iter().map(|&x| x * x).sum::<f64>().sqrt();
+            if v_norm < 1e-10 {
+                break;
+            }
+            v /= v_norm;
+        }
+
+        // σ = ||W * v||
+        let final_u = matrix.dot(&v);
+        final_u.iter().map(|&x| x * x).sum::<f64>().sqrt()
+    }
+}
+
+impl Default for SpectralNormalization {
+    fn default() -> Self {
+        Self {
+            target_norm: 1.0,
+            lambda: 0.01,
+            power_iterations: 1,
+        }
+    }
+}
+
+impl Regularizer for SpectralNormalization {
+    fn compute_penalty(&self, parameters: &HashMap<String, Array<f64, Ix2>>) -> TrainResult<f64> {
+        let mut penalty = 0.0;
+
+        for param in parameters.values() {
+            let spectral_norm = self.estimate_spectral_norm(param);
+            // Penalty for deviation from target norm
+            penalty += (spectral_norm - self.target_norm).powi(2);
+        }
+
+        Ok(self.lambda * penalty)
+    }
+
+    fn compute_gradient(
+        &self,
+        parameters: &HashMap<String, Array<f64, Ix2>>,
+    ) -> TrainResult<HashMap<String, Array<f64, Ix2>>> {
+        let mut gradients = HashMap::new();
+
+        for (name, param) in parameters {
+            let spectral_norm = self.estimate_spectral_norm(param);
+            if spectral_norm < 1e-10 {
+                gradients.insert(name.clone(), Array::zeros(param.dim()));
+                continue;
+            }
+
+            // Approximate gradient: ∇||W||_2 ≈ W / ||W||_F
+            let frobenius_norm = param.iter().map(|&x| x * x).sum::<f64>().sqrt();
+            if frobenius_norm < 1e-10 {
+                gradients.insert(name.clone(), Array::zeros(param.dim()));
+                continue;
+            }
+
+            let scale = 2.0 * self.lambda * (spectral_norm - self.target_norm) / frobenius_norm;
+            let grad = param.mapv(|w| scale * w);
+            gradients.insert(name.clone(), grad);
+        }
+
+        Ok(gradients)
+    }
+}
+
+/// MaxNorm constraint regularizer.
+///
+/// Constrains the norm of weight vectors to a maximum value.
+/// Useful for preventing exploding gradients and improving stability.
+///
+/// # References
+/// - Hinton et al.: "Improving neural networks by preventing co-adaptation"
+#[derive(Debug, Clone)]
+pub struct MaxNormRegularization {
+    /// Maximum allowed norm
+    pub max_norm: f64,
+    /// Regularization strength
+    pub lambda: f64,
+    /// Axis along which to compute norms (0 for rows, 1 for columns)
+    pub axis: usize,
+}
+
+impl MaxNormRegularization {
+    /// Create a new max norm regularizer.
+    pub fn new(max_norm: f64, lambda: f64, axis: usize) -> Self {
+        Self {
+            max_norm,
+            lambda,
+            axis,
+        }
+    }
+}
+
+impl Default for MaxNormRegularization {
+    fn default() -> Self {
+        Self {
+            max_norm: 2.0,
+            lambda: 0.01,
+            axis: 0,
+        }
+    }
+}
+
+impl Regularizer for MaxNormRegularization {
+    fn compute_penalty(&self, parameters: &HashMap<String, Array<f64, Ix2>>) -> TrainResult<f64> {
+        let mut penalty = 0.0;
+
+        for param in parameters.values() {
+            let axis_len = if self.axis == 0 {
+                param.nrows()
+            } else {
+                param.ncols()
+            };
+
+            for i in 0..axis_len {
+                let row_or_col = if self.axis == 0 {
+                    param.row(i)
+                } else {
+                    param.column(i)
+                };
+
+                let norm = row_or_col.iter().map(|&x| x * x).sum::<f64>().sqrt();
+                if norm > self.max_norm {
+                    penalty += (norm - self.max_norm).powi(2);
+                }
+            }
+        }
+
+        Ok(self.lambda * penalty)
+    }
+
+    fn compute_gradient(
+        &self,
+        parameters: &HashMap<String, Array<f64, Ix2>>,
+    ) -> TrainResult<HashMap<String, Array<f64, Ix2>>> {
+        let mut gradients = HashMap::new();
+
+        for (name, param) in parameters {
+            let mut grad = Array::zeros(param.dim());
+
+            let axis_len = if self.axis == 0 {
+                param.nrows()
+            } else {
+                param.ncols()
+            };
+
+            for i in 0..axis_len {
+                let row_or_col = if self.axis == 0 {
+                    param.row(i)
+                } else {
+                    param.column(i)
+                };
+
+                let norm = row_or_col.iter().map(|&x| x * x).sum::<f64>().sqrt();
+                if norm > self.max_norm {
+                    let scale = 2.0 * self.lambda * (norm - self.max_norm) / (norm + 1e-10);
+
+                    for (j, &val) in row_or_col.iter().enumerate() {
+                        if self.axis == 0 {
+                            grad[[i, j]] = scale * val;
+                        } else {
+                            grad[[j, i]] = scale * val;
+                        }
+                    }
+                }
+            }
+
+            gradients.insert(name.clone(), grad);
+        }
+
+        Ok(gradients)
+    }
+}
+
+/// Orthogonal regularization.
+///
+/// Encourages weight matrices to be orthogonal: W^T * W ≈ I
+/// Helps prevent internal covariate shift and improves gradient flow.
+///
+/// # References
+/// - Brock et al. (2017): "Neural Photo Editing with Introspective Adversarial Networks"
+#[derive(Debug, Clone)]
+pub struct OrthogonalRegularization {
+    /// Regularization strength
+    pub lambda: f64,
+}
+
+impl OrthogonalRegularization {
+    /// Create a new orthogonal regularizer.
+    pub fn new(lambda: f64) -> Self {
+        Self { lambda }
+    }
+}
+
+impl Default for OrthogonalRegularization {
+    fn default() -> Self {
+        Self { lambda: 0.01 }
+    }
+}
+
+impl Regularizer for OrthogonalRegularization {
+    fn compute_penalty(&self, parameters: &HashMap<String, Array<f64, Ix2>>) -> TrainResult<f64> {
+        let mut penalty = 0.0;
+
+        for param in parameters.values() {
+            // Compute W^T * W
+            let wt_w = param.t().dot(param);
+
+            // Compute ||W^T * W - I||_F^2
+            let (n, _) = wt_w.dim();
+            for i in 0..n {
+                for j in 0..n {
+                    let target = if i == j { 1.0 } else { 0.0 };
+                    let diff = wt_w[[i, j]] - target;
+                    penalty += diff * diff;
+                }
+            }
+        }
+
+        Ok(self.lambda * penalty)
+    }
+
+    fn compute_gradient(
+        &self,
+        parameters: &HashMap<String, Array<f64, Ix2>>,
+    ) -> TrainResult<HashMap<String, Array<f64, Ix2>>> {
+        let mut gradients = HashMap::new();
+
+        for (name, param) in parameters {
+            // W^T * W
+            let wt_w = param.t().dot(param);
+
+            // Create identity matrix
+            let (n, _) = wt_w.dim();
+            let mut identity = Array::zeros((n, n));
+            for i in 0..n {
+                identity[[i, i]] = 1.0;
+            }
+
+            // Gradient: 2 * λ * W * (W^T * W - I)
+            let diff = &wt_w - &identity;
+            let grad = param.dot(&diff) * (2.0 * self.lambda);
+
+            gradients.insert(name.clone(), grad);
+        }
+
+        Ok(gradients)
+    }
+}
+
+/// Group Lasso regularization.
+///
+/// Encourages group-wise sparsity by penalizing the L2 norm of groups.
+/// Useful when features have natural groupings.
+///
+/// # References
+/// - Yuan & Lin (2006): "Model selection and estimation in regression with grouped variables"
+#[derive(Debug, Clone)]
+pub struct GroupLassoRegularization {
+    /// Regularization strength
+    pub lambda: f64,
+    /// Group size (number of consecutive parameters per group)
+    pub group_size: usize,
+}
+
+impl GroupLassoRegularization {
+    /// Create a new group lasso regularizer.
+    pub fn new(lambda: f64, group_size: usize) -> Self {
+        Self { lambda, group_size }
+    }
+}
+
+impl Default for GroupLassoRegularization {
+    fn default() -> Self {
+        Self {
+            lambda: 0.01,
+            group_size: 10,
+        }
+    }
+}
+
+impl Regularizer for GroupLassoRegularization {
+    fn compute_penalty(&self, parameters: &HashMap<String, Array<f64, Ix2>>) -> TrainResult<f64> {
+        let mut penalty = 0.0;
+
+        for param in parameters.values() {
+            // Flatten to 1D
+            let flat: Vec<f64> = param.iter().copied().collect();
+
+            // Compute group norms
+            for group in flat.chunks(self.group_size) {
+                let group_norm = group.iter().map(|&x| x * x).sum::<f64>().sqrt();
+                penalty += group_norm;
+            }
+        }
+
+        Ok(self.lambda * penalty)
+    }
+
+    fn compute_gradient(
+        &self,
+        parameters: &HashMap<String, Array<f64, Ix2>>,
+    ) -> TrainResult<HashMap<String, Array<f64, Ix2>>> {
+        let mut gradients = HashMap::new();
+
+        for (name, param) in parameters {
+            let mut grad_flat = Vec::new();
+            let flat: Vec<f64> = param.iter().copied().collect();
+
+            for group in flat.chunks(self.group_size) {
+                let group_norm = group.iter().map(|&x| x * x).sum::<f64>().sqrt();
+                if group_norm > 1e-10 {
+                    let scale = self.lambda / group_norm;
+                    grad_flat.extend(group.iter().map(|&x| scale * x));
+                } else {
+                    grad_flat.extend(vec![0.0; group.len()]);
+                }
+            }
+
+            // Reshape back to original shape
+            let grad = Array::from_shape_vec(param.dim(), grad_flat).map_err(|e| {
+                TrainError::ModelError(format!("Failed to reshape gradient: {}", e))
+            })?;
+            gradients.insert(name.clone(), grad);
+        }
+
+        Ok(gradients)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -470,5 +853,152 @@ mod tests {
         let grad_w = gradients.get("w").unwrap();
         assert_eq!(grad_w[[0, 0]], 0.0);
         assert_eq!(grad_w[[0, 1]], 0.0);
+    }
+
+    #[test]
+    fn test_spectral_normalization() {
+        let regularizer = SpectralNormalization::new(0.1, 1.0, 5);
+
+        let mut params = HashMap::new();
+        params.insert("w".to_string(), array![[2.0, 0.0], [0.0, 1.0]]);
+
+        let penalty = regularizer.compute_penalty(&params).unwrap();
+        // Spectral norm of [[2,0],[0,1]] is 2.0
+        // Penalty = 0.1 * (2.0 - 1.0)^2 = 0.1
+        assert!((penalty - 0.1).abs() < 0.01);
+
+        let gradients = regularizer.compute_gradient(&params).unwrap();
+        assert!(gradients.contains_key("w"));
+    }
+
+    #[test]
+    fn test_max_norm_regularization() {
+        let regularizer = MaxNormRegularization::new(1.0, 0.1, 0);
+
+        let mut params = HashMap::new();
+        params.insert(
+            "w".to_string(),
+            array![[3.0, 4.0], [0.1, 0.1]], // First row has norm 5.0 > 1.0
+        );
+
+        let penalty = regularizer.compute_penalty(&params).unwrap();
+        // First row: norm = 5.0, exceeds max_norm = 1.0
+        // Penalty = 0.1 * (5.0 - 1.0)^2 = 1.6
+        assert!((penalty - 1.6).abs() < 0.1);
+
+        let gradients = regularizer.compute_gradient(&params).unwrap();
+        let grad_w = gradients.get("w").unwrap();
+        // First row should have non-zero gradient
+        assert!(grad_w[[0, 0]].abs() > 0.0);
+        // Second row should have zero gradient (norm below max_norm)
+        assert!(grad_w[[1, 0]].abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_orthogonal_regularization() {
+        let regularizer = OrthogonalRegularization::new(0.1);
+
+        let mut params = HashMap::new();
+        // Identity matrix should have zero penalty
+        params.insert("w".to_string(), array![[1.0, 0.0], [0.0, 1.0]]);
+
+        let penalty = regularizer.compute_penalty(&params).unwrap();
+        assert!(penalty.abs() < 1e-10);
+
+        // Non-orthogonal matrix should have non-zero penalty
+        params.insert("w".to_string(), array![[1.0, 1.0], [1.0, 1.0]]);
+        let penalty = regularizer.compute_penalty(&params).unwrap();
+        assert!(penalty > 0.0);
+
+        let gradients = regularizer.compute_gradient(&params).unwrap();
+        assert!(gradients.contains_key("w"));
+    }
+
+    #[test]
+    fn test_group_lasso_regularization() {
+        let regularizer = GroupLassoRegularization::new(0.1, 2);
+
+        let mut params = HashMap::new();
+        params.insert(
+            "w".to_string(),
+            array![[1.0, 2.0], [3.0, 4.0]], // Flatten to [1,2,3,4], groups [1,2] and [3,4]
+        );
+
+        let penalty = regularizer.compute_penalty(&params).unwrap();
+        // Group 1: sqrt(1^2 + 2^2) = sqrt(5) ≈ 2.236
+        // Group 2: sqrt(3^2 + 4^2) = sqrt(25) = 5.0
+        // Total: 0.1 * (2.236 + 5.0) ≈ 0.7236
+        assert!((penalty - 0.7236).abs() < 0.01);
+
+        let gradients = regularizer.compute_gradient(&params).unwrap();
+        let grad_w = gradients.get("w").unwrap();
+        assert_eq!(grad_w.dim(), (2, 2));
+    }
+
+    #[test]
+    fn test_spectral_normalization_zero_matrix() {
+        let regularizer = SpectralNormalization::new(0.1, 1.0, 5);
+
+        let mut params = HashMap::new();
+        params.insert("w".to_string(), array![[0.0, 0.0], [0.0, 0.0]]);
+
+        let penalty = regularizer.compute_penalty(&params).unwrap();
+        // Spectral norm of zero matrix is 0
+        // Penalty = 0.1 * (0 - 1.0)^2 = 0.1
+        assert!((penalty - 0.1).abs() < 0.01);
+
+        let gradients = regularizer.compute_gradient(&params).unwrap();
+        let grad_w = gradients.get("w").unwrap();
+        // Gradient should be zero for zero matrix
+        assert!(grad_w.iter().all(|&x| x.abs() < 1e-10));
+    }
+
+    #[test]
+    fn test_max_norm_no_violation() {
+        let regularizer = MaxNormRegularization::new(10.0, 0.1, 0);
+
+        let mut params = HashMap::new();
+        params.insert("w".to_string(), array![[1.0, 2.0], [3.0, 4.0]]);
+
+        let penalty = regularizer.compute_penalty(&params).unwrap();
+        // All norms are below 10.0, so no penalty
+        assert!(penalty.abs() < 1e-10);
+
+        let gradients = regularizer.compute_gradient(&params).unwrap();
+        let grad_w = gradients.get("w").unwrap();
+        // All gradients should be zero
+        assert!(grad_w.iter().all(|&x| x.abs() < 1e-10));
+    }
+
+    #[test]
+    fn test_orthogonal_non_square() {
+        let regularizer = OrthogonalRegularization::new(0.1);
+
+        let mut params = HashMap::new();
+        params.insert("w".to_string(), array![[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]);
+
+        // Non-square matrix: W^T * W will be 3x3
+        let penalty = regularizer.compute_penalty(&params).unwrap();
+        assert!(penalty > 0.0); // Should have some penalty
+
+        let gradients = regularizer.compute_gradient(&params).unwrap();
+        assert!(gradients.contains_key("w"));
+    }
+
+    #[test]
+    fn test_group_lasso_single_group() {
+        let regularizer = GroupLassoRegularization::new(0.1, 4);
+
+        let mut params = HashMap::new();
+        params.insert("w".to_string(), array![[3.0, 4.0]]);
+
+        let penalty = regularizer.compute_penalty(&params).unwrap();
+        // Single group: sqrt(3^2 + 4^2) = 5.0
+        // Penalty = 0.1 * 5.0 = 0.5
+        assert!((penalty - 0.5).abs() < 0.01);
+
+        let gradients = regularizer.compute_gradient(&params).unwrap();
+        let grad_w = gradients.get("w").unwrap();
+        assert_eq!(grad_w.dim(), (1, 2));
     }
 }
