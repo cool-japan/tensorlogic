@@ -51,6 +51,7 @@ rayon.workspace = true
 [dev-dependencies]
 assert_cmd.workspace = true
 predicates.workspace = true
+criterion.workspace = true
 
 [features]
 # Future features for SIMD and GPU support

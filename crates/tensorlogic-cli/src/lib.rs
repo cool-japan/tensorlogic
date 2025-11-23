@@ -17,18 +17,19 @@
 //! # Quick Start
 //!
 //! ```rust,no_run
-//! use tensorlogic_cli::{parser, executor, CompilationContext};
-//! use tensorlogic_compiler::{CompilerContext, CompilationStrategy};
+//! use tensorlogic_cli::{parser, CompilationContext};
+//! use tensorlogic_compiler::{compile_to_einsum_with_context, CompilationConfig};
 //!
 //! // Parse an expression
-//! let expr = parser::parse_expression("AND(pred1(x), pred2(x, y))").unwrap();
+//! let expr = parser::parse_expression("pred1(x) AND pred2(x, y)").unwrap();
 //!
-//! // Create compiler context
-//! let mut ctx = CompilerContext::new();
-//! ctx.set_strategy(CompilationStrategy::soft_differentiable());
+//! // Create compiler context with configuration
+//! let config = CompilationConfig::soft_differentiable();
+//! let mut ctx = CompilationContext::with_config(config);
+//! ctx.add_domain("D", 100);
 //!
 //! // Compile to einsum graph
-//! let graph = tensorlogic_compiler::compile(&expr, &ctx).unwrap();
+//! let graph = compile_to_einsum_with_context(&expr, &mut ctx).unwrap();
 //!
 //! // Execute the graph (requires appropriate setup)
 //! // let result = executor::execute_graph(&graph, &backend_config).unwrap();
@@ -59,23 +60,24 @@
 //!
 //! ```rust,no_run
 //! use tensorlogic_cli::{parser, analysis, CompilationContext};
-//! use tensorlogic_compiler::{CompilerContext, CompilationStrategy};
+//! use tensorlogic_compiler::{compile_to_einsum_with_context, CompilationConfig};
 //!
 //! // Parse expression
 //! let expr = parser::parse_expression(
-//!     "EXISTS x. (pred1(x) AND pred2(x, y))"
+//!     "EXISTS x IN Person. (pred1(x) AND pred2(x, y))"
 //! ).unwrap();
 //!
 //! // Setup compilation context
-//! let mut ctx = CompilerContext::new();
-//! ctx.set_strategy(CompilationStrategy::soft_differentiable());
+//! let config = CompilationConfig::soft_differentiable();
+//! let mut ctx = CompilationContext::with_config(config);
 //! ctx.add_domain("Person", 100);
+//! ctx.add_domain("D", 100);
 //!
 //! // Compile
-//! let graph = tensorlogic_compiler::compile(&expr, &ctx).unwrap();
+//! let graph = compile_to_einsum_with_context(&expr, &mut ctx).unwrap();
 //!
 //! // Analyze complexity
-//! let metrics = analysis::analyze_graph(&graph);
+//! let metrics = analysis::GraphMetrics::analyze(&graph);
 //! println!("Graph has {} tensors and {} nodes", metrics.tensor_count, metrics.node_count);
 //! println!("Estimated FLOPs: {}", metrics.estimated_flops);
 //! ```
@@ -92,6 +94,7 @@ pub mod analysis;
 pub mod benchmark;
 pub mod cache;
 pub mod conversion;
+pub mod error_suggestions;
 pub mod executor;
 pub mod ffi;
 pub mod macros;

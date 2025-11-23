@@ -220,21 +220,27 @@
 //! 4. **Performance**: Efficient matrix operations
 //! 5. **Interpretability**: Clear mapping from logic to similarity
 
+pub mod ard_kernel;
 pub mod cache;
 pub mod composite_kernel;
 pub mod error;
 pub mod feature_extraction;
+pub mod gradient;
 pub mod graph_kernel;
+pub mod kernel_selection;
 pub mod kernel_transform;
 pub mod kernel_utils;
+pub mod kpca;
 pub mod logic_kernel;
 pub mod low_rank;
 pub mod multitask;
 pub mod online;
 pub mod provenance;
+pub mod random_features;
 #[cfg(feature = "sklears")]
 pub mod sklears_integration;
 pub mod sparse;
+pub mod spectral_kernel;
 pub mod string_kernel;
 pub mod symbolic;
 pub mod tensor_kernel;
@@ -242,6 +248,10 @@ pub mod tree_kernel;
 pub mod types;
 
 // Re-export main types for convenience
+pub use ard_kernel::{
+    ArdMaternKernel, ArdRationalQuadraticKernel, ArdRbfKernel, ConstantKernel, DotProductKernel,
+    KernelGradient, ScaledKernel, WhiteNoiseKernel,
+};
 pub use cache::{CacheStats, CachedKernel, KernelMatrixCache};
 pub use composite_kernel::{KernelAlignment, ProductKernel, WeightedSumKernel};
 pub use error::{KernelError, Result};
@@ -249,6 +259,9 @@ pub use feature_extraction::{FeatureExtractionConfig, FeatureExtractor};
 pub use graph_kernel::{
     Graph, RandomWalkKernel, SubgraphMatchingConfig, SubgraphMatchingKernel, WalkKernelConfig,
     WeisfeilerLehmanConfig, WeisfeilerLehmanKernel,
+};
+pub use kernel_selection::{
+    CrossValidationResult, GammaSearchResult, KFoldConfig, KernelComparison, KernelSelector,
 };
 pub use kernel_transform::NormalizedKernel;
 pub use logic_kernel::{PredicateOverlapKernel, RuleSimilarityKernel};
@@ -265,9 +278,17 @@ pub use provenance::{
     ComputationResult, ProvenanceConfig, ProvenanceId, ProvenanceKernel, ProvenanceRecord,
     ProvenanceStatistics, ProvenanceTracker,
 };
+pub use random_features::{
+    KernelType as RffKernelType, NystroemFeatures, OrthogonalRandomFeatures, RandomFourierFeatures,
+    RffConfig,
+};
 #[cfg(feature = "sklears")]
 pub use sklears_integration::SklearsKernelAdapter;
 pub use sparse::{SparseKernelMatrix, SparseKernelMatrixBuilder};
+pub use spectral_kernel::{
+    ExpSineSquaredKernel, LocallyPeriodicKernel, RbfLinearKernel, SpectralComponent,
+    SpectralMixtureKernel,
+};
 pub use string_kernel::{
     EditDistanceKernel, NGramKernel, NGramKernelConfig, SubsequenceKernel, SubsequenceKernelConfig,
 };

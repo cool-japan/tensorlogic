@@ -54,6 +54,10 @@ harness = false
 name = "database_benchmarks"
 harness = false
 
+[[bench]]
+name = "refinement_benchmarks"
+harness = false
+
 [[bin]]
 name = "schema_validate"
 path = "src/bin/schema_validate.rs"

@@ -89,6 +89,87 @@ impl PolynomialKernel {
     }
 }
 
+impl PolynomialKernel {
+    /// Compute the kernel value and gradient with respect to the constant term.
+    ///
+    /// Returns (K(x,y), dK/dc) where c is the constant term.
+    ///
+    /// # Example
+    /// ```rust
+    /// use tensorlogic_sklears_kernels::PolynomialKernel;
+    ///
+    /// let kernel = PolynomialKernel::new(2, 1.0).unwrap();
+    /// let x = vec![1.0, 2.0];
+    /// let y = vec![3.0, 4.0];
+    /// let (value, grad_c) = kernel.compute_with_constant_gradient(&x, &y).unwrap();
+    /// ```
+    pub fn compute_with_constant_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "polynomial kernel gradient".to_string(),
+            });
+        }
+
+        let dot = Self::dot_product(x, y);
+        let base = dot + self.constant;
+
+        if base.abs() < 1e-10 && self.degree > 1 {
+            // Near zero base with degree > 1, gradient is zero
+            return Ok((0.0, 0.0));
+        }
+
+        let k = base.powi(self.degree as i32);
+        // dK/dc = d * (dot + c)^(d-1)
+        let grad_c = (self.degree as f64) * base.powi(self.degree as i32 - 1);
+
+        Ok((k, grad_c))
+    }
+
+    /// Compute the kernel value and all gradients (w.r.t. constant and degree).
+    ///
+    /// Returns (K(x,y), dK/dc, dK/dd) where:
+    /// - dK/dc is the gradient w.r.t. constant term
+    /// - dK/dd is the gradient w.r.t. degree (treating degree as continuous)
+    ///
+    /// Note: dK/dd = K * ln(dot + c), useful for continuous degree optimization.
+    pub fn compute_with_all_gradients(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "polynomial kernel all gradients".to_string(),
+            });
+        }
+
+        let dot = Self::dot_product(x, y);
+        let base = dot + self.constant;
+
+        if base.abs() < 1e-10 && self.degree > 1 {
+            return Ok((0.0, 0.0, 0.0));
+        }
+
+        let k = base.powi(self.degree as i32);
+
+        // dK/dc = d * (dot + c)^(d-1)
+        let grad_c = (self.degree as f64) * base.powi(self.degree as i32 - 1);
+
+        // dK/dd = K * ln(dot + c), treating degree as continuous
+        let grad_d = if base > 0.0 {
+            k * base.ln()
+        } else if base < 0.0 && self.degree.is_multiple_of(2) {
+            // Even power of negative number
+            k * base.abs().ln()
+        } else {
+            // Negative base with odd power - gradient undefined for continuous degree
+            f64::NAN
+        };
+
+        Ok((k, grad_c, grad_d))
+    }
+}
+
 impl Kernel for PolynomialKernel {
     fn compute(&self, x: &[f64], y: &[f64]) -> Result<f64> {
         if x.len() != y.len() {
@@ -145,6 +226,60 @@ impl RbfKernel {
     /// Compute squared Euclidean distance
     fn squared_distance(x: &[f64], y: &[f64]) -> f64 {
         x.iter().zip(y.iter()).map(|(a, b)| (a - b) * (a - b)).sum()
+    }
+
+    /// Compute the kernel value and gradient with respect to gamma.
+    ///
+    /// Returns (K(x,y), dK/d_gamma) for hyperparameter optimization.
+    ///
+    /// # Example
+    /// ```rust
+    /// use tensorlogic_sklears_kernels::{RbfKernel, RbfKernelConfig};
+    ///
+    /// let kernel = RbfKernel::new(RbfKernelConfig::new(0.5)).unwrap();
+    /// let x = vec![1.0, 2.0];
+    /// let y = vec![3.0, 4.0];
+    /// let (value, grad) = kernel.compute_with_gradient(&x, &y).unwrap();
+    /// ```
+    pub fn compute_with_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "RBF kernel gradient".to_string(),
+            });
+        }
+
+        let sq_dist = Self::squared_distance(x, y);
+        let k = (-self.config.gamma * sq_dist).exp();
+
+        // dK/d_gamma = -sq_dist * exp(-gamma * sq_dist) = -sq_dist * K
+        let grad_gamma = -sq_dist * k;
+
+        Ok((k, grad_gamma))
+    }
+
+    /// Compute the kernel gradient with respect to length scale (sigma = 1/sqrt(2*gamma)).
+    ///
+    /// This is useful when parameterizing in terms of length scale instead of gamma.
+    pub fn compute_with_length_scale_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "RBF kernel length scale gradient".to_string(),
+            });
+        }
+
+        let sq_dist = Self::squared_distance(x, y);
+        let k = (-self.config.gamma * sq_dist).exp();
+
+        // If gamma = 1/(2*sigma^2), then dK/d_sigma = sq_dist * gamma^{3/2} * sqrt(2) * K
+        // Simplified: dK/d_sigma = sq_dist / sigma^3 * K where sigma = 1/sqrt(2*gamma)
+        let sigma = 1.0 / (2.0 * self.config.gamma).sqrt();
+        let grad_sigma = sq_dist / (sigma * sigma * sigma) * k;
+
+        Ok((k, grad_sigma))
     }
 }
 
@@ -279,6 +414,58 @@ impl LaplacianKernel {
     /// Compute L1 (Manhattan) distance
     fn l1_distance(x: &[f64], y: &[f64]) -> f64 {
         x.iter().zip(y.iter()).map(|(a, b)| (a - b).abs()).sum()
+    }
+
+    /// Compute the kernel value and gradient with respect to gamma.
+    ///
+    /// Returns (K(x,y), dK/d_gamma) for hyperparameter optimization.
+    ///
+    /// # Example
+    /// ```rust
+    /// use tensorlogic_sklears_kernels::LaplacianKernel;
+    ///
+    /// let kernel = LaplacianKernel::new(0.5).unwrap();
+    /// let x = vec![1.0, 2.0];
+    /// let y = vec![3.0, 4.0];
+    /// let (value, grad) = kernel.compute_with_gradient(&x, &y).unwrap();
+    /// ```
+    pub fn compute_with_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "Laplacian kernel gradient".to_string(),
+            });
+        }
+
+        let l1_dist = Self::l1_distance(x, y);
+        let k = (-self.gamma * l1_dist).exp();
+
+        // dK/d_gamma = -l1_dist * exp(-gamma * l1_dist) = -l1_dist * K
+        let grad_gamma = -l1_dist * k;
+
+        Ok((k, grad_gamma))
+    }
+
+    /// Compute the kernel gradient with respect to sigma (where gamma = 1/sigma).
+    ///
+    /// Returns (K(x,y), dK/d_sigma) for length-scale parameterization.
+    pub fn compute_with_sigma_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "Laplacian kernel sigma gradient".to_string(),
+            });
+        }
+
+        let l1_dist = Self::l1_distance(x, y);
+        let k = (-self.gamma * l1_dist).exp();
+
+        // If gamma = 1/sigma, then dK/d_sigma = l1_dist/sigma² * K = l1_dist * gamma² * K
+        let grad_sigma = l1_dist * self.gamma * self.gamma * k;
+
+        Ok((k, grad_sigma))
     }
 }
 
@@ -616,6 +803,82 @@ impl MaternKernel {
             .sum::<f64>()
             .sqrt()
     }
+
+    /// Compute the kernel value and gradient with respect to length_scale.
+    ///
+    /// Returns (K(x,y), dK/dl) where l is the length_scale parameter.
+    /// Only supports nu = 0.5, 1.5, 2.5 (the most common cases).
+    ///
+    /// # Example
+    /// ```rust
+    /// use tensorlogic_sklears_kernels::MaternKernel;
+    ///
+    /// let kernel = MaternKernel::nu_3_2(1.0).unwrap();
+    /// let x = vec![1.0, 2.0];
+    /// let y = vec![3.0, 4.0];
+    /// let (value, grad_l) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
+    /// ```
+    pub fn compute_with_length_scale_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "Matérn kernel length scale gradient".to_string(),
+            });
+        }
+
+        let dist = Self::euclidean_distance(x, y);
+
+        // Handle same point case
+        if dist < 1e-10 {
+            return Ok((1.0, 0.0)); // K=1, gradient=0 at same point
+        }
+
+        let l = self.length_scale;
+        let sqrt_2nu = (2.0 * self.nu).sqrt();
+        let scaled_dist = sqrt_2nu * dist / l;
+
+        // Use closed-form expressions for common nu values
+        if (self.nu - 0.5).abs() < 1e-10 {
+            // nu = 1/2: K = exp(-r/l)
+            // dK/dl = (r/l²) * K = scaled_dist/l * K
+            let k = (-scaled_dist).exp();
+            let grad_l = (dist / (l * l)) * k;
+            Ok((k, grad_l))
+        } else if (self.nu - 1.5).abs() < 1e-10 {
+            // nu = 3/2: K = (1 + sqrt(3)*r/l) * exp(-sqrt(3)*r/l)
+            // Let z = sqrt(3)*r/l
+            // K = (1 + z) * exp(-z)
+            // dK/dl = (z²/l) * exp(-z) = (3*r²/l³) * exp(-z)
+            let sqrt3 = 3.0_f64.sqrt();
+            let z = sqrt3 * dist / l;
+            let exp_neg_z = (-z).exp();
+            let k = (1.0 + z) * exp_neg_z;
+            let grad_l = (z * z / l) * exp_neg_z;
+            Ok((k, grad_l))
+        } else if (self.nu - 2.5).abs() < 1e-10 {
+            // nu = 5/2: K = (1 + sqrt(5)*r/l + 5*r²/(3*l²)) * exp(-sqrt(5)*r/l)
+            // Let z = sqrt(5)*r/l
+            // K = (1 + z + z²/3) * exp(-z)
+            // dK/dl = (z²/l) * (1 + z) / 3 * exp(-z)
+            let sqrt5 = 5.0_f64.sqrt();
+            let z = sqrt5 * dist / l;
+            let exp_neg_z = (-z).exp();
+            let k = (1.0 + z + z * z / 3.0) * exp_neg_z;
+            // dK/dl = z²*(1+z)/(3*l) * exp(-z)
+            let grad_l = (z * z * (1.0 + z) / (3.0 * l)) * exp_neg_z;
+            Ok((k, grad_l))
+        } else {
+            // General case: use finite differences approximation
+            let k = (1.0 + scaled_dist) * (-scaled_dist).exp();
+            let eps = 1e-6;
+            let l_plus = l + eps;
+            let scaled_dist_plus = sqrt_2nu * dist / l_plus;
+            let k_plus = (1.0 + scaled_dist_plus) * (-scaled_dist_plus).exp();
+            let grad_l = (k_plus - k) / eps;
+            Ok((k, grad_l))
+        }
+    }
 }
 
 impl Kernel for MaternKernel {
@@ -726,6 +989,101 @@ impl RationalQuadraticKernel {
     /// Compute squared Euclidean distance
     fn squared_distance(x: &[f64], y: &[f64]) -> f64 {
         x.iter().zip(y.iter()).map(|(a, b)| (a - b) * (a - b)).sum()
+    }
+
+    /// Compute the kernel value and gradient with respect to length_scale.
+    ///
+    /// Returns (K(x,y), dK/dl) where l is the length_scale parameter.
+    ///
+    /// # Example
+    /// ```rust
+    /// use tensorlogic_sklears_kernels::RationalQuadraticKernel;
+    ///
+    /// let kernel = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+    /// let x = vec![1.0, 2.0];
+    /// let y = vec![3.0, 4.0];
+    /// let (value, grad_l) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
+    /// ```
+    pub fn compute_with_length_scale_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "Rational Quadratic kernel length scale gradient".to_string(),
+            });
+        }
+
+        let sq_dist = Self::squared_distance(x, y);
+        let l_sq = self.length_scale * self.length_scale;
+        let term = 1.0 + sq_dist / (2.0 * self.alpha * l_sq);
+        let k = term.powf(-self.alpha);
+
+        // dK/dl = K * alpha * sq_dist / (alpha * l³ * term) = K * sq_dist / (l³ * term)
+        // Simplified: dK/dl = K * sq_dist / (l * (2 * alpha * l² + sq_dist))
+        let denom = self.length_scale * (2.0 * self.alpha * l_sq + sq_dist);
+        let grad_l = if denom.abs() > 1e-10 {
+            k * sq_dist / denom
+        } else {
+            0.0
+        };
+
+        Ok((k, grad_l))
+    }
+
+    /// Compute the kernel value and gradient with respect to alpha.
+    ///
+    /// Returns (K(x,y), dK/d_alpha) where alpha is the scale mixture parameter.
+    pub fn compute_with_alpha_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "Rational Quadratic kernel alpha gradient".to_string(),
+            });
+        }
+
+        let sq_dist = Self::squared_distance(x, y);
+        let l_sq = self.length_scale * self.length_scale;
+        let u = sq_dist / (2.0 * self.alpha * l_sq);
+        let term = 1.0 + u;
+        let k = term.powf(-self.alpha);
+
+        // dK/d_alpha = K * (u/term - ln(term))
+        let grad_alpha = k * (u / term - term.ln());
+
+        Ok((k, grad_alpha))
+    }
+
+    /// Compute the kernel value and all gradients (length_scale and alpha).
+    ///
+    /// Returns (K(x,y), dK/dl, dK/d_alpha).
+    pub fn compute_with_all_gradients(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64, f64)> {
+        if x.len() != y.len() {
+            return Err(KernelError::DimensionMismatch {
+                expected: vec![x.len()],
+                got: vec![y.len()],
+                context: "Rational Quadratic kernel all gradients".to_string(),
+            });
+        }
+
+        let sq_dist = Self::squared_distance(x, y);
+        let l_sq = self.length_scale * self.length_scale;
+        let u = sq_dist / (2.0 * self.alpha * l_sq);
+        let term = 1.0 + u;
+        let k = term.powf(-self.alpha);
+
+        // dK/dl
+        let denom = self.length_scale * (2.0 * self.alpha * l_sq + sq_dist);
+        let grad_l = if denom.abs() > 1e-10 {
+            k * sq_dist / denom
+        } else {
+            0.0
+        };
+
+        // dK/d_alpha
+        let grad_alpha = k * (u / term - term.ln());
+
+        Ok((k, grad_l, grad_alpha))
     }
 }
 
@@ -1521,5 +1879,340 @@ mod tests {
         assert!(matern.compute(&x, &y).is_err());
         assert!(rq.compute(&x, &y).is_err());
         assert!(periodic.compute(&x, &y).is_err());
+    }
+
+    // ============================================================================
+    // Tests for kernel gradient methods
+    // ============================================================================
+
+    #[test]
+    fn test_rbf_kernel_gradient_basic() {
+        let config = RbfKernelConfig::new(0.5);
+        let kernel = RbfKernel::new(config).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad) = kernel.compute_with_gradient(&x, &y).unwrap();
+
+        // Verify kernel value matches standard compute
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10);
+
+        // Gradient should be negative (kernel decreases as gamma increases for distant points)
+        assert!(grad < 0.0);
+    }
+
+    #[test]
+    fn test_rbf_kernel_gradient_same_point() {
+        let config = RbfKernelConfig::new(0.5);
+        let kernel = RbfKernel::new(config).unwrap();
+
+        let x = vec![1.0, 2.0, 3.0];
+
+        let (k, grad) = kernel.compute_with_gradient(&x, &x).unwrap();
+
+        // Same point: K = 1.0, gradient = 0 (no distance)
+        assert!((k - 1.0).abs() < 1e-10);
+        assert!(grad.abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_rbf_kernel_gradient_numerical_check() {
+        let gamma = 0.5;
+        let kernel = RbfKernel::new(RbfKernelConfig::new(gamma)).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad) = kernel.compute_with_gradient(&x, &y).unwrap();
+
+        // Numerical gradient check
+        let eps = 1e-6;
+        let kernel_plus = RbfKernel::new(RbfKernelConfig::new(gamma + eps)).unwrap();
+        let k_plus = kernel_plus.compute(&x, &y).unwrap();
+        let numerical_grad = (k_plus - k) / eps;
+
+        assert!(
+            (grad - numerical_grad).abs() < 1e-4,
+            "Analytical: {}, Numerical: {}",
+            grad,
+            numerical_grad
+        );
+    }
+
+    #[test]
+    fn test_rbf_kernel_length_scale_gradient() {
+        let kernel = RbfKernel::new(RbfKernelConfig::new(0.5)).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_sigma) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
+
+        // Kernel value should match
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10);
+
+        // Gradient w.r.t. sigma should be positive (kernel increases as length scale increases)
+        assert!(grad_sigma > 0.0);
+    }
+
+    #[test]
+    fn test_polynomial_kernel_constant_gradient() {
+        let kernel = PolynomialKernel::new(2, 1.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_c) = kernel.compute_with_constant_gradient(&x, &y).unwrap();
+
+        // Verify kernel value: (dot + c)^d = (1*3 + 2*4 + 1)^2 = (11 + 1)^2 = 144
+        assert!((k - 144.0).abs() < 1e-10);
+
+        // dK/dc = d * (dot + c)^(d-1) = 2 * 12 = 24
+        assert!((grad_c - 24.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_polynomial_kernel_all_gradients() {
+        let kernel = PolynomialKernel::new(3, 1.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![2.0, 3.0];
+
+        let (k, grad_c, grad_d) = kernel.compute_with_all_gradients(&x, &y).unwrap();
+
+        // dot = 1*2 + 2*3 = 8, base = 9
+        // K = 9^3 = 729
+        assert!((k - 729.0).abs() < 1e-8);
+
+        // dK/dc = 3 * 9^2 = 243
+        assert!((grad_c - 243.0).abs() < 1e-8);
+
+        // dK/dd = K * ln(base) = 729 * ln(9)
+        let expected_grad_d = 729.0 * 9.0_f64.ln();
+        assert!(
+            (grad_d - expected_grad_d).abs() < 1e-6,
+            "Expected: {}, Got: {}",
+            expected_grad_d,
+            grad_d
+        );
+    }
+
+    #[test]
+    fn test_polynomial_kernel_gradient_numerical_check() {
+        let c = 1.0;
+        let kernel = PolynomialKernel::new(2, c).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_c) = kernel.compute_with_constant_gradient(&x, &y).unwrap();
+
+        // Numerical gradient check
+        let eps = 1e-6;
+        let kernel_plus = PolynomialKernel::new(2, c + eps).unwrap();
+        let k_plus = kernel_plus.compute(&x, &y).unwrap();
+        let numerical_grad = (k_plus - k) / eps;
+
+        assert!(
+            (grad_c - numerical_grad).abs() < 1e-3,
+            "Analytical: {}, Numerical: {}",
+            grad_c,
+            numerical_grad
+        );
+    }
+
+    #[test]
+    fn test_laplacian_kernel_gradient() {
+        let kernel = LaplacianKernel::new(0.5).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad) = kernel.compute_with_gradient(&x, &y).unwrap();
+
+        // Verify kernel value matches
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10);
+
+        // Gradient should be negative
+        assert!(grad < 0.0);
+    }
+
+    #[test]
+    fn test_laplacian_kernel_gradient_same_point() {
+        let kernel = LaplacianKernel::new(0.5).unwrap();
+
+        let x = vec![1.0, 2.0, 3.0];
+
+        let (k, grad) = kernel.compute_with_gradient(&x, &x).unwrap();
+
+        // Same point: K = 1.0, gradient = 0
+        assert!((k - 1.0).abs() < 1e-10);
+        assert!(grad.abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_laplacian_kernel_sigma_gradient() {
+        let kernel = LaplacianKernel::new(0.5).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_sigma) = kernel.compute_with_sigma_gradient(&x, &y).unwrap();
+
+        // Kernel value should match
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10);
+
+        // Gradient w.r.t. sigma should be positive
+        assert!(grad_sigma > 0.0);
+    }
+
+    #[test]
+    fn test_matern_kernel_gradient_nu_half() {
+        let kernel = MaternKernel::exponential(1.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_l) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
+
+        // Verify kernel value matches
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10, "K mismatch: {} vs {}", k, k_std);
+
+        // Gradient w.r.t. length scale should be positive (kernel increases as l increases)
+        assert!(grad_l > 0.0);
+    }
+
+    #[test]
+    fn test_matern_kernel_gradient_nu_3_2() {
+        let kernel = MaternKernel::nu_3_2(1.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_l) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
+
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10, "K mismatch: {} vs {}", k, k_std);
+
+        assert!(grad_l > 0.0, "Gradient should be positive, got: {}", grad_l);
+    }
+
+    #[test]
+    fn test_matern_kernel_gradient_nu_5_2() {
+        let kernel = MaternKernel::nu_5_2(1.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_l) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
+
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10, "K mismatch: {} vs {}", k, k_std);
+
+        assert!(grad_l > 0.0);
+    }
+
+    #[test]
+    fn test_matern_kernel_gradient_same_point() {
+        let kernel = MaternKernel::nu_3_2(1.0).unwrap();
+
+        let x = vec![1.0, 2.0, 3.0];
+
+        let (k, grad_l) = kernel.compute_with_length_scale_gradient(&x, &x).unwrap();
+
+        // Same point: K = 1.0, gradient = 0
+        assert!((k - 1.0).abs() < 1e-10);
+        assert!(grad_l.abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_rational_quadratic_kernel_length_scale_gradient() {
+        let kernel = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_l) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
+
+        // Verify kernel value matches
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10);
+
+        // Gradient w.r.t. length scale should be positive
+        assert!(grad_l > 0.0);
+    }
+
+    #[test]
+    fn test_rational_quadratic_kernel_alpha_gradient() {
+        let kernel = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_alpha) = kernel.compute_with_alpha_gradient(&x, &y).unwrap();
+
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10);
+
+        // Gradient w.r.t. alpha: should be negative (kernel decreases as alpha increases)
+        assert!(grad_alpha < 0.0);
+    }
+
+    #[test]
+    fn test_rational_quadratic_kernel_all_gradients() {
+        let kernel = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![3.0, 4.0];
+
+        let (k, grad_l, grad_alpha) = kernel.compute_with_all_gradients(&x, &y).unwrap();
+
+        let k_std = kernel.compute(&x, &y).unwrap();
+        assert!((k - k_std).abs() < 1e-10);
+
+        // Verify consistency with individual gradient methods
+        let (_, grad_l_single) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
+        let (_, grad_alpha_single) = kernel.compute_with_alpha_gradient(&x, &y).unwrap();
+
+        assert!((grad_l - grad_l_single).abs() < 1e-10);
+        assert!((grad_alpha - grad_alpha_single).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_rational_quadratic_kernel_gradient_same_point() {
+        let kernel = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+
+        let x = vec![1.0, 2.0, 3.0];
+
+        let (k, grad_l, grad_alpha) = kernel.compute_with_all_gradients(&x, &x).unwrap();
+
+        // Same point: K = 1.0, gradients = 0
+        assert!((k - 1.0).abs() < 1e-10);
+        assert!(grad_l.abs() < 1e-10);
+        assert!(grad_alpha.abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_kernel_gradient_dimension_mismatch() {
+        let rbf = RbfKernel::new(RbfKernelConfig::new(0.5)).unwrap();
+        let poly = PolynomialKernel::new(2, 1.0).unwrap();
+        let lap = LaplacianKernel::new(0.5).unwrap();
+        let matern = MaternKernel::nu_3_2(1.0).unwrap();
+        let rq = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
+
+        let x = vec![1.0, 2.0];
+        let y = vec![1.0, 2.0, 3.0];
+
+        assert!(rbf.compute_with_gradient(&x, &y).is_err());
+        assert!(poly.compute_with_constant_gradient(&x, &y).is_err());
+        assert!(lap.compute_with_gradient(&x, &y).is_err());
+        assert!(matern.compute_with_length_scale_gradient(&x, &y).is_err());
+        assert!(rq.compute_with_length_scale_gradient(&x, &y).is_err());
     }
 }

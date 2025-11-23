@@ -15,12 +15,14 @@ use tensorlogic_adapters::{
     LinearContext,
     LinearKind,
     LinearType,
+    MemoryDatabase,
     PredicateInfo,
     PredicateQuery,
     QueryPlanner,
     // Advanced Type System
     RefinementPredicate,
     RefinementRegistry,
+    SchemaDatabase,
     SchemaValidator,
     StringInterner,
     SymbolTable,
@@ -679,5 +681,239 @@ proptest! {
         prop_assert!(diff.has(Effect::GPU));
         prop_assert!(!diff.has(Effect::IO));
         prop_assert!(!diff.has(Effect::State));
+    }
+}
+
+// =============================================================================
+// Database Property Tests
+// =============================================================================
+
+mod database_properties {
+    use super::*;
+
+    proptest! {
+        /// Test that storing and loading a schema preserves all data
+        #[test]
+        fn test_database_store_load_roundtrip(table in symbol_table_strategy()) {
+            let mut db = MemoryDatabase::new();
+
+            // Store the schema
+            let schema_id = db.store_schema("test_schema", &table).unwrap();
+
+            // Load it back
+            let loaded = db.load_schema(schema_id).unwrap();
+
+            // Verify all domains are preserved
+            prop_assert_eq!(table.domains.len(), loaded.domains.len());
+            for (name, domain) in &table.domains {
+                prop_assert!(loaded.domains.contains_key(name));
+                let loaded_domain = &loaded.domains[name];
+                prop_assert_eq!(domain.cardinality, loaded_domain.cardinality);
+                prop_assert_eq!(&domain.name, &loaded_domain.name);
+            }
+
+            // Verify all predicates are preserved
+            prop_assert_eq!(table.predicates.len(), loaded.predicates.len());
+            for (name, pred) in &table.predicates {
+                prop_assert!(loaded.predicates.contains_key(name));
+                let loaded_pred = &loaded.predicates[name];
+                prop_assert_eq!(pred.arity, loaded_pred.arity);
+                prop_assert_eq!(&pred.arg_domains, &loaded_pred.arg_domains);
+            }
+        }
+
+        /// Test that schemas can be loaded by name
+        #[test]
+        fn test_database_load_by_name(table in symbol_table_strategy(), name in "[a-z]{3,15}") {
+            let mut db = MemoryDatabase::new();
+
+            // Store with a specific name
+            db.store_schema(&name, &table).unwrap();
+
+            // Load by name
+            let loaded = db.load_schema_by_name(&name).unwrap();
+
+            // Should match
+            prop_assert_eq!(table.domains.len(), loaded.domains.len());
+            prop_assert_eq!(table.predicates.len(), loaded.predicates.len());
+        }
+
+        /// Test that multiple versions of the same schema can coexist
+        #[test]
+        fn test_database_versioning(
+            table1 in symbol_table_strategy(),
+            table2 in symbol_table_strategy(),
+        ) {
+            let mut db = MemoryDatabase::new();
+
+            // Store two versions of the same schema
+            let id1 = db.store_schema("versioned_schema", &table1).unwrap();
+            let id2 = db.store_schema("versioned_schema", &table2).unwrap();
+
+            // IDs should be different
+            prop_assert_ne!(id1, id2);
+
+            // Both should be loadable
+            let loaded1 = db.load_schema(id1).unwrap();
+            let loaded2 = db.load_schema(id2).unwrap();
+
+            prop_assert_eq!(table1.domains.len(), loaded1.domains.len());
+            prop_assert_eq!(table2.domains.len(), loaded2.domains.len());
+        }
+
+        /// Test that schema search works correctly
+        #[test]
+        fn test_database_search(
+            table in symbol_table_strategy(),
+            prefix in "[a-z]{2,5}",
+            suffix in "[a-z]{2,5}",
+        ) {
+            let mut db = MemoryDatabase::new();
+            let name = format!("{}_test_{}", prefix, suffix);
+
+            db.store_schema(&name, &table).unwrap();
+
+            // Search with prefix should find it
+            let results = db.search_schemas(&format!("{}_", prefix)).unwrap();
+            prop_assert!(!results.is_empty());
+
+            // Verify the found schema has the correct name
+            prop_assert!(results.iter().any(|m| m.name.starts_with(&prefix)));
+        }
+
+        /// Test that deleting a schema removes it
+        #[test]
+        fn test_database_delete(table in symbol_table_strategy()) {
+            let mut db = MemoryDatabase::new();
+
+            let id = db.store_schema("to_delete", &table).unwrap();
+
+            // Verify it exists
+            prop_assert!(db.load_schema(id).is_ok());
+
+            // Delete it
+            db.delete_schema(id).unwrap();
+
+            // Should no longer be loadable
+            prop_assert!(db.load_schema(id).is_err());
+        }
+
+        /// Test that schema history tracks versions
+        #[test]
+        fn test_database_history(
+            table1 in symbol_table_strategy(),
+            table2 in symbol_table_strategy(),
+            table3 in symbol_table_strategy(),
+        ) {
+            let mut db = MemoryDatabase::new();
+            let name = "history_test";
+
+            db.store_schema(name, &table1).unwrap();
+            db.store_schema(name, &table2).unwrap();
+            db.store_schema(name, &table3).unwrap();
+
+            let history = db.get_schema_history(name).unwrap();
+
+            // Should have 3 versions
+            prop_assert_eq!(history.len(), 3);
+
+            // Versions should be sequential
+            prop_assert_eq!(history[0].version, 1);
+            prop_assert_eq!(history[1].version, 2);
+            prop_assert_eq!(history[2].version, 3);
+        }
+
+        /// Test that list_schemas returns all stored schemas
+        #[test]
+        fn test_database_list_schemas(
+            tables in prop::collection::vec(symbol_table_strategy(), 1..10),
+        ) {
+            let mut db = MemoryDatabase::new();
+            let mut names = Vec::new();
+
+            // Store multiple schemas with unique names
+            for (i, table) in tables.iter().enumerate() {
+                let name = format!("schema_{}", i);
+                names.push(name.clone());
+                db.store_schema(&name, table).unwrap();
+            }
+
+            let list = db.list_schemas().unwrap();
+
+            // Should have at least as many as we stored
+            prop_assert!(list.len() >= tables.len());
+
+            // All our schemas should be in the list
+            for name in &names {
+                prop_assert!(list.iter().any(|m| m.name == *name));
+            }
+        }
+
+        /// Test that database handles empty schemas correctly
+        #[test]
+        fn test_database_empty_schema(_dummy in 0..1) {
+            let mut db = MemoryDatabase::new();
+            let empty = SymbolTable::new();
+
+            let id = db.store_schema("empty", &empty).unwrap();
+            let loaded = db.load_schema(id).unwrap();
+
+            prop_assert_eq!(loaded.domains.len(), 0);
+            prop_assert_eq!(loaded.predicates.len(), 0);
+            prop_assert_eq!(loaded.variables.len(), 0);
+        }
+
+        /// Test database metadata accuracy
+        #[test]
+        fn test_database_metadata_accuracy(table in symbol_table_strategy()) {
+            let mut db = MemoryDatabase::new();
+
+            let id = db.store_schema("metadata_test", &table).unwrap();
+            let list = db.list_schemas().unwrap();
+
+            // Find our schema in the list
+            let metadata = list.iter().find(|m| m.id == id).unwrap();
+
+            // Verify counts match
+            prop_assert_eq!(metadata.num_domains, table.domains.len());
+            prop_assert_eq!(metadata.num_predicates, table.predicates.len());
+            prop_assert_eq!(metadata.num_variables, table.variables.len());
+        }
+
+        /// Test that concurrent schema operations don't interfere
+        #[test]
+        fn test_database_independence(
+            table1 in symbol_table_strategy(),
+            table2 in symbol_table_strategy(),
+        ) {
+            let mut db = MemoryDatabase::new();
+
+            // Store two different schemas
+            let id1 = db.store_schema("schema_a", &table1).unwrap();
+            let id2 = db.store_schema("schema_b", &table2).unwrap();
+
+            // Load them back
+            let loaded1 = db.load_schema(id1).unwrap();
+            let loaded2 = db.load_schema(id2).unwrap();
+
+            // They should be independent (not affect each other)
+            prop_assert_eq!(table1.domains.len(), loaded1.domains.len());
+            prop_assert_eq!(table2.domains.len(), loaded2.domains.len());
+
+            // Modifying one shouldn't affect the other
+            if !table1.domains.is_empty() && !table2.domains.is_empty() {
+                let dom1_names: Vec<_> = table1.domains.keys().collect();
+                let dom2_names: Vec<_> = table2.domains.keys().collect();
+
+                // If they have different domains, verify independence
+                if dom1_names != dom2_names {
+                    for name in &dom1_names {
+                        if !dom2_names.contains(name) {
+                            prop_assert!(!loaded2.domains.contains_key(*name));
+                        }
+                    }
+                }
+            }
+        }
     }
 }

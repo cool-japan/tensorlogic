@@ -504,6 +504,9 @@ impl RefinementType {
     /// A refinement type A is a subtype of B if:
     /// 1. They have the same base type
     /// 2. A's predicates imply B's predicates
+    ///
+    /// This implementation uses semantic implication checking for common predicate patterns,
+    /// providing a practical alternative to full SMT solving while handling most real-world cases.
     pub fn is_subtype_of(&self, other: &RefinementType) -> bool {
         if self.base_type != other.base_type {
             return false;
@@ -519,9 +522,172 @@ impl RefinementType {
             return false;
         }
 
-        // For now, use a conservative approximation
-        // TODO: Implement proper SMT-based subtyping check
+        // Check if all of other's predicates are implied by our predicates
+        for other_pred in &other.predicates {
+            if !self.implies_predicate(other_pred) {
+                return false;
+            }
+        }
+
         true
+    }
+
+    /// Check if this refinement type's predicates imply the given predicate.
+    ///
+    /// This uses semantic implication checking for common patterns:
+    /// - Syntactic equality (via Debug representation)
+    /// - Range implication (x > 10 implies x > 5)
+    /// - Modulo implication (x % 4 == 0 implies x % 2 == 0)
+    fn implies_predicate(&self, target: &RefinementPredicate) -> bool {
+        // Check for syntactic equality using Debug representation
+        // (RefinementPredicate doesn't implement PartialEq due to function pointers)
+        let target_repr = format!("{:?}", target);
+        if self
+            .predicates
+            .iter()
+            .any(|p| format!("{:?}", p) == target_repr)
+        {
+            return true;
+        }
+
+        // Check for semantic implication based on predicate types
+        for pred in &self.predicates {
+            if Self::semantic_implies(pred, target) {
+                return true;
+            }
+        }
+
+        // Check for conjunction of predicates implying the target
+        Self::conjunction_implies(&self.predicates, target)
+    }
+
+    /// Check if one predicate semantically implies another.
+    fn semantic_implies(source: &RefinementPredicate, target: &RefinementPredicate) -> bool {
+        use RefinementPredicate::*;
+
+        match (source, target) {
+            // Range implications: stricter range implies looser range
+            (
+                Range {
+                    min: min1,
+                    max: max1,
+                },
+                Range {
+                    min: min2,
+                    max: max2,
+                },
+            ) => {
+                // [5, 10] implies [0, 15]
+                min1 >= min2 && max1 <= max2
+            }
+            (
+                RangeExclusive {
+                    min: min1,
+                    max: max1,
+                },
+                RangeExclusive {
+                    min: min2,
+                    max: max2,
+                },
+            ) => min1 >= min2 && max1 <= max2,
+            // Greater-than implications: x > 10 implies x > 5
+            (GreaterThan(v1), GreaterThan(v2)) => v1 >= v2,
+            (GreaterThanOrEqual(v1), GreaterThanOrEqual(v2)) => v1 >= v2,
+            (GreaterThan(v1), GreaterThanOrEqual(v2)) => v1 >= v2, // x > 10 implies x >= 10
+            // Less-than implications: x < 5 implies x < 10
+            (LessThan(v1), LessThan(v2)) => v1 <= v2,
+            (LessThanOrEqual(v1), LessThanOrEqual(v2)) => v1 <= v2,
+            (LessThan(v1), LessThanOrEqual(v2)) => v1 <= v2, // x < 5 implies x <= 5
+            // Equality implies bounds
+            (Equal(v1), GreaterThan(v2)) => v1 > v2,
+            (Equal(v1), GreaterThanOrEqual(v2)) => v1 >= v2,
+            (Equal(v1), LessThan(v2)) => v1 < v2,
+            (Equal(v1), LessThanOrEqual(v2)) => v1 <= v2,
+            (Equal(v1), Range { min, max }) => v1 >= min && v1 <= max,
+            // Modulo implications: x % 4 == 0 implies x % 2 == 0
+            (
+                Modulo {
+                    divisor: d1,
+                    remainder: r1,
+                },
+                Modulo {
+                    divisor: d2,
+                    remainder: r2,
+                },
+            ) => r1 == r2 && d1 % d2 == 0,
+            // Dependent predicates with same variable
+            (
+                Dependent {
+                    variable: v1,
+                    relation: rel1,
+                },
+                Dependent {
+                    variable: v2,
+                    relation: rel2,
+                },
+            ) => {
+                if v1 != v2 {
+                    return false;
+                }
+                // Same variable, check if rel1 implies rel2
+                use DependentRelation::*;
+                matches!(
+                    (rel1, rel2),
+                    (Equal, Equal)
+                        | (GreaterThan, GreaterThan)
+                        | (GreaterThan, GreaterThanOrEqual)
+                        | (LessThan, LessThan)
+                        | (LessThan, LessThanOrEqual)
+                        | (GreaterThanOrEqual, GreaterThanOrEqual)
+                        | (LessThanOrEqual, LessThanOrEqual)
+                )
+            }
+            _ => false,
+        }
+    }
+
+    /// Check if a conjunction of predicates implies a target predicate.
+    ///
+    /// This handles cases like: (x > 5 && x < 10) implies x > 0
+    fn conjunction_implies(
+        predicates: &[RefinementPredicate],
+        target: &RefinementPredicate,
+    ) -> bool {
+        use RefinementPredicate::*;
+
+        // Extract range bounds from multiple predicates
+        let mut lower_bounds = Vec::new();
+        let mut upper_bounds = Vec::new();
+
+        for pred in predicates {
+            match pred {
+                GreaterThan(v) | GreaterThanOrEqual(v) => {
+                    lower_bounds.push(*v);
+                }
+                LessThan(v) | LessThanOrEqual(v) => {
+                    upper_bounds.push(*v);
+                }
+                Range { min, max } => {
+                    lower_bounds.push(*min);
+                    upper_bounds.push(*max);
+                }
+                Equal(v) => {
+                    lower_bounds.push(*v);
+                    upper_bounds.push(*v);
+                }
+                _ => {}
+            }
+        }
+
+        // Check if combined bounds imply the target
+        match target {
+            GreaterThan(v) | GreaterThanOrEqual(v) => lower_bounds.iter().any(|lb| lb >= v),
+            LessThan(v) | LessThanOrEqual(v) => upper_bounds.iter().any(|ub| ub <= v),
+            Range { min, max } => {
+                lower_bounds.iter().any(|lb| lb >= min) && upper_bounds.iter().any(|ub| ub <= max)
+            }
+            _ => false,
+        }
     }
 
     /// Get all free variables referenced in predicates.
@@ -991,5 +1157,118 @@ mod tests {
         assert!(registry.contains("SmallPositive"));
         assert!(registry.check("SmallPositive", 1e-7).unwrap());
         assert!(!registry.check("SmallPositive", 1.0).unwrap());
+    }
+
+    // Tests for semantic subtyping implementation
+
+    #[test]
+    fn test_subtyping_basic() {
+        // Test basic base type matching
+        let int_type = RefinementType::new("Int");
+        let float_type = RefinementType::new("Float");
+
+        assert!(!int_type.is_subtype_of(&float_type)); // Different base types
+        assert!(int_type.is_subtype_of(&int_type)); // Same type
+    }
+
+    #[test]
+    fn test_subtyping_range_implication() {
+        // x ∈ [5, 10] is a subtype of x ∈ [0, 15]
+        let stricter = RefinementType::new("Int").with_predicate(RefinementPredicate::Range {
+            min: 5.0,
+            max: 10.0,
+        });
+
+        let looser = RefinementType::new("Int").with_predicate(RefinementPredicate::Range {
+            min: 0.0,
+            max: 15.0,
+        });
+
+        assert!(stricter.is_subtype_of(&looser));
+        assert!(!looser.is_subtype_of(&stricter)); // Not the other way around
+    }
+
+    #[test]
+    fn test_subtyping_greater_than_implication() {
+        // x > 10 is a subtype of x > 5
+        let stricter =
+            RefinementType::new("Int").with_predicate(RefinementPredicate::GreaterThan(10.0));
+
+        let looser =
+            RefinementType::new("Int").with_predicate(RefinementPredicate::GreaterThan(5.0));
+
+        assert!(stricter.is_subtype_of(&looser));
+        assert!(!looser.is_subtype_of(&stricter));
+    }
+
+    #[test]
+    fn test_subtyping_less_than_implication() {
+        // x < 5 is a subtype of x < 10
+        let stricter =
+            RefinementType::new("Int").with_predicate(RefinementPredicate::LessThan(5.0));
+
+        let looser = RefinementType::new("Int").with_predicate(RefinementPredicate::LessThan(10.0));
+
+        assert!(stricter.is_subtype_of(&looser));
+        assert!(!looser.is_subtype_of(&stricter));
+    }
+
+    #[test]
+    fn test_subtyping_modulo_implication() {
+        // x % 4 == 0 is a subtype of x % 2 == 0
+        let divisible_by_4 =
+            RefinementType::new("Int").with_predicate(RefinementPredicate::Modulo {
+                divisor: 4,
+                remainder: 0,
+            });
+
+        let divisible_by_2 =
+            RefinementType::new("Int").with_predicate(RefinementPredicate::Modulo {
+                divisor: 2,
+                remainder: 0,
+            });
+
+        assert!(divisible_by_4.is_subtype_of(&divisible_by_2));
+        assert!(!divisible_by_2.is_subtype_of(&divisible_by_4));
+    }
+
+    #[test]
+    fn test_subtyping_conjunction() {
+        // (x > 5 && x < 10) implies x > 0
+        let bounded = RefinementType::new("Int")
+            .with_predicate(RefinementPredicate::GreaterThan(5.0))
+            .with_predicate(RefinementPredicate::LessThan(10.0));
+
+        let positive =
+            RefinementType::new("Int").with_predicate(RefinementPredicate::GreaterThan(0.0));
+
+        assert!(bounded.is_subtype_of(&positive));
+    }
+
+    #[test]
+    fn test_subtyping_equality_implies_bounds() {
+        // x == 7 implies x > 5 and x < 10
+        let exact = RefinementType::new("Int").with_predicate(RefinementPredicate::Equal(7.0));
+
+        let gt_5 = RefinementType::new("Int").with_predicate(RefinementPredicate::GreaterThan(5.0));
+
+        let lt_10 = RefinementType::new("Int").with_predicate(RefinementPredicate::LessThan(10.0));
+
+        assert!(exact.is_subtype_of(&gt_5));
+        assert!(exact.is_subtype_of(&lt_10));
+    }
+
+    #[test]
+    fn test_subtyping_no_implication() {
+        // x % 2 == 0 does NOT imply x > 5
+        let even = RefinementType::new("Int").with_predicate(RefinementPredicate::Modulo {
+            divisor: 2,
+            remainder: 0,
+        });
+
+        let gt_5 = RefinementType::new("Int").with_predicate(RefinementPredicate::GreaterThan(5.0));
+
+        assert!(!even.is_subtype_of(&gt_5));
+        assert!(!gt_5.is_subtype_of(&even));
     }
 }
