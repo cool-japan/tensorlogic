@@ -310,19 +310,31 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - Lambda expressions with closure tracking
   - Apply with beta reduction
   - Requires significant IR and runtime changes
-- [ ] **Set Theory Operations** 🔄 NOT IMPLEMENTED
-  - SetMembership, SetUnion, SetIntersection, SetDifference
-  - SetCardinality, EmptySet, SetComprehension
-  - Pending implementation (error handlers added)
+- [x] **Set Theory Operations** ✅ COMPLETE (Alpha.2)
+  - [x] SetMembership (elem ∈ set) - element-wise product
+  - [x] SetUnion (A ∪ B) - element-wise max
+  - [x] SetIntersection (A ∩ B) - element-wise min
+  - [x] SetDifference (A \ B) - masked multiplication
+  - [x] SetCardinality (|S|) - sum reduction
+  - [x] EmptySet (∅) - constant zero tensor
+  - [x] SetComprehension ({ var : domain | condition }) - predicate as characteristic function
+  - [x] 8 comprehensive unit tests (all passing)
+  - [x] Example demonstrating usage (19_set_operations.rs - 320+ lines)
+  - [x] Sets represented as characteristic functions (indicator tensors)
 - [ ] **Fixed-Point Operators** 🔄 NOT IMPLEMENTED
   - LeastFixpoint (μ), GreatestFixpoint (ν)
   - Requires iterative computation until convergence
 - [ ] **Hybrid Logic** 🔄 NOT IMPLEMENTED
   - Nominal, At, Somewhere, Everywhere
   - Requires named state tracking and reachability
-- [ ] **Constraint Programming** 🔄 NOT IMPLEMENTED
-  - AllDifferent, GlobalCardinality
-  - Can be encoded with existing quantifiers (workaround available)
+- [x] **Constraint Programming** ✅ COMPLETE (Alpha.2)
+  - [x] AllDifferent - ensures all variables have distinct values
+  - [x] GlobalCardinality - bounds occurrences of values
+  - [x] AllDifferent compiles to: ∏_{i<j} (xᵢ ≠ xⱼ) as pairwise inequalities
+  - [x] GlobalCardinality compiles to: count bounds with aggregations
+  - [x] 9 comprehensive unit tests (all passing)
+  - [x] Example demonstrating usage (20_constraint_programming.rs - 415+ lines)
+  - [x] Applications: N-Queens, Sudoku, Graph Coloring, Scheduling, Resource Allocation
 - [ ] **Abductive Reasoning** 🔄 NOT IMPLEMENTED
   - Abducible, Explain
   - Requires explanation search and cost optimization
@@ -665,11 +677,11 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - Import/Export Capabilities:
   - ✅ Import from Prolog, S-Expression, TPTP formats (34 tests)
   - ✅ Export to ONNX, TensorFlow GraphDef, PyTorch Python code (21 tests)
-**Test Coverage:** 344 lib tests + 8 example tests (100% passing, includes 34 import + 21 export tests)
-**Build Status:** Zero errors, zero warnings (strict clippy compliance)
-**Lines of Code:** ~21,572 lines total (21,501 code, all files < 2000 lines, largest: tensorflow.rs 724 lines)
+**Test Coverage:** 372 lib tests (100% passing, includes 34 import + 21 export + 8 set operations + 9 constraint programming tests)
+**Build Status:** Zero errors, zero warnings in library code (strict clippy compliance)
+**Lines of Code:** ~23,000 lines total (~22,400 code, all files < 2000 lines, largest: tensorflow.rs 724 lines)
 **Binary Tools:** CLI tool moved to `tensorlogic-cli` crate
-**Examples:** 14 comprehensive examples (+677 lines)
+**Examples:** 16 comprehensive examples (+1,412 lines)
   - 10_modal_temporal_logic.rs (320 lines) - Demonstrates Box, Diamond, Eventually, Always operators
   - 11_fuzzy_logic.rs (381 lines) - Complete fuzzy logic demonstration
     - All 19 fuzzy operators: 5 t-norms, 5 t-conorms, 3 negations, 6 implications
@@ -691,4 +703,16 @@ See main [TODO.md](../../TODO.md) for overall project status.
     - Auto-detection of input format
     - Complex rules including transitivity and nested quantifiers
     - Compilation to einsum graphs after import
-**New Modules:** fuzzy.rs (672 lines), modal_temporal.rs (430 lines), tensorflow.rs (724 lines), pytorch.rs (639 lines), import/ (987 lines total: prolog.rs 247, sexpr.rs 325, tptp.rs 321, mod.rs 94)
+  - **19_set_operations.rs (320 lines) - NEW**: Set theory operations demonstration
+    - 10 comprehensive examples covering all set operations
+    - Union, intersection, difference, cardinality, membership
+    - Set comprehension with complex conditions
+    - Nested set operations and integration with quantifiers
+    - Sets represented as characteristic functions (indicator tensors)
+  - **20_constraint_programming.rs (394 lines) - NEW**: Constraint programming demonstration
+    - 10 comprehensive examples covering AllDifferent and GlobalCardinality
+    - N-Queens pattern, Graph Coloring, Sudoku constraints
+    - Resource allocation, Load balancing, Team assignment
+    - Course scheduling, Tournament scheduling
+    - Real-world combinatorial optimization problems
+**New Modules:** fuzzy.rs (672 lines), modal_temporal.rs (430 lines), tensorflow.rs (724 lines), pytorch.rs (639 lines), import/ (987 lines total: prolog.rs 247, sexpr.rs 325, tptp.rs 321, mod.rs 94), set_operations.rs (586 lines), constraints.rs (452 lines)

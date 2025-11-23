@@ -14,7 +14,7 @@ cpu = []
 simd = ["cpu", "scirs2-core/simd", "scirs2-linalg/simd"]
 gpu = []
 parallel = ["scirs2-core/parallel"]
-# Enable integration tests that require tensorlogic-compiler (creates circular dev-dependency)
+# Enable integration tests that require tensorlogic-compiler
 integration-tests = []
 
 [dependencies]
@@ -28,7 +28,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
 [dev-dependencies]
-# tensorlogic-compiler.workspace = true  # Disabled: circular dev-dependency
+tensorlogic-compiler.workspace = true
 criterion.workspace = true
 proptest.workspace = true
 

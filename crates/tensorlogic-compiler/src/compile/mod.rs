@@ -3,6 +3,7 @@
 mod arithmetic;
 mod comparison;
 mod conditional;
+mod constraints;
 mod counting_quantifiers;
 pub mod custom_ops;
 mod fuzzy;
@@ -13,6 +14,7 @@ mod modal_temporal;
 mod predicate;
 mod probabilistic;
 mod quantifiers;
+mod set_operations;
 mod strategy_mapping;
 
 use anyhow::{bail, Result};
@@ -27,6 +29,7 @@ pub(crate) use arithmetic::{
 };
 pub(crate) use comparison::{compile_eq, compile_gt, compile_gte, compile_lt, compile_lte};
 pub(crate) use conditional::{compile_constant, compile_if_then_else};
+pub(crate) use constraints::{compile_all_different, compile_global_cardinality};
 pub(crate) use counting_quantifiers::{
     compile_counting_exists, compile_counting_forall, compile_exact_count, compile_majority,
 };
@@ -47,6 +50,10 @@ pub(crate) use probabilistic::{compile_probabilistic_choice, compile_weighted_ru
 pub(crate) use quantifiers::{
     compile_aggregate, compile_exists, compile_forall, compile_soft_exists, compile_soft_forall,
 };
+pub(crate) use set_operations::{
+    compile_empty_set, compile_set_cardinality, compile_set_comprehension, compile_set_difference,
+    compile_set_intersection, compile_set_membership, compile_set_union,
+};
 
 /// Infer domain from expression context (if available).
 pub(crate) fn infer_domain(expr: &TLExpr, _var: &str) -> Option<String> {
@@ -55,7 +62,12 @@ pub(crate) fn infer_domain(expr: &TLExpr, _var: &str) -> Option<String> {
         | TLExpr::ForAll { domain, .. }
         | TLExpr::Aggregate { domain, .. }
         | TLExpr::SoftExists { domain, .. }
-        | TLExpr::SoftForAll { domain, .. } => Some(domain.clone()),
+        | TLExpr::SoftForAll { domain, .. }
+        | TLExpr::SetComprehension { domain, .. }
+        | TLExpr::CountingExists { domain, .. }
+        | TLExpr::CountingForAll { domain, .. }
+        | TLExpr::ExactCount { domain, .. }
+        | TLExpr::Majority { domain, .. } => Some(domain.clone()),
         // Modal/temporal logic operators - not yet implemented
         TLExpr::Box(_)
         | TLExpr::Diamond(_)
@@ -210,19 +222,20 @@ pub(crate) fn compile_expr(
             )
         }
 
-        // Set theory operations - not yet implemented
-        TLExpr::SetMembership { .. }
-        | TLExpr::SetUnion { .. }
-        | TLExpr::SetIntersection { .. }
-        | TLExpr::SetDifference { .. }
-        | TLExpr::SetCardinality { .. }
-        | TLExpr::EmptySet
-        | TLExpr::SetComprehension { .. } => {
-            bail!(
-                "Set theory operations are not yet fully implemented. \
-                   Consider using predicates and quantifiers to express set-theoretic constraints."
-            )
+        // Set theory operations
+        TLExpr::SetMembership { element, set } => compile_set_membership(element, set, ctx, graph),
+        TLExpr::SetUnion { left, right } => compile_set_union(left, right, ctx, graph),
+        TLExpr::SetIntersection { left, right } => {
+            compile_set_intersection(left, right, ctx, graph)
         }
+        TLExpr::SetDifference { left, right } => compile_set_difference(left, right, ctx, graph),
+        TLExpr::SetCardinality { set } => compile_set_cardinality(set, ctx, graph),
+        TLExpr::EmptySet => compile_empty_set(ctx, graph),
+        TLExpr::SetComprehension {
+            var,
+            domain,
+            condition,
+        } => compile_set_comprehension(var, domain, condition, ctx, graph),
 
         // Fixed-point operators - not yet implemented
         TLExpr::LeastFixpoint { .. } | TLExpr::GreatestFixpoint { .. } => {
@@ -243,13 +256,21 @@ pub(crate) fn compile_expr(
             )
         }
 
-        // Constraint programming - not yet implemented
-        TLExpr::AllDifferent { .. } | TLExpr::GlobalCardinality { .. } => {
-            bail!(
-                "Constraint programming operators are not yet fully implemented. \
-                   Consider encoding constraints using logical expressions and quantifiers."
-            )
-        }
+        // Constraint programming
+        TLExpr::AllDifferent { variables } => compile_all_different(variables, ctx, graph),
+        TLExpr::GlobalCardinality {
+            variables,
+            values,
+            min_occurrences,
+            max_occurrences,
+        } => compile_global_cardinality(
+            variables,
+            values,
+            min_occurrences,
+            max_occurrences,
+            ctx,
+            graph,
+        ),
 
         // Abductive reasoning - not yet implemented
         TLExpr::Abducible { .. } | TLExpr::Explain { .. } => {

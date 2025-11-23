@@ -32,10 +32,9 @@ use sklears_core::types::Float;
 use sklears_kernel_approximation::custom_kernel::KernelFunction;
 
 use crate::{
-    ChiSquaredKernel, CosineKernel, HistogramIntersectionKernel, LaplacianKernel, LinearKernel,
-    PolynomialKernel, RbfKernel, SigmoidKernel,
+    ChiSquaredKernel, CosineKernel, HistogramIntersectionKernel, Kernel, LaplacianKernel,
+    LinearKernel, PolynomialKernel, RbfKernel, SigmoidKernel,
 };
-use crate::{Kernel, Result as KernelResult};
 use scirs2_core::ndarray::{s, Array2};
 use scirs2_core::random::essentials::Normal as RandNormal;
 use scirs2_core::random::rngs::StdRng as RealStdRng;
@@ -70,42 +69,9 @@ impl<K: Kernel + Clone> SklearsKernelAdapter<K> {
     }
 }
 
-#[cfg(feature = "sklears")]
-impl<K: Kernel + Clone + Send + Sync> KernelFunction for SklearsKernelAdapter<K> {
-    fn kernel(&self, x: &[Float], y: &[Float]) -> Float {
-        self.kernel.compute(x, y).unwrap_or(0.0)
-    }
-
-    fn fourier_transform(&self, _w: &[Float]) -> Float {
-        // Default implementation for kernels without closed-form Fourier transform
-        // This is a placeholder - specific kernels should override this
-        1.0
-    }
-
-    fn sample_frequencies(
-        &self,
-        n_features: usize,
-        n_components: usize,
-        rng: &mut RealStdRng,
-    ) -> Array2<Float> {
-        // Default implementation: standard normal sampling
-        // Specific kernels can override this for proper spectral sampling
-        let normal = RandNormal::new(0.0, 1.0).unwrap();
-        let mut weights = Array2::zeros((n_features, n_components));
-        for mut col in weights.columns_mut() {
-            for val in col.iter_mut() {
-                *val = normal.sample(rng);
-            }
-        }
-        weights
-    }
-
-    fn description(&self) -> String {
-        format!("TensorLogic {} kernel", self.kernel.name())
-    }
-}
-
-// Specific implementations for kernels with known Fourier transforms
+// Specific implementations for each kernel type
+// Note: We use specific implementations instead of a generic one to allow
+// customization of Fourier transforms and frequency sampling for each kernel
 
 /// RBF kernel adapter with proper Fourier transform
 #[cfg(feature = "sklears")]

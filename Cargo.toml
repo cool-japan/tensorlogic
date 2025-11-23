@@ -68,6 +68,10 @@ flate2 = "1.0"
 assert_cmd = "2.0"
 predicates = "3.1"
 
+# Structured logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+
 # SciRS2 dependencies (from crates.io)
 scirs2-core = "0.1.0-rc.2"
 scirs2-linalg = "0.1.0-rc.2"

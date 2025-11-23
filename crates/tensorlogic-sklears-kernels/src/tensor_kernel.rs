@@ -9,6 +9,7 @@ use crate::types::{Kernel, RbfKernelConfig};
 /// Linear kernel: K(x, y) = x · y
 ///
 /// The simplest kernel, equivalent to inner product in feature space.
+#[derive(Clone)]
 pub struct LinearKernel;
 
 impl LinearKernel {
@@ -50,6 +51,7 @@ impl Kernel for LinearKernel {
 /// Polynomial kernel: K(x, y) = (x · y + c)^d
 ///
 /// Captures polynomial relationships up to degree d.
+#[derive(Clone)]
 pub struct PolynomialKernel {
     /// Polynomial degree
     degree: u32,
@@ -110,6 +112,7 @@ impl Kernel for PolynomialKernel {
 /// RBF (Radial Basis Function) kernel: K(x, y) = exp(-gamma * ||x - y||^2)
 ///
 /// Also known as Gaussian kernel. Maps to infinite-dimensional space.
+#[derive(Clone)]
 pub struct RbfKernel {
     /// Configuration
     config: RbfKernelConfig,
@@ -168,6 +171,7 @@ impl Kernel for RbfKernel {
 /// Cosine similarity kernel: K(x, y) = (x · y) / (||x|| * ||y||)
 ///
 /// Measures angle between vectors, normalized to [-1, 1].
+#[derive(Clone)]
 pub struct CosineKernel;
 
 impl CosineKernel {

@@ -12,6 +12,7 @@
 // Note: This example is disabled by default because it requires a working sklears-core crate
 #[cfg(feature = "sklears")]
 fn main() {
+    use sklears_kernel_approximation::custom_kernel::KernelFunction;
     use tensorlogic_sklears_kernels::{
         CosineKernel, Kernel, LaplacianKernel, LinearKernel, PolynomialKernel, RbfKernel,
         RbfKernelConfig, SklearsKernelAdapter,

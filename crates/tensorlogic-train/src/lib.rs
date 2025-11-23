@@ -28,11 +28,13 @@ mod data;
 mod distillation;
 mod ensemble;
 mod error;
+mod few_shot;
 mod hyperparameter;
 mod label_smoothing;
 mod logging;
 mod loss;
 mod memory;
+mod meta_learning;
 mod metrics;
 mod mixed_precision;
 mod model;
@@ -47,6 +49,9 @@ mod scheduler;
 mod trainer;
 mod transfer;
 mod utils;
+
+#[cfg(feature = "structured-logging")]
+pub mod structured_logging;
 
 pub use augmentation::{
     CompositeAugmenter, CutMixAugmenter, DataAugmenter, MixupAugmenter, NoAugmentation,
@@ -172,4 +177,15 @@ pub use quantization::{
 pub use mixed_precision::{
     AutocastContext, GradientScaler, LossScaler, MixedPrecisionStats, MixedPrecisionTrainer,
     PrecisionMode,
+};
+
+// Few-shot learning
+pub use few_shot::{
+    DistanceMetric, EpisodeSampler, FewShotAccuracy, MatchingNetwork, PrototypicalDistance,
+    ShotType, SupportSet,
+};
+
+// Meta-learning
+pub use meta_learning::{
+    MAMLConfig, MetaLearner, MetaStats, MetaTask, Reptile, ReptileConfig, MAML,
 };

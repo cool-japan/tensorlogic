@@ -74,8 +74,12 @@ x, y = tl.var("x"), tl.var("y")
 knows = tl.pred("knows", [x, y])
 knows_someone = tl.exists("y", "Person", knows)
 
-# Compile to tensor graph
-graph = tl.compile(knows_someone)
+# Create compiler context and register domain (required for quantifiers)
+ctx = tl.compiler_context()
+ctx.add_domain("Person", 100)
+
+# Compile to tensor graph with context
+graph = tl.compile_with_context(knows_someone, ctx)
 
 # Execute with data
 knows_matrix = np.random.rand(100, 100)

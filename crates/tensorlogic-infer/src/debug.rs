@@ -121,10 +121,111 @@ impl ExecutionTrace {
     }
 
     /// Get the critical path (longest chain of dependent operations).
+    ///
+    /// Uses dependency tracking via input/output tensor IDs to compute the critical path.
+    /// The critical path is the longest chain of operations where each depends on the previous,
+    /// determining the minimum possible execution time.
     pub fn critical_path(&self) -> Vec<&TraceEntry> {
-        // Simple implementation: return entries in execution order
-        // TODO: Implement proper critical path analysis with dependency tracking
-        self.entries.iter().collect()
+        if self.entries.is_empty() {
+            return Vec::new();
+        }
+
+        let n = self.entries.len();
+
+        // Map output tensors to the entries that produce them
+        let mut tensor_producers: HashMap<usize, usize> = HashMap::new();
+        for (idx, entry) in self.entries.iter().enumerate() {
+            for &output_id in &entry.output_ids {
+                tensor_producers.insert(output_id, idx);
+            }
+        }
+
+        // Build reverse dependencies: for each entry, which entries must complete before it
+        let mut predecessors: Vec<Vec<usize>> = vec![Vec::new(); n];
+        for (idx, entry) in self.entries.iter().enumerate() {
+            for &input_id in &entry.input_ids {
+                if let Some(&producer_idx) = tensor_producers.get(&input_id) {
+                    if producer_idx < n {
+                        predecessors[idx].push(producer_idx);
+                    }
+                }
+            }
+        }
+
+        // Compute earliest start time (EST) and earliest finish time (EFT) for each node
+        // EFT[i] = max(EFT[pred] for pred in predecessors[i]) + duration[i]
+        let mut eft = vec![Duration::ZERO; n];
+        let mut predecessor_on_critical_path = vec![None; n];
+
+        // Use iterative approach with fixed-point iteration to handle all dependencies
+        let mut changed = true;
+        for _ in 0..n {
+            // Maximum n iterations needed
+            if !changed {
+                break;
+            }
+            changed = false;
+
+            for idx in 0..n {
+                let mut max_pred_eft = Duration::ZERO;
+                let mut critical_pred = None;
+
+                for &pred_idx in &predecessors[idx] {
+                    if eft[pred_idx] > max_pred_eft {
+                        max_pred_eft = eft[pred_idx];
+                        critical_pred = Some(pred_idx);
+                    }
+                }
+
+                let new_eft = max_pred_eft + self.entries[idx].duration;
+                if new_eft > eft[idx] {
+                    eft[idx] = new_eft;
+                    predecessor_on_critical_path[idx] = critical_pred;
+                    changed = true;
+                }
+            }
+        }
+
+        // Find the node with maximum EFT (end of critical path)
+        let critical_end_idx = eft
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, &time)| time)
+            .map(|(idx, _)| idx)
+            .unwrap_or(0);
+
+        // Backtrack from the end to find the critical path
+        let mut critical_path_indices = Vec::new();
+        let mut current = Some(critical_end_idx);
+
+        while let Some(idx) = current {
+            critical_path_indices.push(idx);
+            current = predecessor_on_critical_path[idx];
+        }
+
+        // Reverse to get path from start to end
+        critical_path_indices.reverse();
+
+        // Convert indices to entry references
+        critical_path_indices
+            .iter()
+            .map(|&idx| &self.entries[idx])
+            .collect()
+    }
+
+    /// Get the total critical path duration.
+    pub fn critical_path_duration(&self) -> Duration {
+        self.critical_path().iter().map(|e| e.duration).sum()
+    }
+
+    /// Calculate the parallelism factor (total work / critical path time).
+    /// Values > 1 indicate potential for parallel execution.
+    pub fn parallelism_factor(&self) -> f64 {
+        let critical_time = self.critical_path_duration();
+        if critical_time.as_secs_f64() == 0.0 {
+            return 1.0;
+        }
+        self.total_duration.as_secs_f64() / critical_time.as_secs_f64()
     }
 
     /// Get operations sorted by duration (slowest first).
@@ -1000,5 +1101,313 @@ mod tests {
 
         let node_1_entries = trace.entries_for_node(1);
         assert_eq!(node_1_entries.len(), 1);
+    }
+
+    #[test]
+    fn test_critical_path_linear_chain() {
+        // Test linear chain: op0 -> op1 -> op2
+        let mut trace = ExecutionTrace::new();
+
+        // op0: produces tensor 0
+        trace.add_entry(TraceEntry {
+            entry_id: 0,
+            node_id: 0,
+            operation: "op0".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(10),
+            input_ids: vec![],
+            output_ids: vec![0],
+            metadata: HashMap::new(),
+        });
+
+        // op1: consumes tensor 0, produces tensor 1
+        trace.add_entry(TraceEntry {
+            entry_id: 1,
+            node_id: 1,
+            operation: "op1".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(20),
+            input_ids: vec![0],
+            output_ids: vec![1],
+            metadata: HashMap::new(),
+        });
+
+        // op2: consumes tensor 1, produces tensor 2
+        trace.add_entry(TraceEntry {
+            entry_id: 2,
+            node_id: 2,
+            operation: "op2".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(15),
+            input_ids: vec![1],
+            output_ids: vec![2],
+            metadata: HashMap::new(),
+        });
+
+        let critical_path = trace.critical_path();
+        assert_eq!(critical_path.len(), 3); // All operations are on critical path
+        assert_eq!(critical_path[0].node_id, 0);
+        assert_eq!(critical_path[1].node_id, 1);
+        assert_eq!(critical_path[2].node_id, 2);
+
+        let cp_duration = trace.critical_path_duration();
+        assert_eq!(cp_duration, Duration::from_millis(45)); // 10 + 20 + 15
+    }
+
+    #[test]
+    fn test_critical_path_parallel_operations() {
+        // Test parallel operations: op0 produces two independent outputs
+        let mut trace = ExecutionTrace::new();
+
+        // op0: produces tensors 0 and 1
+        trace.add_entry(TraceEntry {
+            entry_id: 0,
+            node_id: 0,
+            operation: "op0".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(10),
+            input_ids: vec![],
+            output_ids: vec![0, 1],
+            metadata: HashMap::new(),
+        });
+
+        // op1: consumes tensor 0 (fast path)
+        trace.add_entry(TraceEntry {
+            entry_id: 1,
+            node_id: 1,
+            operation: "op1".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(5),
+            input_ids: vec![0],
+            output_ids: vec![2],
+            metadata: HashMap::new(),
+        });
+
+        // op2: consumes tensor 1 (slow path - critical)
+        trace.add_entry(TraceEntry {
+            entry_id: 2,
+            node_id: 2,
+            operation: "op2".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(20),
+            input_ids: vec![1],
+            output_ids: vec![3],
+            metadata: HashMap::new(),
+        });
+
+        let critical_path = trace.critical_path();
+        // Critical path should be op0 -> op2 (the longer path)
+        assert_eq!(critical_path.len(), 2);
+        assert_eq!(critical_path[0].node_id, 0);
+        assert_eq!(critical_path[1].node_id, 2);
+
+        let cp_duration = trace.critical_path_duration();
+        assert_eq!(cp_duration, Duration::from_millis(30)); // 10 + 20
+    }
+
+    #[test]
+    fn test_critical_path_diamond_pattern() {
+        // Test diamond pattern: op0 -> (op1, op2) -> op3
+        let mut trace = ExecutionTrace::new();
+
+        // op0: produces tensor 0
+        trace.add_entry(TraceEntry {
+            entry_id: 0,
+            node_id: 0,
+            operation: "op0".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(10),
+            input_ids: vec![],
+            output_ids: vec![0],
+            metadata: HashMap::new(),
+        });
+
+        // op1: consumes tensor 0, produces tensor 1 (fast path)
+        trace.add_entry(TraceEntry {
+            entry_id: 1,
+            node_id: 1,
+            operation: "op1".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(5),
+            input_ids: vec![0],
+            output_ids: vec![1],
+            metadata: HashMap::new(),
+        });
+
+        // op2: consumes tensor 0, produces tensor 2 (slow path)
+        trace.add_entry(TraceEntry {
+            entry_id: 2,
+            node_id: 2,
+            operation: "op2".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(25),
+            input_ids: vec![0],
+            output_ids: vec![2],
+            metadata: HashMap::new(),
+        });
+
+        // op3: consumes tensors 1 and 2, produces tensor 3
+        trace.add_entry(TraceEntry {
+            entry_id: 3,
+            node_id: 3,
+            operation: "op3".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(15),
+            input_ids: vec![1, 2],
+            output_ids: vec![3],
+            metadata: HashMap::new(),
+        });
+
+        let critical_path = trace.critical_path();
+        // Critical path should be op0 -> op2 -> op3 (longest path)
+        assert_eq!(critical_path.len(), 3);
+        assert_eq!(critical_path[0].node_id, 0);
+        assert_eq!(critical_path[1].node_id, 2);
+        assert_eq!(critical_path[2].node_id, 3);
+
+        let cp_duration = trace.critical_path_duration();
+        assert_eq!(cp_duration, Duration::from_millis(50)); // 10 + 25 + 15
+    }
+
+    #[test]
+    fn test_critical_path_empty() {
+        let trace = ExecutionTrace::new();
+        let critical_path = trace.critical_path();
+        assert_eq!(critical_path.len(), 0);
+        assert_eq!(trace.critical_path_duration(), Duration::ZERO);
+    }
+
+    #[test]
+    fn test_critical_path_single_operation() {
+        let mut trace = ExecutionTrace::new();
+        trace.add_entry(TraceEntry {
+            entry_id: 0,
+            node_id: 0,
+            operation: "op0".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(10),
+            input_ids: vec![],
+            output_ids: vec![0],
+            metadata: HashMap::new(),
+        });
+
+        let critical_path = trace.critical_path();
+        assert_eq!(critical_path.len(), 1);
+        assert_eq!(critical_path[0].node_id, 0);
+    }
+
+    #[test]
+    fn test_parallelism_factor() {
+        let mut trace = ExecutionTrace::new();
+
+        // Create a scenario with some parallelism
+        // Total work: 10 + 20 + 30 + 40 = 100ms
+        // Critical path: 10 + 30 + 40 = 80ms
+        // Parallelism factor: 100 / 80 = 1.25
+
+        // op0: start (10ms)
+        trace.add_entry(TraceEntry {
+            entry_id: 0,
+            node_id: 0,
+            operation: "op0".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(10),
+            input_ids: vec![],
+            output_ids: vec![0],
+            metadata: HashMap::new(),
+        });
+
+        // op1: parallel to op2 (20ms, fast path)
+        trace.add_entry(TraceEntry {
+            entry_id: 1,
+            node_id: 1,
+            operation: "op1".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(20),
+            input_ids: vec![0],
+            output_ids: vec![1],
+            metadata: HashMap::new(),
+        });
+
+        // op2: parallel to op1 (30ms, slow path - on critical path)
+        trace.add_entry(TraceEntry {
+            entry_id: 2,
+            node_id: 2,
+            operation: "op2".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(30),
+            input_ids: vec![0],
+            output_ids: vec![2],
+            metadata: HashMap::new(),
+        });
+
+        // op3: join (40ms)
+        trace.add_entry(TraceEntry {
+            entry_id: 3,
+            node_id: 3,
+            operation: "op3".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(40),
+            input_ids: vec![1, 2],
+            output_ids: vec![3],
+            metadata: HashMap::new(),
+        });
+
+        let parallelism = trace.parallelism_factor();
+        // Total duration: 100ms
+        // Critical path: 10 + 30 + 40 = 80ms
+        // Factor: 100 / 80 = 1.25
+        assert!((parallelism - 1.25).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_critical_path_complex_graph() {
+        // More complex dependency graph with multiple levels
+        let mut trace = ExecutionTrace::new();
+
+        // Level 0: single root
+        trace.add_entry(TraceEntry {
+            entry_id: 0,
+            node_id: 0,
+            operation: "root".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(5),
+            input_ids: vec![],
+            output_ids: vec![0],
+            metadata: HashMap::new(),
+        });
+
+        // Level 1: three parallel branches
+        for i in 1..=3 {
+            trace.add_entry(TraceEntry {
+                entry_id: i,
+                node_id: i,
+                operation: format!("branch{}", i),
+                start_time: Instant::now(),
+                duration: Duration::from_millis((i as u64) * 10),
+                input_ids: vec![0],
+                output_ids: vec![i],
+                metadata: HashMap::new(),
+            });
+        }
+
+        // Level 2: merge two slowest branches
+        trace.add_entry(TraceEntry {
+            entry_id: 4,
+            node_id: 4,
+            operation: "merge".to_string(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(15),
+            input_ids: vec![2, 3],
+            output_ids: vec![4],
+            metadata: HashMap::new(),
+        });
+
+        let critical_path = trace.critical_path();
+        // Critical path should be: root -> branch3 -> merge
+        assert!(critical_path.len() >= 3);
+        assert_eq!(critical_path[0].operation, "root");
+        // The last entry should be "merge" (highest finish time)
+        assert_eq!(critical_path[critical_path.len() - 1].operation, "merge");
     }
 }

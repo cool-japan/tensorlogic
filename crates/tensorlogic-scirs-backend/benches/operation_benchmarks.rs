@@ -5,8 +5,9 @@
 //! cargo bench -p tensorlogic-scirs-backend
 //! ```
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use scirs2_core::ndarray::ArrayD;
+use std::hint::black_box;
 use tensorlogic_scirs_backend::Scirs2Exec;
 
 fn create_tensor(shape: &[usize]) -> ArrayD<f64> {
@@ -244,12 +245,12 @@ fn bench_logical_ops(c: &mut Criterion) {
     // Values in [0, 1] for logical operations
     let a = ArrayD::from_shape_vec(
         vec![size],
-        (0..size).map(|i| (i as f64 / size as f64)).collect(),
+        (0..size).map(|i| i as f64 / size as f64).collect(),
     )
     .unwrap();
     let b = ArrayD::from_shape_vec(
         vec![size],
-        (0..size).map(|i| 1.0 - (i as f64 / size as f64)).collect(),
+        (0..size).map(|i| 1.0 - i as f64 / size as f64).collect(),
     )
     .unwrap();
 
