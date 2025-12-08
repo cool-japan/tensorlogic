@@ -222,6 +222,223 @@ pub(crate) fn compile_until(
     )
 }
 
+/// Compile Release (R) temporal operator: "Q holds until and including when P first holds"
+///
+/// # Semantics
+///
+/// P R Q (P releases Q) means:
+/// - Q must hold continuously until P becomes true
+/// - When P becomes true, Q can be released (no longer required)
+/// - If P never becomes true, Q must hold forever
+///
+/// Release is the dual of Until: P R Q ≡ ¬(¬P U ¬Q)
+///
+/// # Tensor Compilation Strategy
+///
+/// Since Until is not directly available in einsum, we approximate Release using:
+/// ```text
+/// P R Q ≈ Q ∧ (P ∨ □Q)
+/// ```
+///
+/// This checks that:
+/// 1. Q holds in the current state
+/// 2. Either P holds (releasing Q) or Q holds in all future states
+///
+/// # Example
+///
+/// "The robot must hold the object (Q) until it reaches the destination (P)"
+/// - If the robot never reaches the destination, it must hold the object forever
+/// - Once it reaches the destination, it can release the object
+pub(crate) fn compile_release(
+    p: &TLExpr,
+    q: &TLExpr,
+    ctx: &mut CompilerContext,
+    graph: &mut EinsumGraph,
+) -> Result<CompileState> {
+    // Release is dual of Until: P R Q ≡ ¬(¬P U ¬Q)
+    // Since Until is not available, we use an approximation:
+    // P R Q ≈ Q ∧ (P ∨ □Q)
+    //
+    // This ensures:
+    // - Q holds now
+    // - Either P holds (release condition) or Q holds always
+
+    // Compile Q
+    let q_state = compile_expr(q, ctx, graph)?;
+
+    // Compile □Q (Always Q)
+    let always_q = TLExpr::Always(Box::new(q.clone()));
+
+    // Compute P ∨ □Q
+    let p_or_always_q = TLExpr::or(p.clone(), always_q);
+    let p_or_always_q_state = compile_expr(&p_or_always_q, ctx, graph)?;
+
+    // Compute Q ∧ (P ∨ □Q)
+    let result_name = ctx.fresh_temp();
+    let result_idx = graph.add_tensor(result_name);
+
+    // Determine output axes (intersection of q_state and p_or_always_q_state axes)
+    let output_axes = merge_axes(&q_state.axes, &p_or_always_q_state.axes);
+
+    // Create AND operation (Hadamard product)
+    let spec = format!(
+        "{},{}->{}",
+        q_state.axes, p_or_always_q_state.axes, output_axes
+    );
+    let node = EinsumNode::new(
+        spec,
+        vec![q_state.tensor_idx, p_or_always_q_state.tensor_idx],
+        vec![result_idx],
+    );
+    graph.add_node(node)?;
+
+    Ok(CompileState {
+        tensor_idx: result_idx,
+        axes: output_axes,
+    })
+}
+
+/// Compile WeakUntil (W) temporal operator: "P holds until Q, but Q may never hold"
+///
+/// # Semantics
+///
+/// P W Q (P weak until Q) means:
+/// - P must hold continuously until Q becomes true
+/// - Unlike strong Until, Q is not required to ever become true
+/// - If Q never becomes true, P must hold forever
+///
+/// WeakUntil can be expressed as: P W Q ≡ (P U Q) ∨ □P
+///
+/// # Tensor Compilation Strategy
+///
+/// We approximate using:
+/// ```text
+/// P W Q ≈ □P ∨ ◇Q
+/// ```
+///
+/// This checks that:
+/// - Either P holds in all future states (□P)
+/// - Or Q eventually becomes true (◇Q)
+///
+/// # Example
+///
+/// "The system must be safe (P) until it shuts down (Q), but shutdown is optional"
+/// - If the system never shuts down, it must remain safe forever
+/// - If it does shut down, it must be safe until that point
+pub(crate) fn compile_weak_until(
+    p: &TLExpr,
+    q: &TLExpr,
+    ctx: &mut CompilerContext,
+    graph: &mut EinsumGraph,
+) -> Result<CompileState> {
+    // WeakUntil: P W Q ≡ (P U Q) ∨ □P
+    // Since Until is not available, we approximate:
+    // P W Q ≈ □P ∨ ◇Q
+    //
+    // This ensures either:
+    // - P holds always (if Q never occurs)
+    // - Q eventually occurs
+
+    // Compile □P (Always P)
+    let always_p = TLExpr::Always(Box::new(p.clone()));
+
+    // Compile ◇Q (Eventually Q)
+    let eventually_q = TLExpr::Eventually(Box::new(q.clone()));
+
+    // Compute □P ∨ ◇Q
+    let weak_until_expr = TLExpr::or(always_p, eventually_q);
+    compile_expr(&weak_until_expr, ctx, graph)
+}
+
+/// Compile StrongRelease (M) temporal operator: "Strong version of Release"
+///
+/// # Semantics
+///
+/// P M Q (P strong-releases Q) means:
+/// - Q must hold until P becomes true
+/// - P must eventually become true (unlike regular Release)
+/// - This is the dual of WeakUntil
+///
+/// StrongRelease: P M Q ≡ ◇P ∧ (Q R P)
+///
+/// # Tensor Compilation Strategy
+///
+/// We compile as:
+/// ```text
+/// P M Q ≈ ◇P ∧ Q ∧ (P ∨ □Q)
+/// ```
+///
+/// This ensures:
+/// 1. P eventually becomes true (◇P)
+/// 2. Q holds until P (Q R P approximation)
+///
+/// # Example
+///
+/// "The robot must hold the object (Q) until it reaches the destination (P),
+///  and it must eventually reach the destination"
+/// - Unlike regular Release, this requires P to eventually hold
+pub(crate) fn compile_strong_release(
+    p: &TLExpr,
+    q: &TLExpr,
+    ctx: &mut CompilerContext,
+    graph: &mut EinsumGraph,
+) -> Result<CompileState> {
+    // StrongRelease: P M Q ≡ ◇P ∧ (Q R P)
+    // Approximation: ◇P ∧ Q ∧ (P ∨ □Q)
+
+    // Compile ◇P (Eventually P)
+    let eventually_p = TLExpr::Eventually(Box::new(p.clone()));
+    let eventually_p_state = compile_expr(&eventually_p, ctx, graph)?;
+
+    // Compile P R Q (Release)
+    // We'll inline the Release logic here to avoid recursion
+    // Release: Q ∧ (P ∨ □Q)
+
+    let always_q = TLExpr::Always(Box::new(q.clone()));
+
+    let p_or_always_q = TLExpr::or(p.clone(), always_q);
+
+    // Q ∧ (P ∨ □Q)
+    let release_expr = TLExpr::and(q.clone(), p_or_always_q);
+    let release_state = compile_expr(&release_expr, ctx, graph)?;
+
+    // Finally: ◇P ∧ Release
+    let result_name = ctx.fresh_temp();
+    let result_idx = graph.add_tensor(result_name);
+
+    let output_axes = merge_axes(&eventually_p_state.axes, &release_state.axes);
+
+    let spec = format!(
+        "{},{}->{}",
+        eventually_p_state.axes, release_state.axes, output_axes
+    );
+    let node = EinsumNode::new(
+        spec,
+        vec![eventually_p_state.tensor_idx, release_state.tensor_idx],
+        vec![result_idx],
+    );
+    graph.add_node(node)?;
+
+    Ok(CompileState {
+        tensor_idx: result_idx,
+        axes: output_axes,
+    })
+}
+
+/// Merge two axis strings, taking the union of axes.
+fn merge_axes(axes1: &str, axes2: &str) -> String {
+    let mut result = axes1.to_string();
+    for c in axes2.chars() {
+        if !result.contains(c) {
+            result.push(c);
+        }
+    }
+    // Sort for canonical form
+    let mut chars: Vec<char> = result.chars().collect();
+    chars.sort();
+    chars.into_iter().collect()
+}
+
 // ========================================================================
 // Helper Functions
 // ========================================================================

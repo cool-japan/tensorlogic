@@ -150,6 +150,10 @@
 //! - `10_linear_types`: Linear types for resource management
 //! - `11_refinement_types`: Refinement types with predicates
 //! - `12_profile_guided_optimization`: Profile-guided optimization with runtime profiling
+//! - `13_sequent_calculus`: Sequent calculus and proof search
+//! - `14_constraint_logic_programming`: Constraint satisfaction problems
+//! - `15_advanced_graph_algorithms`: Graph analysis (SCC, cycles, critical paths)
+//! - `16_resolution_theorem_proving`: Resolution-based automated theorem proving
 //!
 //! ## Architecture
 //!
@@ -197,6 +201,7 @@
 //! - **tensorlogic-scirs-backend**: SciRS2-powered runtime execution
 //! - **tensorlogic-adapters**: Symbol tables and axis metadata
 
+pub mod clp;
 pub mod dependent;
 pub mod diff;
 mod display;
@@ -210,6 +215,8 @@ pub mod linear;
 mod metadata;
 pub mod parametric_types;
 pub mod refinement;
+pub mod resolution;
+pub mod sequent;
 pub mod serialization;
 mod signature;
 mod term;
@@ -271,6 +278,11 @@ pub use expr::temporal_equivalences::apply_temporal_equivalences;
 pub use expr::{
     AggregateOp, FuzzyImplicationKind, FuzzyNegationKind, TCoNormKind, TLExpr, TNormKind,
 };
+pub use graph::advanced_algorithms::{
+    are_isomorphic, critical_path_analysis, find_all_paths, find_cycles, graph_diameter, is_dag,
+    strongly_connected_components, topological_sort, CriticalPath, Cycle, IsomorphismResult,
+    StronglyConnectedComponent,
+};
 pub use graph::constant_folding::{
     analyze_constants, apply_constant_folding, fold_constants_aggressive,
     identify_constant_subgraphs, ConstantInfo, ConstantPropagationResult, FoldingStats,
@@ -320,6 +332,14 @@ pub use parametric_types::{
     TypeSubstitution,
 };
 pub use refinement::{LiquidTypeInference, Refinement, RefinementContext, RefinementType};
+pub use resolution::{
+    Clause, Literal, ProofResult, ProverStats, ResolutionProver, ResolutionStep, ResolutionStrategy,
+};
+// Note: resolution::to_cnf exists but is not exported to avoid conflict with expr::normal_forms::to_cnf
+pub use sequent::{
+    CutElimination, InferenceRule, ProofSearchEngine, ProofSearchStats, ProofSearchStrategy,
+    ProofTree, Sequent,
+};
 pub use serialization::{VersionedExpr, VersionedGraph, FORMAT_VERSION};
 pub use signature::{PredicateSignature, SignatureRegistry};
 pub use term::{Term, TypeAnnotation};

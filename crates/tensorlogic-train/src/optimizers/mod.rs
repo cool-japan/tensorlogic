@@ -24,6 +24,7 @@
 //!
 //! ## Modern Optimizers
 //! - [`LionOptimizer`]: EvoLved Sign Momentum (memory-efficient, sign-based updates)
+//! - [`SophiaOptimizer`]: Second-order optimizer with Hessian diagonal estimation
 //!
 //! ## Meta-Optimizers (Wrappers)
 //! - [`LookaheadOptimizer`]: Maintains slow and fast weights
@@ -50,6 +51,7 @@ pub mod radam;
 pub mod rmsprop;
 pub mod sam;
 pub mod sgd;
+pub mod sophia;
 
 // Re-export common types
 pub use common::{GradClipMode, Optimizer, OptimizerConfig};
@@ -70,3 +72,4 @@ pub use radam::RAdamOptimizer;
 pub use rmsprop::RMSpropOptimizer;
 pub use sam::SamOptimizer;
 pub use sgd::SgdOptimizer;
+pub use sophia::{SophiaConfig, SophiaOptimizer, SophiaVariant};

@@ -65,4 +65,8 @@ pub enum IrError {
     LinearityViolation(String),
     #[error("Serialization error: {0}")]
     SerializationError(String),
+    #[error("Domain mismatch: expected {expected}, found {found}")]
+    DomainMismatch { expected: String, found: String },
+    #[error("Constraint violation: {message}")]
+    ConstraintViolation { message: String },
 }

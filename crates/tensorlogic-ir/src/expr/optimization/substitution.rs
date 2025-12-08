@@ -6,7 +6,7 @@
 use crate::expr::TLExpr;
 
 /// Substitute a variable with a value in an expression
-pub(super) fn substitute(expr: &TLExpr, var: &str, value: &TLExpr) -> TLExpr {
+pub(crate) fn substitute(expr: &TLExpr, var: &str, value: &TLExpr) -> TLExpr {
     match expr {
         // If we find a predicate matching the variable name with no args, substitute
         TLExpr::Pred { name, args } if name == var && args.is_empty() => value.clone(),

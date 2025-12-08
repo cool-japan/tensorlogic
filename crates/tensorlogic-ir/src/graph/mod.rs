@@ -1,5 +1,6 @@
 //! Tensor computation graphs (EinsumGraph).
 
+pub mod advanced_algorithms;
 pub mod advanced_analysis;
 pub mod canonicalization;
 pub mod constant_folding;

@@ -11,7 +11,7 @@
 mod algebraic;
 mod constant_folding;
 mod propagation;
-mod substitution;
+pub(crate) mod substitution;
 
 // Re-export public functions
 pub use algebraic::algebraic_simplify;

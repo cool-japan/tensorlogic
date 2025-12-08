@@ -6,7 +6,9 @@ mod conditional;
 mod constraints;
 mod counting_quantifiers;
 pub mod custom_ops;
+mod fixpoint;
 mod fuzzy;
+mod higher_order;
 mod implication;
 mod let_binding;
 mod logic_ops;
@@ -36,14 +38,17 @@ pub(crate) use counting_quantifiers::{
 pub use custom_ops::{
     CustomOpData, CustomOpHandler, CustomOpMetadata, CustomOpRegistry, ExtendedCompilerContext,
 };
+pub(crate) use fixpoint::{compile_greatest_fixpoint, compile_least_fixpoint};
 pub(crate) use fuzzy::{
     compile_fuzzy_implication, compile_fuzzy_not, compile_tconorm, compile_tnorm,
 };
+pub(crate) use higher_order::{compile_apply, compile_lambda};
 pub(crate) use implication::compile_imply;
 pub(crate) use let_binding::compile_let;
 pub(crate) use logic_ops::{compile_and, compile_not, compile_or};
 pub(crate) use modal_temporal::{
-    compile_always, compile_box, compile_diamond, compile_eventually, compile_next, compile_until,
+    compile_always, compile_box, compile_diamond, compile_eventually, compile_next,
+    compile_release, compile_strong_release, compile_until, compile_weak_until,
 };
 pub(crate) use predicate::compile_predicate;
 pub(crate) use probabilistic::{compile_probabilistic_choice, compile_weighted_rule};
@@ -184,13 +189,10 @@ pub(crate) fn compile_expr(
         TLExpr::Eventually(inner) => compile_eventually(inner, ctx, graph),
         TLExpr::Always(inner) => compile_always(inner, ctx, graph),
         TLExpr::Until { before, after } => compile_until(before, after, ctx, graph),
-
-        // Advanced temporal operators - not yet fully implemented
-        TLExpr::Release { .. } | TLExpr::WeakUntil { .. } | TLExpr::StrongRelease { .. } => {
-            bail!(
-                "Advanced temporal operators (Release, WeakUntil, StrongRelease) are not yet implemented. \
-                   Use the basic temporal operators (Next, Eventually, Always, Until) instead."
-            )
+        TLExpr::Release { released, releaser } => compile_release(releaser, released, ctx, graph),
+        TLExpr::WeakUntil { before, after } => compile_weak_until(before, after, ctx, graph),
+        TLExpr::StrongRelease { released, releaser } => {
+            compile_strong_release(releaser, released, ctx, graph)
         }
 
         // Counting quantifiers
@@ -214,13 +216,13 @@ pub(crate) fn compile_expr(
         } => compile_exact_count(var, domain, body, *count, ctx, graph),
         TLExpr::Majority { var, domain, body } => compile_majority(var, domain, body, ctx, graph),
 
-        // Higher-order logic - not yet implemented
-        TLExpr::Lambda { .. } | TLExpr::Apply { .. } => {
-            bail!(
-                "Higher-order logic (Lambda, Apply) is not yet fully implemented. \
-                   These features require beta reduction and closure tracking."
-            )
-        }
+        // Higher-order logic
+        TLExpr::Lambda {
+            var,
+            var_type,
+            body,
+        } => compile_lambda(var, var_type, body, ctx, graph),
+        TLExpr::Apply { function, argument } => compile_apply(function, argument, ctx, graph),
 
         // Set theory operations
         TLExpr::SetMembership { element, set } => compile_set_membership(element, set, ctx, graph),
@@ -237,13 +239,9 @@ pub(crate) fn compile_expr(
             condition,
         } => compile_set_comprehension(var, domain, condition, ctx, graph),
 
-        // Fixed-point operators - not yet implemented
-        TLExpr::LeastFixpoint { .. } | TLExpr::GreatestFixpoint { .. } => {
-            bail!(
-                "Fixed-point operators (μ, ν) are not yet fully implemented. \
-                   These require iterative computation until convergence."
-            )
-        }
+        // Fixed-point operators
+        TLExpr::LeastFixpoint { var, body } => compile_least_fixpoint(var, body, ctx, graph),
+        TLExpr::GreatestFixpoint { var, body } => compile_greatest_fixpoint(var, body, ctx, graph),
 
         // Hybrid logic - not yet implemented
         TLExpr::Nominal { .. }

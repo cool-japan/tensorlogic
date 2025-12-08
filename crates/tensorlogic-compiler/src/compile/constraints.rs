@@ -116,10 +116,7 @@ pub(crate) fn compile_all_different(
     }
 
     // Combine all pairwise constraints with AND
-    let result_expr = constraints
-        .into_iter()
-        .reduce(TLExpr::and)
-        .unwrap();
+    let result_expr = constraints.into_iter().reduce(TLExpr::and).unwrap();
 
     // Compile the combined constraint
     compile_expr(&result_expr, ctx, graph)

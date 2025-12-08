@@ -1191,4 +1191,32 @@ impl TLExpr {
             formula: Box::new(formula),
         }
     }
+
+    /// Substitute a variable with an expression throughout this formula.
+    ///
+    /// This performs capture-avoiding substitution, respecting variable shadowing
+    /// in quantifiers, lambda abstractions, and let bindings.
+    ///
+    /// # Arguments
+    ///
+    /// * `var` - The variable name to replace
+    /// * `value` - The expression to substitute in place of the variable
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tensorlogic_ir::{TLExpr, Term};
+    ///
+    /// // P(x) ∧ Q(x)
+    /// let p = TLExpr::pred("P", vec![Term::var("x")]);
+    /// let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    /// let expr = TLExpr::and(p.clone(), q);
+    ///
+    /// // Substitute x with y
+    /// let y = TLExpr::pred("y", vec![]);
+    /// let result = expr.substitute("x", &y);
+    /// ```
+    pub fn substitute(&self, var: &str, value: &TLExpr) -> Self {
+        optimization::substitution::substitute(self, var, value)
+    }
 }

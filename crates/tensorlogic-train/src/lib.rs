@@ -86,7 +86,7 @@ pub use optimizer::{
     AdaBeliefOptimizer, AdaMaxOptimizer, AdagradOptimizer, AdamOptimizer, AdamPOptimizer,
     AdamWOptimizer, GradClipMode, LambOptimizer, LarsOptimizer, LionConfig, LionOptimizer,
     LookaheadOptimizer, NAdamOptimizer, Optimizer, OptimizerConfig, RAdamOptimizer,
-    RMSpropOptimizer, SamOptimizer, SgdOptimizer,
+    RMSpropOptimizer, SamOptimizer, SgdOptimizer, SophiaConfig, SophiaOptimizer, SophiaVariant,
 };
 pub use regularization::{
     CompositeRegularization, ElasticNetRegularization, GroupLassoRegularization, L1Regularization,
@@ -126,7 +126,8 @@ pub use crossval::{
 
 // Ensembling
 pub use ensemble::{
-    AveragingEnsemble, BaggingHelper, Ensemble, StackingEnsemble, VotingEnsemble, VotingMode,
+    AveragingEnsemble, BaggingHelper, Ensemble, ModelSoup, SoupRecipe, StackingEnsemble,
+    VotingEnsemble, VotingMode,
 };
 
 // Multi-task learning
