@@ -8,7 +8,7 @@
 //!
 //! - Huang, G., Sun, Y., Liu, Z., Sedra, D., & Weinberger, K. Q. (2016).
 //!   "Deep Networks with Stochastic Depth". ECCV 2016.
-//!   https://arxiv.org/abs/1603.09382
+//!   <https://arxiv.org/abs/1603.09382>
 //!
 //! - Widely used in:
 //!   - Vision Transformers (ViT, DeiT, Swin)

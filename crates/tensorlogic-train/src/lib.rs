@@ -1,5 +1,7 @@
 //! Training scaffolds: loss wiring, schedules, callbacks.
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! This crate provides comprehensive training infrastructure for Tensorlogic models:
 //! - Loss functions (standard and logical constraint-based)
 //! - Optimizer wrappers around SciRS2

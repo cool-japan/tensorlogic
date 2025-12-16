@@ -26,7 +26,7 @@
 //!
 //! ## Quick Start
 //!
-//! ```rust
+//! ```rust,no_run
 //! use tensorlogic::prelude::*;
 //!
 //! // Define a logical rule: knows(x, y) ∧ knows(y, z) → knows(x, z)

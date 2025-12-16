@@ -2,7 +2,7 @@
 //!
 //! Reference: Mishchenko, K., & Defazio, A. (2024).
 //! "Prodigyopt: An Adaptive Learning Rate Method That Requires No Manual Tuning"
-//! https://arxiv.org/abs/2306.06101
+//! <https://arxiv.org/abs/2306.06101>
 //!
 //! Key innovation: Automatically estimates the learning rate scale (D) without manual tuning.
 //! Uses distance from initialization to estimate appropriate step size.

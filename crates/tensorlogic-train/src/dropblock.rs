@@ -8,7 +8,7 @@
 //!
 //! - Ghiasi, G., Lin, T. Y., & Le, Q. V. (2018).
 //!   "DropBlock: A regularization method for convolutional networks". NeurIPS 2018.
-//!   https://arxiv.org/abs/1810.12890
+//!   <https://arxiv.org/abs/1810.12890>
 //!
 //! - Used in:
 //!   - ResNets (ImageNet)

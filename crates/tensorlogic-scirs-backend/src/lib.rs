@@ -1,5 +1,7 @@
 //! SciRS2-backed executor (CPU/SIMD/GPU via features).
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! This crate provides a production-ready implementation of the TensorLogic execution
 //! traits using the SciRS2 scientific computing library.
 //!

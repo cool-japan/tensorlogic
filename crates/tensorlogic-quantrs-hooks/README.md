@@ -1491,7 +1491,7 @@ Apache-2.0
 ---
 
 **Status**: 🎉 Production Ready (v0.1.0-alpha.2+)
-**Last Updated**: 2025-11-17
+**Last Updated**: 2025-12-16
 **Tests**: 133+ passing (94%: 108 unit + 14 property [10 passing, 4 ignored] + 13 old integration + 14 new TLExpr integration)
 **Benchmarks**: 3 comprehensive suites (50+ benchmarks: factor operations, message passing, inference algorithms)
 **Examples**: 8 comprehensive examples

@@ -1,4 +1,4 @@
-# Alpha.1 Release Status ✅
+# Alpha.2 Release Status ✅
 
 **Version**: 0.1.0-alpha.2  
 **Status**: Production Ready

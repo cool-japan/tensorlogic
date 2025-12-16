@@ -1,5 +1,7 @@
 //! Engine-agnostic traits and execution planning API.
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! This crate defines the abstract execution interfaces and optimization utilities for TensorLogic:
 
 #![allow(clippy::len_zero)]

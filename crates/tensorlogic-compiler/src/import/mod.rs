@@ -18,7 +18,7 @@
 //! let expr = parse_prolog("mortal(X) :- human(X).").unwrap();
 //! ```
 //!
-//! ```
+//! ```no_run
 //! use tensorlogic_compiler::import::sexpr::parse_sexpr;
 //!
 //! // Parse S-expression

@@ -1,5 +1,7 @@
 //! OxiRS Bridge: RDF*/SHACL/GraphQL → TensorLogic Integration
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! This crate provides comprehensive bidirectional integration between RDF knowledge graphs
 //! and TensorLogic's tensor-based logical reasoning system. It enables semantic web data
 //! to be compiled into tensor operations while preserving provenance and validation semantics.

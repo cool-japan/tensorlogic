@@ -21,16 +21,16 @@
 //! use tensorlogic_ir::{TLExpr, Term};
 //!
 //! let mut ctx = CompilerContext::new();
-//! ctx.add_domain("Person", 1000).unwrap();
+//! ctx.add_domain("Person", 1000);
 //!
 //! // Complex expression with multiple equivalent forms
-//! let expr = TLExpr::conjunction(vec![
+//! let expr = TLExpr::and(
 //!     TLExpr::pred("p", vec![Term::var("x")]),
-//!     TLExpr::disjunction(vec![
+//!     TLExpr::or(
 //!         TLExpr::pred("q", vec![Term::var("x")]),
 //!         TLExpr::pred("r", vec![Term::var("x")]),
-//!     ]),
-//! ]);
+//!     ),
+//! );
 //!
 //! let (optimized, stats) = optimize_by_cost(&expr, &ctx);
 //! println!("Cost reduction: {:.1}%", stats.cost_reduction_percent());
@@ -551,12 +551,12 @@ fn expr_hash(expr: &TLExpr) -> String {
 /// use tensorlogic_ir::{TLExpr, Term};
 ///
 /// let mut ctx = CompilerContext::new();
-/// ctx.add_domain("Person", 1000).unwrap();
+/// ctx.add_domain("Person", 1000);
 ///
-/// let expr = TLExpr::conjunction(vec![
+/// let expr = TLExpr::and(
 ///     TLExpr::pred("expensive", vec![Term::var("x")]),
 ///     TLExpr::pred("cheap", vec![Term::var("x")]),
-/// ]);
+/// );
 ///
 /// let (optimized, stats) = optimize_by_cost(&expr, &ctx);
 /// assert!(stats.alternatives_explored > 0);

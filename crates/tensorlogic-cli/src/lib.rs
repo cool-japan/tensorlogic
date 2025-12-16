@@ -1,5 +1,7 @@
 //! TensorLogic CLI Library
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! This library provides programmatic access to the TensorLogic CLI functionality,
 //! allowing you to use the parser, executor, optimizer, and other components
 //! directly from Rust code without shelling out to the command-line interface.

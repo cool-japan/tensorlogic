@@ -1,5 +1,7 @@
 //! # Tensorlogic-SkleaRS-Kernels
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! Logic-derived similarity kernels for machine learning integration.
 //!
 //! This crate provides kernel functions that measure similarity based on logical

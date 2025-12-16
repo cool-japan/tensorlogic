@@ -14,7 +14,7 @@
 //!
 //! # Reference
 //! Yong et al., "Gradient Centralization: A New Optimization Technique for Deep Neural Networks"
-//! ECCV 2020 - https://arxiv.org/abs/2004.01461
+//! ECCV 2020 - <https://arxiv.org/abs/2004.01461>
 
 use crate::{Optimizer, TrainResult};
 use scirs2_core::ndarray::Array2;
@@ -32,11 +32,11 @@ pub enum GcStrategy {
     Global,
 
     /// Centralize per row (for weight matrices).
-    /// For weight matrix: g[i,:] = g[i,:] - mean(g[i,:])
+    /// For weight matrix: g\[i,:\] = g\[i,:\] - mean(g\[i,:\])
     PerRow,
 
     /// Centralize per column (for weight matrices).
-    /// For weight matrix: g[:,j] = g[:,j] - mean(g[:,j])
+    /// For weight matrix: g\[:,j\] = g\[:,j\] - mean(g\[:,j\])
     PerColumn,
 }
 
