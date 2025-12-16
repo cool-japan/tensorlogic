@@ -136,6 +136,7 @@ pub mod optimize;
 #[cfg(feature = "parallel")]
 pub mod parallel;
 pub mod passes;
+pub mod profiling;
 
 #[cfg(test)]
 mod property_tests;

@@ -102,6 +102,7 @@ pub mod optimize;
 pub mod output;
 pub mod parser;
 pub mod simplify;
+pub mod snapshot;
 
 // Re-export config types (but keep internal config logic private)
 pub use config::{CacheConfig, Config, ReplConfig, WatchConfig};

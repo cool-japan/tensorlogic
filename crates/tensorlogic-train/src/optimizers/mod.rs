@@ -25,6 +25,8 @@
 //! ## Modern Optimizers
 //! - [`LionOptimizer`]: EvoLved Sign Momentum (memory-efficient, sign-based updates)
 //! - [`SophiaOptimizer`]: Second-order optimizer with Hessian diagonal estimation
+//! - [`ScheduleFreeAdamW`]: Schedule-free learning without LR schedules (2024)
+//! - [`ProdigyOptimizer`]: Auto-tuning learning rate optimizer (2024)
 //!
 //! ## Meta-Optimizers (Wrappers)
 //! - [`LookaheadOptimizer`]: Maintains slow and fast weights
@@ -47,9 +49,11 @@ pub mod lars;
 pub mod lion;
 pub mod lookahead;
 pub mod nadam;
+pub mod prodigy;
 pub mod radam;
 pub mod rmsprop;
 pub mod sam;
+pub mod schedulefree;
 pub mod sgd;
 pub mod sophia;
 
@@ -68,8 +72,10 @@ pub use lars::LarsOptimizer;
 pub use lion::{LionConfig, LionOptimizer};
 pub use lookahead::LookaheadOptimizer;
 pub use nadam::NAdamOptimizer;
+pub use prodigy::{ProdigyConfig, ProdigyOptimizer};
 pub use radam::RAdamOptimizer;
 pub use rmsprop::RMSpropOptimizer;
 pub use sam::SamOptimizer;
+pub use schedulefree::{ScheduleFreeAdamW, ScheduleFreeConfig};
 pub use sgd::SgdOptimizer;
 pub use sophia::{SophiaConfig, SophiaOptimizer, SophiaVariant};

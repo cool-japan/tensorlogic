@@ -1,5 +1,6 @@
 //! Core compilation functions for TLExpr → EinsumGraph.
 
+mod abduction;
 mod arithmetic;
 mod comparison;
 mod conditional;
@@ -9,6 +10,7 @@ pub mod custom_ops;
 mod fixpoint;
 mod fuzzy;
 mod higher_order;
+mod hybrid;
 mod implication;
 mod let_binding;
 mod logic_ops;
@@ -19,11 +21,12 @@ mod quantifiers;
 mod set_operations;
 mod strategy_mapping;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use tensorlogic_ir::{EinsumGraph, TLExpr};
 
 use crate::context::{CompileState, CompilerContext};
 
+pub(crate) use abduction::{compile_abducible, compile_explain};
 pub(crate) use arithmetic::{
     compile_abs, compile_add, compile_ceil, compile_cos, compile_div, compile_exp, compile_floor,
     compile_log, compile_max_binary, compile_min_binary, compile_mod, compile_mul, compile_pow,
@@ -43,6 +46,7 @@ pub(crate) use fuzzy::{
     compile_fuzzy_implication, compile_fuzzy_not, compile_tconorm, compile_tnorm,
 };
 pub(crate) use higher_order::{compile_apply, compile_lambda};
+pub(crate) use hybrid::{compile_at, compile_everywhere, compile_nominal, compile_somewhere};
 pub(crate) use implication::compile_imply;
 pub(crate) use let_binding::compile_let;
 pub(crate) use logic_ops::{compile_and, compile_not, compile_or};
@@ -243,16 +247,11 @@ pub(crate) fn compile_expr(
         TLExpr::LeastFixpoint { var, body } => compile_least_fixpoint(var, body, ctx, graph),
         TLExpr::GreatestFixpoint { var, body } => compile_greatest_fixpoint(var, body, ctx, graph),
 
-        // Hybrid logic - not yet implemented
-        TLExpr::Nominal { .. }
-        | TLExpr::At { .. }
-        | TLExpr::Somewhere { .. }
-        | TLExpr::Everywhere { .. } => {
-            bail!(
-                "Hybrid logic operators are not yet fully implemented. \
-                   These require named state tracking and reachability analysis."
-            )
-        }
+        // Hybrid logic
+        TLExpr::Nominal { name } => compile_nominal(name, ctx, graph),
+        TLExpr::At { nominal, formula } => compile_at(nominal, formula, ctx, graph),
+        TLExpr::Somewhere { formula } => compile_somewhere(formula, ctx, graph),
+        TLExpr::Everywhere { formula } => compile_everywhere(formula, ctx, graph),
 
         // Constraint programming
         TLExpr::AllDifferent { variables } => compile_all_different(variables, ctx, graph),
@@ -270,12 +269,8 @@ pub(crate) fn compile_expr(
             graph,
         ),
 
-        // Abductive reasoning - not yet implemented
-        TLExpr::Abducible { .. } | TLExpr::Explain { .. } => {
-            bail!(
-                "Abductive reasoning operators are not yet fully implemented. \
-                   These require explanation search and cost optimization."
-            )
-        }
+        // Abductive reasoning
+        TLExpr::Abducible { name, cost } => compile_abducible(name, *cost, ctx, graph),
+        TLExpr::Explain { formula } => compile_explain(formula, ctx, graph),
     }
 }

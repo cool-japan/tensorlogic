@@ -1,7 +1,7 @@
 # tensorlogic-train
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic-train-orange)](https://crates.io/crates/tensorlogic-train)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-train)
-[![Tests](https://img.shields.io/badge/tests-172%2F172-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-434%2F434-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
 
 Training scaffolds for Tensorlogic: loss composition, optimizers, schedulers, and callbacks.

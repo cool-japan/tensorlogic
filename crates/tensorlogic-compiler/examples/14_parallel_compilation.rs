@@ -9,10 +9,15 @@
 //! ```
 
 #[cfg(feature = "parallel")]
-use tensorlogic_compiler::parallel::{ParallelCompiler, ParallelConfig};
-use tensorlogic_compiler::CompilerContext;
+use tensorlogic_compiler::{
+    parallel::{ParallelCompiler, ParallelConfig},
+    CompilerContext,
+};
+
+#[cfg(feature = "parallel")]
 use tensorlogic_ir::{TLExpr, Term};
 
+#[cfg(feature = "parallel")]
 fn create_complex_expression() -> TLExpr {
     // Build a complex knowledge graph inference rule
     // (knows(x,y) ∧ knows(y,z)) → knows(x,z)  (transitivity)

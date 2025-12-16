@@ -26,21 +26,24 @@
 //! ```
 
 use anyhow::Result;
-use tensorlogic_compiler::{compile_to_einsum, CompilerContext};
-use tensorlogic_ir::{TLExpr, Term};
 
 #[cfg(feature = "pytorch")]
-use tensorlogic_compiler::export::pytorch::{
-    export_to_pytorch, export_to_pytorch_with_config, PyTorchDtype, PyTorchExportConfig,
+use tensorlogic_compiler::{
+    compile_to_einsum,
+    export::pytorch::{
+        export_to_pytorch, export_to_pytorch_with_config, PyTorchDtype, PyTorchExportConfig,
+    },
+    CompilerContext,
 };
+
+#[cfg(feature = "pytorch")]
+use tensorlogic_ir::{TLExpr, Term};
 
 fn main() -> Result<()> {
     #[cfg(not(feature = "pytorch"))]
-    {
-        println!("This example requires the 'pytorch' feature to be enabled.");
-        println!("Run with: cargo run --example 17_pytorch_export --features pytorch");
-        return Ok(());
-    }
+    println!("This example requires the 'pytorch' feature to be enabled.");
+    #[cfg(not(feature = "pytorch"))]
+    println!("Run with: cargo run --example 17_pytorch_export --features pytorch");
 
     #[cfg(feature = "pytorch")]
     {

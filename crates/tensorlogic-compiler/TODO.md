@@ -306,10 +306,13 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Passes directory: 5 files (cse, diagnostics, strategy_selection, etc.)
   - [x] Updated symbol_table.rs, scope_analysis.rs, type_checking.rs
   - [x] Zero compilation errors, 356/356 tests passing
-- [ ] **Higher-Order Logic** 🔄 NOT IMPLEMENTED
-  - Lambda expressions with closure tracking
-  - Apply with beta reduction
-  - Requires significant IR and runtime changes
+- [x] **Higher-Order Logic** ✅ COMPLETE (Alpha.2+)
+  - [x] Lambda expressions with type annotations (compile_lambda)
+  - [x] Apply with beta reduction (compile_apply)
+  - [x] Compile-time substitution for immediate applications
+  - [x] Non-lambda application support (predicate application)
+  - [x] 8 comprehensive unit tests (all passing)
+  - [x] Supports nested lambda applications
 - [x] **Set Theory Operations** ✅ COMPLETE (Alpha.2)
   - [x] SetMembership (elem ∈ set) - element-wise product
   - [x] SetUnion (A ∪ B) - element-wise max
@@ -321,12 +324,21 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] 8 comprehensive unit tests (all passing)
   - [x] Example demonstrating usage (19_set_operations.rs - 320+ lines)
   - [x] Sets represented as characteristic functions (indicator tensors)
-- [ ] **Fixed-Point Operators** 🔄 NOT IMPLEMENTED
-  - LeastFixpoint (μ), GreatestFixpoint (ν)
-  - Requires iterative computation until convergence
-- [ ] **Hybrid Logic** 🔄 NOT IMPLEMENTED
-  - Nominal, At, Somewhere, Everywhere
-  - Requires named state tracking and reachability
+- [x] **Fixed-Point Operators** ✅ COMPLETE (Alpha.2+)
+  - [x] LeastFixpoint (μX.φ(X)) - starts from empty set (⊥), iterates upward
+  - [x] GreatestFixpoint (νX.φ(X)) - starts from universal set (⊤), iterates downward
+  - [x] Unrolling strategy with configurable depth (default: 5 iterations)
+  - [x] Domain inference from quantifiers in body
+  - [x] 8 comprehensive unit tests (all passing)
+  - [x] Applications: transitive closure, reachability, safety properties
+- [x] **Hybrid Logic** ✅ COMPLETE (Alpha.2+)
+  - [x] Nominal (@i) - one-hot vector over state space
+  - [x] At operator (@i φ) - evaluates formula at specific state
+  - [x] Somewhere (E φ) - existential over reachable states (max reduction)
+  - [x] Everywhere (A φ) - universal over reachable states (min reduction)
+  - [x] State space representation with default size (10 states)
+  - [x] Full connectivity assumption for reachability
+  - [x] 10 comprehensive unit tests (all passing)
 - [x] **Constraint Programming** ✅ COMPLETE (Alpha.2)
   - [x] AllDifferent - ensures all variables have distinct values
   - [x] GlobalCardinality - bounds occurrences of values
@@ -335,9 +347,14 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] 9 comprehensive unit tests (all passing)
   - [x] Example demonstrating usage (20_constraint_programming.rs - 415+ lines)
   - [x] Applications: N-Queens, Sudoku, Graph Coloring, Scheduling, Resource Allocation
-- [ ] **Abductive Reasoning** 🔄 NOT IMPLEMENTED
-  - Abducible, Explain
-  - Requires explanation search and cost optimization
+- [x] **Abductive Reasoning** ✅ COMPLETE (Alpha.2+)
+  - [x] Abducible(name, cost) - hypothesis literals with associated costs
+  - [x] Explain(formula) - marks formulas for explanation
+  - [x] Soft optimization objective: satisfaction - λ * total_cost
+  - [x] Cost minimization through gradient descent (backend responsibility)
+  - [x] Multiple abducibles support with cost aggregation
+  - [x] 11 comprehensive unit tests (all passing)
+  - [x] Applications: medical diagnosis, robot planning, fault detection
 - [ ] First-class functions/predicates
 - [ ] Higher-order quantification
 - [x] Modal logic operators (□, ◇) ✅ COMPLETE
@@ -681,7 +698,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 **Build Status:** Zero errors, zero warnings in library code (strict clippy compliance)
 **Lines of Code:** ~23,000 lines total (~22,400 code, all files < 2000 lines, largest: tensorflow.rs 724 lines)
 **Binary Tools:** CLI tool moved to `tensorlogic-cli` crate
-**Examples:** 16 comprehensive examples (+1,412 lines)
+**Examples:** 18 comprehensive examples (+2,266 lines)
   - 10_modal_temporal_logic.rs (320 lines) - Demonstrates Box, Diamond, Eventually, Always operators
   - 11_fuzzy_logic.rs (381 lines) - Complete fuzzy logic demonstration
     - All 19 fuzzy operators: 5 t-norms, 5 t-conorms, 3 negations, 6 implications
@@ -715,4 +732,17 @@ See main [TODO.md](../../TODO.md) for overall project status.
     - Resource allocation, Load balancing, Team assignment
     - Course scheduling, Tournament scheduling
     - Real-world combinatorial optimization problems
+  - **22_hybrid_logic.rs (323 lines) - NEW**: Hybrid logic operators demonstration
+    - 10 comprehensive examples covering all hybrid logic operators
+    - Nominal states (@i), At operator (@i φ), Somewhere (E φ), Everywhere (A φ)
+    - Applications: Knowledge graphs, multi-agent systems, path planning, reachability analysis
+    - Named checkpoints, bidirectional reachability, sequential waypoints
+    - Integration with standard logic operators (conjunction, implication)
+  - **23_abductive_reasoning.rs (531 lines) - NEW**: Abductive reasoning demonstration
+    - 10 comprehensive examples covering Abducible and Explain operators
+    - Medical diagnosis, fault detection, robot planning, debugging scenarios
+    - Cost minimization and explanation quality trade-offs
+    - Competing hypotheses, minimal explanations (Occam's razor)
+    - Hierarchical explanations, quantified abduction
+    - Real-world applications: healthcare AI, root cause analysis, automated planning
 **New Modules:** fuzzy.rs (672 lines), modal_temporal.rs (430 lines), tensorflow.rs (724 lines), pytorch.rs (639 lines), import/ (987 lines total: prolog.rs 247, sexpr.rs 325, tptp.rs 321, mod.rs 94), set_operations.rs (586 lines), constraints.rs (452 lines)

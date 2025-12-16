@@ -3,7 +3,7 @@
 //! Implementation of the Sophia optimizer from:
 //! "Sophia: A Scalable Stochastic Second-order Optimizer for Language Model Pre-training"
 //! Hong Liu, Zhiyuan Li, David Hall, Percy Liang, Tengyu Ma (2023)
-//! https://arxiv.org/abs/2305.14342
+//! <https://arxiv.org/abs/2305.14342>
 //!
 //! Sophia uses a lightweight Hessian diagonal estimate to adapt learning rates,
 //! achieving faster convergence than Adam with similar memory requirements.

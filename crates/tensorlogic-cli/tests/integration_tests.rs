@@ -2,10 +2,13 @@
 //!
 //! These tests verify end-to-end functionality of the CLI tool using assert_cmd.
 
-use assert_cmd::Command;
+#![allow(deprecated)]
+
+use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 
 /// Get the CLI binary command
 fn cli() -> Command {

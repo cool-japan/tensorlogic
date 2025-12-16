@@ -280,8 +280,8 @@ impl ParallelCompiler {
         // First optimize the expression
         let pipeline = OptimizationPipeline::with_config(opt_config);
         let (optimized_expr, opt_stats) = if self.config.parallel_optimization {
-            // TODO: Implement parallel optimization passes
-            pipeline.optimize(expr)
+            // Implement parallel optimization passes
+            self.parallel_optimize(expr, pipeline)
         } else {
             pipeline.optimize(expr)
         };
@@ -290,6 +290,176 @@ impl ParallelCompiler {
         let graph = self.compile(&optimized_expr, ctx)?;
 
         Ok((graph, opt_stats))
+    }
+
+    /// Perform optimization passes in parallel on independent subexpressions.
+    fn parallel_optimize(
+        &self,
+        expr: &TLExpr,
+        pipeline: OptimizationPipeline,
+    ) -> (TLExpr, PipelineStats) {
+        use rayon::prelude::*;
+
+        // Check if expression is complex enough to benefit from parallelization
+        let complexity = crate::optimize::analyze_complexity(expr);
+        if complexity.max_depth < self.config.min_complexity_for_parallel {
+            // Not complex enough, optimize sequentially
+            return pipeline.optimize(expr);
+        }
+
+        // Decompose expression into independent subtrees
+        let subtrees = self.decompose_for_parallel_opt(expr);
+
+        if subtrees.len() <= 1 {
+            // No independent subtrees, optimize sequentially
+            return pipeline.optimize(expr);
+        }
+
+        // Optimize each subtree in parallel
+        // Note: Each thread gets a reference to the pipeline since optimize() takes &self
+        let optimized_subtrees: Vec<_> = subtrees
+            .par_iter()
+            .map(|subtree| pipeline.optimize(subtree))
+            .collect();
+
+        // Combine optimized subtrees back into a single expression
+        let combined_expr = self.recombine_subtrees(expr, &optimized_subtrees);
+
+        // Aggregate statistics from all subtrees
+        let combined_stats = self.aggregate_stats(&optimized_subtrees);
+
+        (combined_expr, combined_stats)
+    }
+
+    /// Decompose expression into independent subtrees for parallel optimization.
+    #[allow(clippy::only_used_in_recursion)]
+    fn decompose_for_parallel_opt(&self, expr: &TLExpr) -> Vec<TLExpr> {
+        match expr {
+            // Binary operations can be parallelized
+            TLExpr::And(left, right) | TLExpr::Or(left, right) => {
+                let mut subtrees = Vec::new();
+                subtrees.extend(self.decompose_for_parallel_opt(left));
+                subtrees.extend(self.decompose_for_parallel_opt(right));
+                subtrees
+            }
+            // Arithmetic and comparison operations
+            TLExpr::Add(left, right)
+            | TLExpr::Sub(left, right)
+            | TLExpr::Mul(left, right)
+            | TLExpr::Div(left, right)
+            | TLExpr::Eq(left, right)
+            | TLExpr::Lt(left, right)
+            | TLExpr::Gt(left, right)
+            | TLExpr::Lte(left, right)
+            | TLExpr::Gte(left, right) => {
+                let mut subtrees = Vec::new();
+                subtrees.extend(self.decompose_for_parallel_opt(left));
+                subtrees.extend(self.decompose_for_parallel_opt(right));
+                subtrees
+            }
+            // Leaf nodes are their own subtrees
+            TLExpr::Pred { .. } | TLExpr::Constant(_) => {
+                vec![expr.clone()]
+            }
+            // Other expressions: treat as atomic units
+            _ => vec![expr.clone()],
+        }
+    }
+
+    /// Recombine optimized subtrees back into the original expression structure.
+    #[allow(clippy::only_used_in_recursion)]
+    fn recombine_subtrees(
+        &self,
+        original: &TLExpr,
+        optimized: &[(TLExpr, PipelineStats)],
+    ) -> TLExpr {
+        if optimized.is_empty() {
+            return original.clone();
+        }
+
+        if optimized.len() == 1 {
+            return optimized[0].0.clone();
+        }
+
+        match original {
+            TLExpr::And(_, _) => {
+                let mid = optimized.len() / 2;
+                TLExpr::And(
+                    Box::new(self.recombine_subtrees(original, &optimized[..mid])),
+                    Box::new(self.recombine_subtrees(original, &optimized[mid..])),
+                )
+            }
+            TLExpr::Or(_, _) => {
+                let mid = optimized.len() / 2;
+                TLExpr::Or(
+                    Box::new(self.recombine_subtrees(original, &optimized[..mid])),
+                    Box::new(self.recombine_subtrees(original, &optimized[mid..])),
+                )
+            }
+            TLExpr::Add(_, _) => {
+                let mid = optimized.len() / 2;
+                TLExpr::Add(
+                    Box::new(self.recombine_subtrees(original, &optimized[..mid])),
+                    Box::new(self.recombine_subtrees(original, &optimized[mid..])),
+                )
+            }
+            _ => optimized[0].0.clone(),
+        }
+    }
+
+    /// Aggregate statistics from parallel optimization passes.
+    fn aggregate_stats(&self, results: &[(TLExpr, PipelineStats)]) -> PipelineStats {
+        if results.is_empty() {
+            return PipelineStats::default();
+        }
+
+        let mut combined = results[0].1.clone();
+        for (_, stats) in &results[1..] {
+            combined.total_iterations = combined.total_iterations.max(stats.total_iterations);
+            combined.reached_fixed_point =
+                combined.reached_fixed_point && stats.reached_fixed_point;
+
+            // Aggregate individual pass statistics
+            combined.negation.double_negations_eliminated +=
+                stats.negation.double_negations_eliminated;
+            combined.negation.demorgans_applied += stats.negation.demorgans_applied;
+            combined.negation.quantifier_negations_pushed +=
+                stats.negation.quantifier_negations_pushed;
+
+            combined.constant_folding.binary_ops_folded += stats.constant_folding.binary_ops_folded;
+            combined.constant_folding.unary_ops_folded += stats.constant_folding.unary_ops_folded;
+
+            combined.algebraic.identities_eliminated += stats.algebraic.identities_eliminated;
+            combined.algebraic.annihilations_applied += stats.algebraic.annihilations_applied;
+            combined.algebraic.idempotent_simplified += stats.algebraic.idempotent_simplified;
+
+            combined.strength_reduction.power_reductions +=
+                stats.strength_reduction.power_reductions;
+            combined.strength_reduction.operations_eliminated +=
+                stats.strength_reduction.operations_eliminated;
+            combined.strength_reduction.special_function_optimizations +=
+                stats.strength_reduction.special_function_optimizations;
+
+            combined.distributivity.expressions_factored +=
+                stats.distributivity.expressions_factored;
+            combined.distributivity.expressions_expanded +=
+                stats.distributivity.expressions_expanded;
+            combined.distributivity.common_terms_extracted +=
+                stats.distributivity.common_terms_extracted;
+
+            combined.quantifier_opt.invariants_hoisted += stats.quantifier_opt.invariants_hoisted;
+            combined.quantifier_opt.quantifiers_reordered +=
+                stats.quantifier_opt.quantifiers_reordered;
+            combined.quantifier_opt.quantifiers_fused += stats.quantifier_opt.quantifiers_fused;
+
+            combined.dead_code.branches_eliminated += stats.dead_code.branches_eliminated;
+            combined.dead_code.short_circuits += stats.dead_code.short_circuits;
+            combined.dead_code.unused_quantifiers_removed +=
+                stats.dead_code.unused_quantifiers_removed;
+            combined.dead_code.identity_simplifications += stats.dead_code.identity_simplifications;
+        }
+
+        combined
     }
 }
 

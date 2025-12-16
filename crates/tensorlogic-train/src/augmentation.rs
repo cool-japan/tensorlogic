@@ -5,6 +5,10 @@
 //! - Scale augmentation (random scaling)
 //! - Rotation augmentation (placeholder for future)
 //! - Mixup augmentation (interpolation between samples)
+//! - CutMix augmentation (cutting and mixing patches)
+//! - Random Erasing (randomly erase rectangular regions)
+//! - CutOut (fixed-size random erasing)
+//!
 
 use crate::{TrainError, TrainResult};
 use scirs2_core::ndarray::{Array, Array2, ArrayView2};
@@ -487,6 +491,239 @@ impl DataAugmenter for CompositeAugmenter {
     }
 }
 
+/// Random Erasing augmentation.
+///
+/// Randomly erases rectangular regions in the input data with random values.
+/// This technique prevents overfitting and improves generalization, especially for image data.
+///
+/// Reference: Zhong et al., "Random Erasing Data Augmentation" (AAAI 2020)
+///
+/// # Parameters
+/// - `p`: Probability of applying erasing (default: 0.5)
+/// - `scale`: Range of proportion of erased area (default: [0.02, 0.33])
+/// - `ratio`: Range of aspect ratio of erased area (default: [0.3, 3.3])
+/// - `value`: Value to fill erased region (0.0 = zero, 1.0 = random, -1.0 = pixel mean)
+#[derive(Debug, Clone)]
+pub struct RandomErasingAugmenter {
+    /// Probability of applying erasing.
+    pub probability: f64,
+    /// Minimum proportion of erased area.
+    pub scale_min: f64,
+    /// Maximum proportion of erased area.
+    pub scale_max: f64,
+    /// Minimum aspect ratio.
+    pub ratio_min: f64,
+    /// Maximum aspect ratio.
+    pub ratio_max: f64,
+    /// Fill value (0.0 = zero, 1.0 = random).
+    pub fill_value: f64,
+}
+
+impl RandomErasingAugmenter {
+    /// Create a new Random Erasing augmenter with custom parameters.
+    pub fn new(
+        probability: f64,
+        scale_min: f64,
+        scale_max: f64,
+        ratio_min: f64,
+        ratio_max: f64,
+        fill_value: f64,
+    ) -> TrainResult<Self> {
+        if !(0.0..=1.0).contains(&probability) {
+            return Err(TrainError::InvalidParameter(
+                "probability must be in [0, 1]".to_string(),
+            ));
+        }
+        if scale_min >= scale_max || scale_min < 0.0 || scale_max > 1.0 {
+            return Err(TrainError::InvalidParameter(
+                "scale range must be valid (0 <= min < max <= 1)".to_string(),
+            ));
+        }
+        if ratio_min <= 0.0 || ratio_min >= ratio_max {
+            return Err(TrainError::InvalidParameter(
+                "ratio range must be valid (0 < min < max)".to_string(),
+            ));
+        }
+
+        Ok(Self {
+            probability,
+            scale_min,
+            scale_max,
+            ratio_min,
+            ratio_max,
+            fill_value,
+        })
+    }
+
+    /// Create with default parameters (as in the paper).
+    pub fn with_defaults() -> Self {
+        Self {
+            probability: 0.5,
+            scale_min: 0.02,
+            scale_max: 0.33,
+            ratio_min: 0.3,
+            ratio_max: 3.3,
+            fill_value: 0.0,
+        }
+    }
+}
+
+impl Default for RandomErasingAugmenter {
+    fn default() -> Self {
+        Self::with_defaults()
+    }
+}
+
+impl DataAugmenter for RandomErasingAugmenter {
+    fn augment(&self, data: &ArrayView2<f64>, rng: &mut StdRng) -> TrainResult<Array2<f64>> {
+        let mut augmented = data.to_owned();
+
+        // Apply with probability p
+        if rng.random::<f64>() > self.probability {
+            return Ok(augmented);
+        }
+
+        let (height, width) = (data.nrows(), data.ncols());
+        let area = (height * width) as f64;
+
+        // Try multiple times to find a valid erasing region
+        for _ in 0..10 {
+            // Random scale (proportion of total area)
+            let scale = self.scale_min + rng.random::<f64>() * (self.scale_max - self.scale_min);
+            let erase_area = area * scale;
+
+            // Random aspect ratio
+            let aspect_ratio =
+                self.ratio_min + rng.random::<f64>() * (self.ratio_max - self.ratio_min);
+
+            // Compute erase region dimensions
+            let h = (erase_area * aspect_ratio).sqrt().min(height as f64);
+            let w = (erase_area / aspect_ratio).sqrt().min(width as f64);
+
+            if h >= 1.0 && w >= 1.0 {
+                let erase_h = h as usize;
+                let erase_w = w as usize;
+
+                // Random position
+                let i = if erase_h < height {
+                    (rng.random::<f64>() * (height - erase_h) as f64) as usize
+                } else {
+                    0
+                };
+                let j = if erase_w < width {
+                    (rng.random::<f64>() * (width - erase_w) as f64) as usize
+                } else {
+                    0
+                };
+
+                // Fill with specified value
+                if self.fill_value == 1.0 {
+                    // Random values
+                    for row in i..i + erase_h.min(height - i) {
+                        for col in j..j + erase_w.min(width - j) {
+                            augmented[[row, col]] = rng.random();
+                        }
+                    }
+                } else {
+                    // Fixed value (0.0 or specified)
+                    for row in i..i + erase_h.min(height - i) {
+                        for col in j..j + erase_w.min(width - j) {
+                            augmented[[row, col]] = self.fill_value;
+                        }
+                    }
+                }
+
+                break;
+            }
+        }
+
+        Ok(augmented)
+    }
+}
+
+/// CutOut augmentation.
+///
+/// Randomly erases a fixed-size square region in the input data.
+/// Simpler variant of Random Erasing with fixed square regions.
+///
+/// Reference: DeVries & Taylor, "Improved Regularization of Convolutional Neural Networks with Cutout" (2017)
+///
+/// # Parameters
+/// - `size`: Size of the square region to erase
+/// - `p`: Probability of applying cutout (default: 1.0)
+/// - `fill_value`: Value to fill the erased region (default: 0.0)
+#[derive(Debug, Clone)]
+pub struct CutOutAugmenter {
+    /// Size of the square cutout region.
+    pub cutout_size: usize,
+    /// Probability of applying cutout.
+    pub probability: f64,
+    /// Fill value for erased region.
+    pub fill_value: f64,
+}
+
+impl CutOutAugmenter {
+    /// Create a new CutOut augmenter.
+    pub fn new(cutout_size: usize, probability: f64, fill_value: f64) -> TrainResult<Self> {
+        if cutout_size == 0 {
+            return Err(TrainError::InvalidParameter(
+                "cutout_size must be > 0".to_string(),
+            ));
+        }
+        if !(0.0..=1.0).contains(&probability) {
+            return Err(TrainError::InvalidParameter(
+                "probability must be in [0, 1]".to_string(),
+            ));
+        }
+
+        Ok(Self {
+            cutout_size,
+            probability,
+            fill_value,
+        })
+    }
+
+    /// Create with default parameters.
+    pub fn with_size(size: usize) -> TrainResult<Self> {
+        Self::new(size, 1.0, 0.0)
+    }
+}
+
+impl DataAugmenter for CutOutAugmenter {
+    fn augment(&self, data: &ArrayView2<f64>, rng: &mut StdRng) -> TrainResult<Array2<f64>> {
+        let mut augmented = data.to_owned();
+
+        // Apply with probability p
+        if rng.random::<f64>() > self.probability {
+            return Ok(augmented);
+        }
+
+        let (height, width) = (data.nrows(), data.ncols());
+
+        // Random center position
+        let center_y = (rng.random::<f64>() * height as f64) as usize;
+        let center_x = (rng.random::<f64>() * width as f64) as usize;
+
+        // Compute cutout region bounds (allow partial cutout at boundaries)
+        let half_size = self.cutout_size / 2;
+
+        let y_start = center_y.saturating_sub(half_size);
+        let y_end = (center_y + half_size).min(height);
+
+        let x_start = center_x.saturating_sub(half_size);
+        let x_end = (center_x + half_size).min(width);
+
+        // Erase the region
+        for i in y_start..y_end {
+            for j in x_start..x_end {
+                augmented[[i, j]] = self.fill_value;
+            }
+        }
+
+        Ok(augmented)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -756,5 +993,113 @@ mod tests {
 
         assert_eq!(composite.len(), 3);
         assert!(!composite.is_empty());
+    }
+
+    #[test]
+    fn test_random_erasing_creation() {
+        let augmenter = RandomErasingAugmenter::new(0.5, 0.02, 0.33, 0.3, 3.3, 0.0).unwrap();
+        assert_eq!(augmenter.probability, 0.5);
+        assert_eq!(augmenter.scale_min, 0.02);
+        assert_eq!(augmenter.scale_max, 0.33);
+    }
+
+    #[test]
+    fn test_random_erasing_invalid_params() {
+        // Invalid probability
+        assert!(RandomErasingAugmenter::new(1.5, 0.02, 0.33, 0.3, 3.3, 0.0).is_err());
+
+        // Invalid scale range
+        assert!(RandomErasingAugmenter::new(0.5, 0.33, 0.02, 0.3, 3.3, 0.0).is_err());
+
+        // Invalid ratio range
+        assert!(RandomErasingAugmenter::new(0.5, 0.02, 0.33, 3.3, 0.3, 0.0).is_err());
+    }
+
+    #[test]
+    fn test_random_erasing_augment() {
+        let augmenter = RandomErasingAugmenter::with_defaults();
+        let data = Array2::ones((10, 10));
+        let mut rng = create_test_rng();
+
+        let augmented = augmenter.augment(&data.view(), &mut rng).unwrap();
+
+        // Shape should be preserved
+        assert_eq!(augmented.shape(), data.shape());
+
+        // Some values may be erased (but not guaranteed due to probability)
+    }
+
+    #[test]
+    fn test_random_erasing_probability_zero() {
+        let augmenter = RandomErasingAugmenter::new(0.0, 0.02, 0.33, 0.3, 3.3, 0.0).unwrap();
+        let data = Array2::ones((10, 10));
+        let mut rng = create_test_rng();
+
+        let augmented = augmenter.augment(&data.view(), &mut rng).unwrap();
+
+        // With probability 0, data should be unchanged
+        assert_eq!(augmented, data);
+    }
+
+    #[test]
+    fn test_cutout_creation() {
+        let augmenter = CutOutAugmenter::new(5, 1.0, 0.0).unwrap();
+        assert_eq!(augmenter.cutout_size, 5);
+        assert_eq!(augmenter.probability, 1.0);
+        assert_eq!(augmenter.fill_value, 0.0);
+    }
+
+    #[test]
+    fn test_cutout_invalid_params() {
+        // Zero size
+        assert!(CutOutAugmenter::new(0, 1.0, 0.0).is_err());
+
+        // Invalid probability
+        assert!(CutOutAugmenter::new(5, 1.5, 0.0).is_err());
+    }
+
+    #[test]
+    fn test_cutout_augment() {
+        let augmenter = CutOutAugmenter::with_size(3).unwrap();
+        let data = Array2::ones((10, 10));
+        let mut rng = create_test_rng();
+
+        let augmented = augmenter.augment(&data.view(), &mut rng).unwrap();
+
+        // Shape should be preserved
+        assert_eq!(augmented.shape(), data.shape());
+
+        // Some values should be zero (erased)
+        let zeros_count = augmented.iter().filter(|&&x| x == 0.0).count();
+        assert!(zeros_count > 0, "Expected some values to be erased");
+        assert!(zeros_count < 100, "Not all values should be erased");
+    }
+
+    #[test]
+    fn test_cutout_probability_zero() {
+        let augmenter = CutOutAugmenter::new(5, 0.0, 0.0).unwrap();
+        let data = Array2::ones((10, 10));
+        let mut rng = create_test_rng();
+
+        let augmented = augmenter.augment(&data.view(), &mut rng).unwrap();
+
+        // With probability 0, data should be unchanged
+        assert_eq!(augmented, data);
+    }
+
+    #[test]
+    fn test_cutout_fill_value() {
+        let augmenter = CutOutAugmenter::new(3, 1.0, 0.5).unwrap();
+        let data = Array2::ones((10, 10));
+        let mut rng = create_test_rng();
+
+        let augmented = augmenter.augment(&data.view(), &mut rng).unwrap();
+
+        // Some values should be 0.5 (fill value)
+        let filled_count = augmented.iter().filter(|&&x| x == 0.5).count();
+        assert!(
+            filled_count > 0,
+            "Expected some values to be filled with 0.5"
+        );
     }
 }

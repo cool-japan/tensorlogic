@@ -24,7 +24,7 @@
 //! # Examples
 //!
 //! ```rust
-//! use tensorlogic_train::few_shot::{
+//! use tensorlogic_train::{
 //!     EpisodeSampler, PrototypicalDistance, DistanceMetric, ShotType
 //! };
 //! use scirs2_core::ndarray::Array2;

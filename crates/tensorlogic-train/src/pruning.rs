@@ -11,7 +11,7 @@
 //! ## Magnitude-based Pruning
 //! Prune weights with smallest absolute values (most common and effective):
 //! ```rust
-//! use tensorlogic_train::pruning::{MagnitudePruner, PruningConfig};
+//! use tensorlogic_train::{MagnitudePruner, Pruner, PruningConfig};
 //! use scirs2_core::ndarray::Array2;
 //!
 //! let weights = Array2::from_shape_vec((3, 3), vec![
@@ -28,13 +28,13 @@
 //! };
 //!
 //! let pruner = MagnitudePruner::new(config);
-//! let (pruned_weights, mask) = pruner.prune(&weights);
+//! let (pruned_weights, mask) = pruner.prune(&weights).unwrap();
 //! ```
 //!
 //! ## Gradient-based Pruning
 //! Prune weights with smallest gradient magnitudes (less sensitive to training):
 //! ```rust
-//! use tensorlogic_train::pruning::{GradientPruner, PruningConfig};
+//! use tensorlogic_train::{GradientPruner, PruningConfig};
 //! use scirs2_core::ndarray::Array2;
 //!
 //! let gradients = Array2::<f64>::zeros((3, 3));
@@ -45,7 +45,7 @@
 //! ## Structured Pruning
 //! Remove entire neurons, channels, or filters:
 //! ```rust
-//! use tensorlogic_train::pruning::{StructuredPruner, PruningConfig, StructuredPruningAxis};
+//! use tensorlogic_train::{StructuredPruner, PruningConfig, StructuredPruningAxis};
 //!
 //! let config = PruningConfig {
 //!     pruning_ratio: 0.5,

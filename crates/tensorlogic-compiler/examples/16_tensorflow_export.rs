@@ -25,21 +25,24 @@
 //! ```
 
 use anyhow::Result;
-use tensorlogic_compiler::{compile_to_einsum, CompilerContext};
-use tensorlogic_ir::{TLExpr, Term};
 
 #[cfg(feature = "tensorflow")]
-use tensorlogic_compiler::export::tensorflow::{
-    export_to_tensorflow, export_to_tensorflow_with_config, TensorFlowExportConfig, TfDataType,
+use tensorlogic_compiler::{
+    compile_to_einsum,
+    export::tensorflow::{
+        export_to_tensorflow, export_to_tensorflow_with_config, TensorFlowExportConfig, TfDataType,
+    },
+    CompilerContext,
 };
+
+#[cfg(feature = "tensorflow")]
+use tensorlogic_ir::{TLExpr, Term};
 
 fn main() -> Result<()> {
     #[cfg(not(feature = "tensorflow"))]
-    {
-        println!("This example requires the 'tensorflow' feature to be enabled.");
-        println!("Run with: cargo run --example 16_tensorflow_export --features tensorflow");
-        return Ok(());
-    }
+    println!("This example requires the 'tensorflow' feature to be enabled.");
+    #[cfg(not(feature = "tensorflow"))]
+    println!("Run with: cargo run --example 16_tensorflow_export --features tensorflow");
 
     #[cfg(feature = "tensorflow")]
     {

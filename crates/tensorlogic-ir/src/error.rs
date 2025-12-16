@@ -69,4 +69,6 @@ pub enum IrError {
     DomainMismatch { expected: String, found: String },
     #[error("Constraint violation: {message}")]
     ConstraintViolation { message: String },
+    #[error("Formatting error: {0}")]
+    FormattingError(#[from] std::fmt::Error),
 }

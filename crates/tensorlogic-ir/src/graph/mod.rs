@@ -8,6 +8,7 @@ pub mod cost_model;
 pub mod dot_export;
 mod einsum_spec;
 mod einsum_spec_display;
+pub mod export;
 pub mod fusion;
 pub mod layout;
 pub mod memory;

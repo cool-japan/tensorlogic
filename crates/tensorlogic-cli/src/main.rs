@@ -10,6 +10,7 @@ mod cli;
 mod completion;
 mod config;
 mod conversion;
+mod error_suggestions;
 mod executor;
 mod macros;
 mod optimize;
@@ -17,11 +18,14 @@ mod output;
 mod parser;
 mod profile;
 mod repl;
+mod simplify;
+mod snapshot;
 mod watch;
 
 use anyhow::{Context, Result};
 use clap::Parser;
 use std::fs;
+use std::path::PathBuf;
 use std::str::FromStr;
 use tensorlogic_compiler::{compile_to_einsum_with_context, CompilationConfig, CompilerContext};
 use tensorlogic_ir::{export_to_dot, validate_graph, EinsumGraph, TLExpr};
@@ -215,6 +219,7 @@ fn run() -> Result<()> {
             &cli.domains,
         ),
         Some(Commands::Cache { command }) => handle_cache_command(command, &config),
+        Some(Commands::Snapshot { command }) => handle_snapshot_command(command, &config),
         None => {
             // Main compilation mode
             compile_mode(&cli, &config)
@@ -718,6 +723,102 @@ fn handle_cache_command(command: &cli::CacheCommand, config: &Config) -> Result<
                 None => CompilationCache::default_cache_dir()?,
             };
             println!("{}", cache_dir.display());
+        }
+    }
+
+    Ok(())
+}
+
+fn handle_snapshot_command(command: &cli::SnapshotCommand, config: &Config) -> Result<()> {
+    use crate::snapshot::SnapshotSuite;
+    use cli::SnapshotCommand;
+    use std::env;
+
+    // Determine snapshot directory
+    let snapshot_dir = env::var("TENSORLOGIC_SNAPSHOT_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            dirs::home_dir()
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join(".tensorlogic_snapshots")
+        });
+
+    let suite = SnapshotSuite::new("tensorlogic", snapshot_dir.clone());
+
+    match command {
+        SnapshotCommand::Record {
+            name,
+            expression,
+            strategy,
+            domains,
+        } => {
+            let expr = parser::parse_expression(expression)?;
+            let context = if let Some(strat) = strategy {
+                let mut cfg = config.clone();
+                cfg.strategy = strat.clone();
+                create_context(&cfg, domains)?
+            } else {
+                create_context(config, domains)?
+            };
+            suite.record(name, &expr, &context, expression)?;
+            print_success(&format!("Recorded snapshot: {}", name));
+        }
+        SnapshotCommand::Verify {
+            name,
+            expression,
+            strategy,
+            domains,
+        } => {
+            let expr = parser::parse_expression(expression)?;
+            let context = if let Some(strat) = strategy {
+                let mut cfg = config.clone();
+                cfg.strategy = strat.clone();
+                create_context(&cfg, domains)?
+            } else {
+                create_context(config, domains)?
+            };
+            let diff = suite.verify(name, &expr, &context, expression)?;
+            if diff.is_match() {
+                print_success(&format!("✓ Snapshot matches: {}", name));
+            } else {
+                print_error(&format!("✗ Snapshot differs: {}", name));
+                for d in &diff.differences {
+                    eprintln!("  - {}", d);
+                }
+                std::process::exit(1);
+            }
+        }
+        SnapshotCommand::Update {
+            name,
+            expression,
+            strategy,
+            domains,
+        } => {
+            let expr = parser::parse_expression(expression)?;
+            let context = if let Some(strat) = strategy {
+                let mut cfg = config.clone();
+                cfg.strategy = strat.clone();
+                create_context(&cfg, domains)?
+            } else {
+                create_context(config, domains)?
+            };
+            suite.update(name, &expr, &context, expression)?;
+            print_success(&format!("Updated snapshot: {}", name));
+        }
+        SnapshotCommand::List => {
+            let snapshots = suite.list_snapshots()?;
+            if snapshots.is_empty() {
+                println!("No snapshots found in {}", snapshot_dir.display());
+            } else {
+                println!("Snapshots in {}:", snapshot_dir.display());
+                for snapshot in &snapshots {
+                    println!("  - {}", snapshot);
+                }
+                println!("\nTotal: {} snapshot(s)", snapshots.len());
+            }
+        }
+        SnapshotCommand::Path => {
+            println!("{}", snapshot_dir.display());
         }
     }
 

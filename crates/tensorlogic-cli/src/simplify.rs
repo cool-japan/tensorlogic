@@ -3,6 +3,8 @@
 //! This module provides logical expression simplification to optimize expressions
 //! before compilation. It applies standard logical equivalences and normalization rules.
 
+#![allow(dead_code)]
+
 use tensorlogic_ir::{TLExpr, Term};
 
 /// Simplify a logical expression using standard equivalences

@@ -9,6 +9,12 @@ use tensorlogic_ir::{validate_graph, EinsumGraph, OpType, ValidationReport};
 
 use crate::CompilerContext;
 
+// Import our new optimization passes
+use super::{
+    contraction_opt::{optimize_contractions_with_config, ContractionOptConfig},
+    loop_fusion::{fuse_loops_with_config, LoopFusionConfig},
+};
+
 /// Post-compilation validation options.
 #[derive(Debug, Clone)]
 pub struct PostCompilationOptions {
@@ -20,6 +26,10 @@ pub struct PostCompilationOptions {
     pub validate_shapes: bool,
     /// Enable optimization passes
     pub apply_optimizations: bool,
+    /// Enable contraction optimization
+    pub enable_contraction_opt: bool,
+    /// Enable loop fusion optimization
+    pub enable_loop_fusion: bool,
     /// Fail on warnings
     pub strict_mode: bool,
 }
@@ -31,6 +41,8 @@ impl Default for PostCompilationOptions {
             validate_axes: true,
             validate_shapes: true,
             apply_optimizations: true,
+            enable_contraction_opt: true,
+            enable_loop_fusion: true,
             strict_mode: false,
         }
     }
@@ -142,7 +154,7 @@ pub fn post_compilation_passes(
 
     // 4. Apply optimization passes
     if options.apply_optimizations {
-        optimizations_applied += apply_optimization_passes(graph, &mut messages)?;
+        optimizations_applied += apply_optimization_passes(graph, &options, &mut messages)?;
     }
 
     // Check if valid
@@ -297,16 +309,47 @@ fn validate_shape_compatibility(
 
 /// Apply optimization passes to the graph.
 fn apply_optimization_passes(
-    _graph: &mut EinsumGraph,
+    graph: &mut EinsumGraph,
+    options: &PostCompilationOptions,
     messages: &mut Vec<String>,
 ) -> Result<usize> {
-    // Note: Graph optimization methods (eliminate_dead_code, eliminate_common_subexpressions,
-    // simplify_identities) are not yet available in the current tensorlogic-ir API.
-    // These optimizations can be added when the IR supports them.
+    let mut total_optimizations = 0;
 
-    messages.push("Graph optimizations: currently disabled (awaiting IR API support)".to_string());
+    // 1. Contraction optimization
+    if options.enable_contraction_opt {
+        let config = ContractionOptConfig::default();
+        let (optimized_graph, stats) = optimize_contractions_with_config(graph, &config);
+        *graph = optimized_graph;
 
-    Ok(0)
+        if stats.contractions_reordered > 0 {
+            messages.push(format!(
+                "Contraction optimization: {} contractions reordered, {:.1}% FLOPs reduction",
+                stats.contractions_reordered, stats.flops_reduction_percent
+            ));
+            total_optimizations += stats.total_optimizations();
+        }
+    }
+
+    // 2. Loop fusion
+    if options.enable_loop_fusion {
+        let config = LoopFusionConfig::default();
+        let (optimized_graph, stats) = fuse_loops_with_config(graph, &config);
+        *graph = optimized_graph;
+
+        if stats.loops_fused > 0 {
+            messages.push(format!(
+                "Loop fusion: {} loops fused, {} intermediates eliminated",
+                stats.loops_fused, stats.intermediates_eliminated
+            ));
+            total_optimizations += stats.total_optimizations();
+        }
+    }
+
+    if total_optimizations == 0 {
+        messages.push("No graph optimizations applied (graph may already be optimal)".to_string());
+    }
+
+    Ok(total_optimizations)
 }
 
 /// Quick validation check (used internally).

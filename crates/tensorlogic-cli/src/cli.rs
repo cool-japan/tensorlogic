@@ -258,6 +258,12 @@ pub enum Commands {
         #[command(subcommand)]
         command: CacheCommand,
     },
+
+    /// Snapshot testing for output consistency
+    Snapshot {
+        #[command(subcommand)]
+        command: SnapshotCommand,
+    },
 }
 
 #[derive(Subcommand)]
@@ -284,6 +290,53 @@ pub enum ConfigCommand {
     Init,
     /// Edit configuration file
     Edit,
+}
+
+#[derive(Subcommand)]
+pub enum SnapshotCommand {
+    /// Record a new snapshot
+    Record {
+        /// Test name
+        name: String,
+        /// Input expression
+        expression: String,
+        /// Compilation strategy
+        #[arg(short, long)]
+        strategy: Option<String>,
+        /// Domain definitions (name:size pairs)
+        #[arg(short, long, value_parser = parse_domain)]
+        domains: Vec<(String, usize)>,
+    },
+    /// Verify expression against recorded snapshot
+    Verify {
+        /// Test name
+        name: String,
+        /// Input expression
+        expression: String,
+        /// Compilation strategy
+        #[arg(short, long)]
+        strategy: Option<String>,
+        /// Domain definitions (name:size pairs)
+        #[arg(short, long, value_parser = parse_domain)]
+        domains: Vec<(String, usize)>,
+    },
+    /// Update an existing snapshot
+    Update {
+        /// Test name
+        name: String,
+        /// Input expression
+        expression: String,
+        /// Compilation strategy
+        #[arg(short, long)]
+        strategy: Option<String>,
+        /// Domain definitions (name:size pairs)
+        #[arg(short, long, value_parser = parse_domain)]
+        domains: Vec<(String, usize)>,
+    },
+    /// List all snapshots
+    List,
+    /// Show snapshot directory path
+    Path,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]

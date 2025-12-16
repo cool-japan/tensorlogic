@@ -1122,7 +1122,7 @@ impl Loss for KLDivergenceLoss {
 /// Poly Loss - Polynomial Expansion of Cross-Entropy Loss.
 ///
 /// Paper: "PolyLoss: A Polynomial Expansion Perspective of Classification Loss Functions" (Leng et al., 2022)
-/// https://arxiv.org/abs/2204.12511
+/// <https://arxiv.org/abs/2204.12511>
 ///
 /// PolyLoss adds polynomial terms to cross-entropy to provide better gradient flow
 /// for well-classified examples. It helps with:

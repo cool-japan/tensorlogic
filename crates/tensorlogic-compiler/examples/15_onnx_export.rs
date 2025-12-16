@@ -14,6 +14,8 @@ use tensorlogic_compiler::{
     export::onnx::{export_to_onnx, export_to_onnx_with_config, DataType, OnnxExportConfig},
     CompilerContext,
 };
+
+#[cfg(feature = "onnx")]
 use tensorlogic_ir::{TLExpr, Term};
 
 #[cfg(feature = "onnx")]

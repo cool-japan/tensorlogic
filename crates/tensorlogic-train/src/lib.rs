@@ -26,9 +26,11 @@ mod crossval;
 mod curriculum;
 mod data;
 mod distillation;
+mod dropblock;
 mod ensemble;
 mod error;
 mod few_shot;
+mod gradient_centralization;
 mod hyperparameter;
 mod label_smoothing;
 mod logging;
@@ -46,6 +48,7 @@ mod quantization;
 mod regularization;
 mod sampling;
 mod scheduler;
+mod stochastic_depth;
 mod trainer;
 mod transfer;
 mod utils;
@@ -54,8 +57,8 @@ mod utils;
 pub mod structured_logging;
 
 pub use augmentation::{
-    CompositeAugmenter, CutMixAugmenter, DataAugmenter, MixupAugmenter, NoAugmentation,
-    NoiseAugmenter, RotationAugmenter, ScaleAugmenter,
+    CompositeAugmenter, CutMixAugmenter, CutOutAugmenter, DataAugmenter, MixupAugmenter,
+    NoAugmentation, NoiseAugmenter, RandomErasingAugmenter, RotationAugmenter, ScaleAugmenter,
 };
 pub use batch::{extract_batch, BatchConfig, BatchIterator, DataShuffler};
 pub use callbacks::{
@@ -85,8 +88,9 @@ pub use model::{AutodiffModel, DynamicModel, LinearModel, Model};
 pub use optimizer::{
     AdaBeliefOptimizer, AdaMaxOptimizer, AdagradOptimizer, AdamOptimizer, AdamPOptimizer,
     AdamWOptimizer, GradClipMode, LambOptimizer, LarsOptimizer, LionConfig, LionOptimizer,
-    LookaheadOptimizer, NAdamOptimizer, Optimizer, OptimizerConfig, RAdamOptimizer,
-    RMSpropOptimizer, SamOptimizer, SgdOptimizer, SophiaConfig, SophiaOptimizer, SophiaVariant,
+    LookaheadOptimizer, NAdamOptimizer, Optimizer, OptimizerConfig, ProdigyConfig,
+    ProdigyOptimizer, RAdamOptimizer, RMSpropOptimizer, SamOptimizer, ScheduleFreeAdamW,
+    ScheduleFreeConfig, SgdOptimizer, SophiaConfig, SophiaOptimizer, SophiaVariant,
 };
 pub use regularization::{
     CompositeRegularization, ElasticNetRegularization, GroupLassoRegularization, L1Regularization,
@@ -115,7 +119,8 @@ pub use transfer::{
 
 // Hyperparameter optimization
 pub use hyperparameter::{
-    GridSearch, HyperparamConfig, HyperparamResult, HyperparamSpace, HyperparamValue, RandomSearch,
+    AcquisitionFunction, BayesianOptimization, GaussianProcess, GpKernel, GridSearch,
+    HyperparamConfig, HyperparamResult, HyperparamSpace, HyperparamValue, RandomSearch,
 };
 
 // Cross-validation
@@ -190,3 +195,12 @@ pub use few_shot::{
 pub use meta_learning::{
     MAMLConfig, MetaLearner, MetaStats, MetaTask, Reptile, ReptileConfig, MAML,
 };
+
+// Gradient centralization
+pub use gradient_centralization::{GcConfig, GcStats, GcStrategy, GradientCentralization};
+
+// Stochastic Depth (DropPath)
+pub use stochastic_depth::{DropPath, ExponentialStochasticDepth, LinearStochasticDepth};
+
+// DropBlock regularization
+pub use dropblock::{DropBlock, LinearDropBlockScheduler};

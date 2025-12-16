@@ -57,19 +57,81 @@
 //! let q = TLExpr::pred("Q", vec![Term::var("x")]);
 //! let and_pq = TLExpr::and(p.clone(), q);
 //!
-//! let sequent = Sequent::new(vec![and_pq], vec![p.clone()]);
+//! let conclusion = Sequent::new(vec![and_pq], vec![p.clone()]);
 //!
-//! // Construct a proof tree
-//! let proof = ProofTree::identity(p.clone())
-//!     .apply_rule(InferenceRule::AndLeft { index: 0 });
+//! // Construct a proof tree: Identity axiom as premise, then apply AndLeft
+//! let identity_premise = ProofTree::identity(p.clone());
+//! let proof = ProofTree::new(
+//!     conclusion,
+//!     InferenceRule::AndLeft { index: 0 },
+//!     vec![identity_premise]
+//! );
 //!
 //! assert!(proof.is_valid());
 //! ```
 
 use crate::expr::TLExpr;
 use crate::term::Term;
+use crate::unification::Substitution;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+
+/// Helper function to substitute terms in predicates within an expression.
+///
+/// This performs capture-avoiding substitution, respecting bound variables in quantifiers.
+fn substitute_in_expr(expr: &TLExpr, subst: &Substitution) -> TLExpr {
+    match expr {
+        TLExpr::Pred { name, args } => {
+            // Apply substitution to each term in the predicate
+            let new_args = args.iter().map(|term| subst.apply(term)).collect();
+            TLExpr::Pred {
+                name: name.clone(),
+                args: new_args,
+            }
+        }
+        TLExpr::And(left, right) => TLExpr::And(
+            Box::new(substitute_in_expr(left, subst)),
+            Box::new(substitute_in_expr(right, subst)),
+        ),
+        TLExpr::Or(left, right) => TLExpr::Or(
+            Box::new(substitute_in_expr(left, subst)),
+            Box::new(substitute_in_expr(right, subst)),
+        ),
+        TLExpr::Not(inner) => TLExpr::Not(Box::new(substitute_in_expr(inner, subst))),
+        TLExpr::Imply(left, right) => TLExpr::Imply(
+            Box::new(substitute_in_expr(left, subst)),
+            Box::new(substitute_in_expr(right, subst)),
+        ),
+        TLExpr::Exists { var, domain, body } => {
+            // Capture-avoiding substitution: don't substitute if var is bound
+            if subst.domain().contains(var) {
+                // Variable is bound by this quantifier, return unchanged
+                expr.clone()
+            } else {
+                TLExpr::Exists {
+                    var: var.clone(),
+                    domain: domain.clone(),
+                    body: Box::new(substitute_in_expr(body, subst)),
+                }
+            }
+        }
+        TLExpr::ForAll { var, domain, body } => {
+            // Capture-avoiding substitution: don't substitute if var is bound
+            if subst.domain().contains(var) {
+                // Variable is bound by this quantifier, return unchanged
+                expr.clone()
+            } else {
+                TLExpr::ForAll {
+                    var: var.clone(),
+                    domain: domain.clone(),
+                    body: Box::new(substitute_in_expr(body, subst)),
+                }
+            }
+        }
+        // For other expression types, return as-is (they don't contain terms)
+        _ => expr.clone(),
+    }
+}
 
 /// A sequent is a formal statement `Γ ⊢ Δ` representing an entailment relation.
 ///
@@ -169,10 +231,41 @@ impl Sequent {
     }
 
     /// Substitute a term for a variable throughout the sequent.
-    /// Note: Substitution is currently a no-op for expressions without substitution support.
-    pub fn substitute(&self, _var: &str, _term: &Term) -> Self {
-        // TODO: Implement substitution when TLExpr supports it
-        self.clone()
+    ///
+    /// This creates a new substitution and applies it to all formulas in the sequent.
+    /// The substitution is capture-avoiding for bound variables in quantifiers.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tensorlogic_ir::{Sequent, TLExpr, Term};
+    ///
+    /// // P(x) ⊢ P(x)
+    /// let p_x = TLExpr::pred("P", vec![Term::var("x")]);
+    /// let seq = Sequent::identity(p_x);
+    ///
+    /// // Substitute x with a
+    /// let seq_subst = seq.substitute("x", &Term::constant("a"));
+    ///
+    /// // Result should be P(a) ⊢ P(a)
+    /// ```
+    pub fn substitute(&self, var: &str, term: &Term) -> Self {
+        let mut subst = Substitution::empty();
+        subst.bind(var.to_string(), term.clone());
+
+        let new_antecedents = self
+            .antecedents
+            .iter()
+            .map(|expr| substitute_in_expr(expr, &subst))
+            .collect();
+
+        let new_consequents = self
+            .consequents
+            .iter()
+            .map(|expr| substitute_in_expr(expr, &subst))
+            .collect();
+
+        Sequent::new(new_antecedents, new_consequents)
     }
 }
 
@@ -662,15 +755,71 @@ mod tests {
     }
 
     #[test]
+    fn test_sequent_substitute() {
+        let p_x = TLExpr::pred("P", vec![Term::var("x")]);
+        let seq = Sequent::identity(p_x.clone());
+
+        // Substitute x with a
+        let substituted = seq.substitute("x", &Term::constant("a"));
+        let p_a = TLExpr::pred("P", vec![Term::constant("a")]);
+        assert_eq!(substituted.antecedents[0], p_a);
+        assert_eq!(substituted.consequents[0], p_a);
+
+        // Verify original is unchanged
+        assert_eq!(seq.antecedents[0], p_x);
+    }
+
+    #[test]
+    fn test_sequent_substitute_capture_avoiding() {
+        // Test that substitution respects bound variables
+        // ∃x. P(x) ⊢ Q(x)
+        let p_x = TLExpr::pred("P", vec![Term::var("x")]);
+        let exists_p = TLExpr::exists("x", "Domain", p_x);
+        let q_x = TLExpr::pred("Q", vec![Term::var("x")]);
+        let seq = Sequent::new(vec![exists_p.clone()], vec![q_x]);
+
+        // Substitute x with a
+        let substituted = seq.substitute("x", &Term::constant("a"));
+
+        // Left side should be unchanged (x is bound)
+        assert_eq!(substituted.antecedents[0], exists_p);
+        // Right side should be substituted (x is free)
+        let q_a = TLExpr::pred("Q", vec![Term::constant("a")]);
+        assert_eq!(substituted.consequents[0], q_a);
+    }
+
+    #[test]
+    fn test_sequent_substitute_multiple() {
+        // P(x) ∧ Q(x) ⊢ R(x)
+        let p_x = TLExpr::pred("P", vec![Term::var("x")]);
+        let q_x = TLExpr::pred("Q", vec![Term::var("x")]);
+        let and_pq = TLExpr::and(p_x, q_x);
+        let r_x = TLExpr::pred("R", vec![Term::var("x")]);
+        let seq = Sequent::new(vec![and_pq], vec![r_x]);
+
+        // Substitute x with b
+        let substituted = seq.substitute("x", &Term::constant("b"));
+
+        // All x's should be replaced with b
+        let p_b = TLExpr::pred("P", vec![Term::constant("b")]);
+        let q_b = TLExpr::pred("Q", vec![Term::constant("b")]);
+        let and_pq_b = TLExpr::and(p_b, q_b);
+        let r_b = TLExpr::pred("R", vec![Term::constant("b")]);
+
+        assert_eq!(substituted.antecedents[0], and_pq_b);
+        assert_eq!(substituted.consequents[0], r_b);
+    }
+
+    #[test]
     fn test_substitution() {
         let p = TLExpr::pred("P", vec![Term::var("x")]);
         let seq = Sequent::identity(p.clone());
 
-        // Currently substitution is a no-op (returns clone)
-        // TODO: Implement full substitution when TLExpr supports it
+        // Substitution now works properly with unification
         let substituted = seq.substitute("x", &Term::constant("a"));
-        assert_eq!(substituted.antecedents[0], p);
-        assert_eq!(substituted.consequents[0], p);
+        let p_a = TLExpr::pred("P", vec![Term::constant("a")]);
+        assert_eq!(substituted.antecedents[0], p_a);
+        assert_eq!(substituted.consequents[0], p_a);
     }
 
     #[test]

@@ -58,6 +58,22 @@ harness = false
 name = "refinement_benchmarks"
 harness = false
 
+[[bench]]
+name = "synchronization_benchmarks"
+harness = false
+
+[[bench]]
+name = "query_cache_benchmarks"
+harness = false
+
+[[bench]]
+name = "merge_strategies_benchmarks"
+harness = false
+
+[[bench]]
+name = "utilities_benchmarks"
+harness = false
+
 [[bin]]
 name = "schema_validate"
 path = "src/bin/schema_validate.rs"

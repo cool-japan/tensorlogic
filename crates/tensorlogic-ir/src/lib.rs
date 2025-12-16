@@ -220,6 +220,7 @@ pub mod sequent;
 pub mod serialization;
 mod signature;
 mod term;
+pub mod unification;
 pub mod util;
 
 #[cfg(test)]
@@ -291,6 +292,10 @@ pub use graph::cost_model::{
     auto_annotate_costs, estimate_graph_cost, estimate_operation_cost, CostSummary, GraphCostModel,
     OperationCost,
 };
+pub use graph::export::{
+    export_to_onnx_text, export_to_onnx_text_with_options, export_to_torchscript_text,
+    export_to_torchscript_text_with_options, OnnxExportOptions, TorchScriptExportOptions,
+};
 pub use graph::fusion::{
     fuse_all, fuse_einsum_operations, fuse_elementwise_operations, fuse_map_reduce, FusionStats,
 };
@@ -343,4 +348,8 @@ pub use sequent::{
 pub use serialization::{VersionedExpr, VersionedGraph, FORMAT_VERSION};
 pub use signature::{PredicateSignature, SignatureRegistry};
 pub use term::{Term, TypeAnnotation};
+pub use unification::{
+    anti_unify_terms, are_unifiable, lgg_terms, rename_vars, unify_term_list, unify_terms,
+    Substitution,
+};
 pub use util::{pretty_print_expr, pretty_print_graph, ExprStats, GraphStats};

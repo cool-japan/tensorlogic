@@ -25,7 +25,7 @@
 //! # Examples
 //!
 //! ```rust
-//! use tensorlogic_train::meta_learning::{MAMLConfig, ReptileConfig, MetaLearner};
+//! use tensorlogic_train::{MAMLConfig, ReptileConfig, MetaLearner};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! // Configure MAML

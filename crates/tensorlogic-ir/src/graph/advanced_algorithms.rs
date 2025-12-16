@@ -20,7 +20,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use tensorlogic_ir::{EinsumGraph, EinsumNode, advanced_graph_algorithms};
+//! use tensorlogic_ir::{EinsumGraph, EinsumNode, find_cycles, strongly_connected_components, topological_sort};
 //!
 //! let mut graph = EinsumGraph::new();
 //! let a = graph.add_tensor("A");
@@ -30,14 +30,14 @@
 //! graph.add_node(EinsumNode::einsum("ij,jk->ik", vec![a, b], vec![c])).unwrap();
 //!
 //! // Detect cycles
-//! let cycles = advanced_graph_algorithms::find_cycles(&graph);
+//! let cycles = find_cycles(&graph);
 //! assert!(cycles.is_empty()); // Should be acyclic
 //!
 //! // Find strongly connected components
-//! let sccs = advanced_graph_algorithms::strongly_connected_components(&graph);
+//! let sccs = strongly_connected_components(&graph);
 //!
 //! // Topological sort
-//! let topo_order = advanced_graph_algorithms::topological_sort(&graph).unwrap();
+//! let topo_order = topological_sort(&graph).unwrap();
 //! ```
 
 use crate::graph::EinsumGraph;

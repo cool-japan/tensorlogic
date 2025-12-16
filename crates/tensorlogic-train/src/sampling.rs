@@ -11,7 +11,7 @@
 //!
 //! ## Hard Negative Mining
 //! ```rust
-//! use tensorlogic_train::sampling::{HardNegativeMiner, MiningStrategy};
+//! use tensorlogic_train::{HardNegativeMiner, MiningStrategy};
 //! use scirs2_core::ndarray::Array1;
 //!
 //! let losses = Array1::from_vec(vec![0.1, 0.9, 0.3, 0.8, 0.2]);
@@ -23,7 +23,7 @@
 //!
 //! ## Importance Sampling
 //! ```rust
-//! use tensorlogic_train::sampling::ImportanceSampler;
+//! use tensorlogic_train::ImportanceSampler;
 //! use scirs2_core::ndarray::Array1;
 //!
 //! let scores = Array1::from_vec(vec![0.1, 0.5, 0.9, 0.3]);

@@ -4,7 +4,7 @@
 
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic--compiler-orange)](https://crates.io/crates/tensorlogic-compiler)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-compiler)
-[![Tests](https://img.shields.io/badge/tests-311%2F311-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-437%2F437_passing-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
 
 ## Overview
@@ -63,6 +63,15 @@ The compiler features a **7-pass optimization pipeline** that can reduce express
 - ✅ **26+ Configurable Strategies**: Customize logic-to-tensor mappings for different use cases
 - ✅ **6 Preset Configurations**: Soft differentiable, hard Boolean, fuzzy logics, probabilistic
 - ✅ **Fine-Grained Control**: Per-operation strategy selection (AND, OR, NOT, quantifiers, implication)
+
+### Advanced Analysis & Profiling (New in Alpha.2 ✨)
+- ✨ **Compilation Profiling**: Track compilation time, memory usage, cache statistics, and pass-level performance
+- ✨ **Dataflow Analysis**: Live variable analysis, reaching definitions, use-def chains for optimization
+- ✨ **Graph Dataflow**: Tensor liveness tracking, dependency analysis for graph optimization
+- ✨ **Contraction Optimization**: Dynamic programming for optimal einsum contraction order (reduces FLOPs)
+- ✨ **Loop Fusion**: Fuse multiple loops over the same axes for better cache locality
+- ✨ **Reachability Analysis**: Compute dominance, strongly connected components, topological ordering
+- ✨ **Integrated Post-Compilation**: Unified pipeline combining validation and graph-level optimizations
 
 ## Quick Start
 
@@ -318,6 +327,219 @@ let (optimized_graph, stats) = optimize_graph(&graph, OptimizationLevel::Aggress
 println!("Removed {} nodes", stats.nodes_removed);
 ```
 
+## Advanced Analysis Features (Alpha.2 ✨)
+
+The compiler now includes sophisticated analysis and optimization capabilities:
+
+### Compilation Profiling
+
+Track compilation performance, memory usage, and cache statistics:
+
+```rust
+use tensorlogic_compiler::profiling::CompilationProfiler;
+
+let mut profiler = CompilationProfiler::new();
+profiler.start();
+
+// Profile compilation phases
+profiler.start_phase("compilation");
+let graph = compile_to_einsum(&expr)?;
+profiler.end_phase("compilation");
+
+// Record pass executions
+profiler.record_pass("negation_opt", duration, optimizations_applied);
+
+// Generate reports
+let report = profiler.generate_report();
+println!("{}", report);
+
+// Get JSON output for tooling
+let json = profiler.generate_json_report();
+```
+
+**Profiling capabilities:**
+- Phase-level time tracking with nesting support
+- Memory usage snapshots and peak memory detection
+- Pass-level statistics (execution count, time, optimizations)
+- Cache statistics (hits, misses, evictions, hit rate)
+- Performance recommendations based on profiling data
+
+### Dataflow Analysis
+
+Analyze how data flows through expressions for optimization opportunities:
+
+```rust
+use tensorlogic_compiler::passes::{analyze_dataflow, analyze_graph_dataflow};
+
+// Analyze expression dataflow
+let analysis = analyze_dataflow(&expr);
+
+// Check live variables at each point
+println!("Live variables: {:?}", analysis.live_variables);
+
+// Track reaching definitions (which assignments reach each use)
+println!("Reaching definitions: {:?}", analysis.reaching_defs);
+
+// Identify available expressions for CSE
+println!("Available expressions: {:?}", analysis.available_exprs);
+
+// Use-def chains for dependency tracking
+println!("Use-def chains: {:?}", analysis.use_def_chains);
+
+// Analyze compiled graph dataflow
+let graph_analysis = analyze_graph_dataflow(&graph);
+println!("Tensor dependencies: {:?}", graph_analysis.dependencies);
+println!("Live tensors per node: {:?}", graph_analysis.live_tensors);
+```
+
+**Dataflow analysis provides:**
+- Live variable analysis (which variables are used downstream)
+- Reaching definitions (where values are defined)
+- Available expressions (for common subexpression elimination)
+- Use-def chains (variable usage tracking)
+- Tensor liveness in compiled graphs
+- Dependency analysis for graph optimization
+
+### Contraction Optimization
+
+Optimize einsum contraction order using dynamic programming:
+
+```rust
+use tensorlogic_compiler::passes::{optimize_contractions, optimize_contractions_with_config};
+use tensorlogic_compiler::passes::ContractionOptConfig;
+
+// Optimize with default greedy algorithm
+let (optimized_graph, stats) = optimize_contractions(&graph);
+
+println!("Contractions reordered: {}", stats.contractions_reordered);
+println!("FLOPs reduction: {:.1}%", stats.flops_reduction_percent);
+println!("Memory reduction: {:.1}%", stats.memory_reduction_percent);
+
+// Custom configuration
+let config = ContractionOptConfig {
+    max_intermediate_size: 1_000_000,  // Limit intermediate tensor sizes
+    prefer_memory_over_flops: false,    // Optimize for FLOPs first
+};
+
+let (optimized, stats) = optimize_contractions_with_config(&graph, &config);
+```
+
+**Contraction optimization features:**
+- Dynamic programming to find optimal contraction order
+- Minimizes floating-point operations (FLOPs)
+- Controls intermediate tensor memory usage
+- Greedy algorithm for large graphs
+- Detailed statistics on FLOP and memory savings
+
+### Loop Fusion
+
+Fuse multiple loops over the same axes for better cache locality:
+
+```rust
+use tensorlogic_compiler::passes::{fuse_loops, fuse_loops_with_config};
+use tensorlogic_compiler::passes::LoopFusionConfig;
+
+// Fuse loops with default settings
+let (fused_graph, stats) = fuse_loops(&graph);
+
+println!("Loops fused: {}", stats.loops_fused);
+println!("Reductions merged: {}", stats.reductions_merged);
+println!("Intermediates eliminated: {}", stats.intermediates_eliminated);
+
+// Custom configuration
+let config = LoopFusionConfig {
+    max_fusion_depth: 3,           // Limit fusion depth
+    require_same_reduction: true,  // Only fuse identical reductions
+};
+
+let (fused, stats) = fuse_loops_with_config(&graph, &config);
+```
+
+**Loop fusion benefits:**
+- Reduces memory bandwidth requirements
+- Improves cache locality by reusing loaded data
+- Eliminates intermediate tensors
+- Merges reduction operations
+- Reduces kernel launch overhead on GPUs
+
+### Reachability Analysis
+
+Compute graph structure properties for optimization and validation:
+
+```rust
+use tensorlogic_compiler::passes::{analyze_reachability, analyze_dominance};
+
+// Compute reachability information
+let reachability = analyze_reachability(&graph);
+
+// Check if node B is reachable from node A
+if reachability.reachable.contains(&(node_a, node_b)) {
+    println!("Node {} can reach node {}", node_a, node_b);
+}
+
+// Get strongly connected components
+println!("SCCs: {:?}", reachability.strongly_connected_components);
+
+// Topological ordering (for DAGs)
+if let Some(topo) = &reachability.topological_order {
+    println!("Topological order: {:?}", topo);
+}
+
+// Compute dominance relationships
+let dominance = analyze_dominance(&graph);
+println!("Immediate dominators: {:?}", dominance.immediate_dominators);
+println!("Dominance frontiers: {:?}", dominance.dominance_frontiers);
+```
+
+**Reachability analysis provides:**
+- Transitive reachability between nodes
+- Strongly connected component detection
+- Topological ordering for DAGs
+- Cycle detection
+- Dominance and post-dominance analysis
+- Dominator trees and frontiers
+
+### Integrated Post-Compilation Pipeline
+
+Run all analysis and optimization passes in a single pipeline:
+
+```rust
+use tensorlogic_compiler::passes::{post_compilation_passes, PostCompilationOptions};
+
+let options = PostCompilationOptions {
+    validate_graph_structure: true,  // Check for cycles, orphans
+    validate_axes: true,              // Validate axis compatibility
+    validate_shapes: true,            // Check tensor shape consistency
+    apply_optimizations: true,        // Run optimization passes
+    enable_contraction_opt: true,     // Optimize contraction order
+    enable_loop_fusion: true,         // Fuse compatible loops
+    strict_mode: false,               // Fail on warnings if true
+};
+
+let mut graph = compile_to_einsum(&expr)?;
+let result = post_compilation_passes(&mut graph, &ctx, options)?;
+
+if result.is_valid {
+    println!("✓ Graph validated successfully");
+    println!("  Checks performed: {}", result.validation_report.checks_performed);
+    println!("  Optimizations: {}", result.optimizations_applied);
+
+    for msg in &result.messages {
+        println!("  {}", msg);
+    }
+}
+```
+
+**Post-compilation pipeline:**
+- Graph structure validation (cycles, orphaned nodes)
+- Axis compatibility checking
+- Shape inference and validation
+- Automated optimization application
+- Configurable strictness levels
+- Detailed validation and optimization reports
+
+See `examples/21_profiling_and_optimization.rs` for comprehensive demonstrations of all these features.
+
 ## Compiler Architecture
 
 ```
@@ -539,10 +761,10 @@ cargo llvm-cov --package tensorlogic-compiler
 ```
 
 **Current Test Status:**
-- **68 tests** (all passing)
+- **437 tests** (100% passing)
 - **Zero warnings** (strict clippy compliance)
-- **3,711 lines of code** (all files < 2000 lines)
-- **~85% feature completion**
+- **21,466 lines of code** across 72 files (all files < 2000 lines)
+- **100% Alpha.2 feature completion**
 
 ## Current Status & Roadmap
 

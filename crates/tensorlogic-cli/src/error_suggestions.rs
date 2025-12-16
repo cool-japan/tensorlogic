@@ -2,6 +2,8 @@
 //!
 //! Provides user-friendly error messages with actionable suggestions.
 
+#![allow(dead_code)]
+
 use anyhow::Result;
 use std::fmt;
 

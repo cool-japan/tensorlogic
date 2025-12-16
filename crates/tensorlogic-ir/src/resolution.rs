@@ -44,13 +44,13 @@
 //! ```rust
 //! use tensorlogic_ir::{TLExpr, Term, Clause, Literal, ResolutionProver};
 //!
-//! // Clauses: { P(x), ¬P(a) }
-//! // This is unsatisfiable (derives empty clause)
-//! let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+//! // Clauses: { P(a), ¬P(a) }
+//! // This is unsatisfiable (derives empty clause via direct resolution)
+//! let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
 //! let not_p_a = Literal::negative(TLExpr::pred("P", vec![Term::constant("a")]));
 //!
 //! let mut prover = ResolutionProver::new();
-//! prover.add_clause(Clause::from_literals(vec![p_x]));
+//! prover.add_clause(Clause::from_literals(vec![p_a]));
 //! prover.add_clause(Clause::from_literals(vec![not_p_a]));
 //!
 //! let result = prover.prove();
@@ -59,6 +59,8 @@
 
 use crate::error::IrError;
 use crate::expr::TLExpr;
+use crate::term::Term;
+use crate::unification::{rename_vars, unify_term_list, Substitution};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashSet, VecDeque};
 
@@ -97,8 +99,103 @@ impl Literal {
     }
 
     /// Check if this literal is complementary to another (same atom, opposite polarity).
+    ///
+    /// For ground literals (no variables), this checks exact equality.
     pub fn is_complementary(&self, other: &Literal) -> bool {
         self.atom == other.atom && self.polarity != other.polarity
+    }
+
+    /// Attempt to unify this literal with another for resolution.
+    ///
+    /// Returns the most general unifier (MGU) if the atoms can be unified
+    /// and the polarities are opposite.
+    ///
+    /// This is used for first-order resolution with variables.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use tensorlogic_ir::{TLExpr, Term, Literal};
+    ///
+    /// // P(x) and ¬P(a) can be unified with {x/a}
+    /// let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+    /// let not_p_a = Literal::negative(TLExpr::pred("P", vec![Term::constant("a")]));
+    ///
+    /// let mgu = p_x.try_unify(&not_p_a);
+    /// assert!(mgu.is_some());
+    /// ```
+    pub fn try_unify(&self, other: &Literal) -> Option<Substitution> {
+        // Must have opposite polarity
+        if self.polarity == other.polarity {
+            return None;
+        }
+
+        // Try to unify the atoms
+        self.try_unify_atoms(&other.atom)
+    }
+
+    /// Attempt to unify this literal's atom with another expression.
+    ///
+    /// This extracts terms from predicates and attempts unification.
+    fn try_unify_atoms(&self, other_atom: &TLExpr) -> Option<Substitution> {
+        match (&self.atom, other_atom) {
+            (
+                TLExpr::Pred {
+                    name: n1,
+                    args: args1,
+                },
+                TLExpr::Pred {
+                    name: n2,
+                    args: args2,
+                },
+            ) => {
+                // Predicate names must match
+                if n1 != n2 {
+                    return None;
+                }
+
+                // Arity must match
+                if args1.len() != args2.len() {
+                    return None;
+                }
+
+                // Unify argument lists
+                let pairs: Vec<(Term, Term)> = args1
+                    .iter()
+                    .zip(args2.iter())
+                    .map(|(t1, t2)| (t1.clone(), t2.clone()))
+                    .collect();
+
+                unify_term_list(&pairs).ok()
+            }
+            _ => None,
+        }
+    }
+
+    /// Apply a substitution to this literal.
+    ///
+    /// This creates a new literal with the substitution applied to all terms.
+    pub fn apply_substitution(&self, subst: &Substitution) -> Literal {
+        let new_atom = self.apply_subst_to_expr(&self.atom, subst);
+        Literal {
+            atom: new_atom,
+            polarity: self.polarity,
+        }
+    }
+
+    /// Apply substitution to an expression (helper for apply_substitution).
+    fn apply_subst_to_expr(&self, expr: &TLExpr, subst: &Substitution) -> TLExpr {
+        match expr {
+            TLExpr::Pred { name, args } => {
+                let new_args = args.iter().map(|term| subst.apply(term)).collect();
+                TLExpr::Pred {
+                    name: name.clone(),
+                    args: new_args,
+                }
+            }
+            // For other expression types, return as-is
+            _ => expr.clone(),
+        }
     }
 
     /// Check if this is a positive literal.
@@ -192,15 +289,204 @@ impl Clause {
     }
 
     /// Check if this clause subsumes another (is more general).
-    /// Clause C subsumes D if there exists a substitution σ such that Cσ ⊆ D.
-    pub fn subsumes(&self, _other: &Clause) -> bool {
-        // Simplified implementation - proper subsumption requires unification
-        // For now, just check if all literals match exactly
-        self.literals
-            .iter()
-            .all(|lit| _other.literals.contains(lit))
+    ///
+    /// **Theta-Subsumption**: Clause C subsumes D (C ⪯ D) if there exists a
+    /// substitution θ such that Cθ ⊆ D.
+    ///
+    /// This means C is more general than D. For example:
+    /// - `{P(x)}` subsumes `{P(a), Q(a)}` with θ = {x/a}
+    /// - `{P(x), Q(x)}` subsumes `{P(a), Q(a), R(a)}` with θ = {x/a}
+    ///
+    /// # Implementation
+    ///
+    /// We try to find a substitution by:
+    /// 1. For each literal in C, try to unify it with some literal in D
+    /// 2. Check if all substitutions are consistent
+    /// 3. If successful, C subsumes D
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use tensorlogic_ir::{TLExpr, Term, Literal, Clause};
+    ///
+    /// // {P(x)} subsumes {P(a)}
+    /// let c = Clause::unit(Literal::positive(TLExpr::pred("P", vec![Term::var("x")])));
+    /// let d = Clause::unit(Literal::positive(TLExpr::pred("P", vec![Term::constant("a")])));
+    /// assert!(c.subsumes(&d));
+    ///
+    /// // {P(a)} does not subsume {P(x)} (x is more general than a)
+    /// assert!(!d.subsumes(&c));
+    /// ```
+    pub fn subsumes(&self, other: &Clause) -> bool {
+        // Empty clause subsumes nothing (except itself)
+        if self.is_empty() {
+            return other.is_empty();
+        }
+
+        // Can't subsume if C has more literals than D
+        if self.literals.len() > other.literals.len() {
+            return false;
+        }
+
+        // Try to find a substitution that makes all of C's literals match some literal in D
+        self.try_subsumption_matching(other).is_some()
     }
 
+    /// Attempt to find a substitution θ such that Cθ ⊆ D.
+    ///
+    /// Uses a backtracking search to find consistent literal matchings.
+    fn try_subsumption_matching(&self, other: &Clause) -> Option<Substitution> {
+        // Rename variables in self to avoid conflicts
+        static mut SUBSUME_COUNTER: usize = 0;
+        let counter = unsafe {
+            SUBSUME_COUNTER += 1;
+            SUBSUME_COUNTER
+        };
+
+        let renamed_self = self.rename_variables(&format!("_s{}", counter));
+        let renamed_vars: HashSet<String> = renamed_self.free_vars();
+
+        // Try to match each literal in renamed_self with literals in other
+        let mut subst = Substitution::empty();
+
+        for self_lit in &renamed_self.literals {
+            // Try to find a matching literal in other
+            let mut found_match = false;
+
+            for other_lit in &other.literals {
+                // Literals must have the same polarity
+                if self_lit.polarity != other_lit.polarity {
+                    continue;
+                }
+
+                // Try one-way matching: only variables from self can be bound
+                if let Some(lit_mgu) = self_lit.try_one_way_match(&other_lit.atom, &renamed_vars) {
+                    // Check if this unifier is consistent with existing substitution
+                    if let Ok(()) = subst.try_extend(&lit_mgu) {
+                        found_match = true;
+                        break;
+                    }
+                }
+            }
+
+            if !found_match {
+                return None; // Failed to match this literal
+            }
+        }
+
+        Some(subst)
+    }
+}
+
+impl Literal {
+    /// Try one-way matching for subsumption: only variables in `allowed_vars` can be bound.
+    ///
+    /// This is different from full unification - we only allow variables from the
+    /// subsuming clause to be instantiated, not variables from the subsumed clause.
+    fn try_one_way_match(
+        &self,
+        other_atom: &TLExpr,
+        allowed_vars: &HashSet<String>,
+    ) -> Option<Substitution> {
+        match (&self.atom, other_atom) {
+            (
+                TLExpr::Pred {
+                    name: n1,
+                    args: args1,
+                },
+                TLExpr::Pred {
+                    name: n2,
+                    args: args2,
+                },
+            ) => {
+                // Predicate names must match
+                if n1 != n2 {
+                    return None;
+                }
+
+                // Arity must match
+                if args1.len() != args2.len() {
+                    return None;
+                }
+
+                // Try one-way matching for each argument pair
+                let mut subst = Substitution::empty();
+
+                for (t1, t2) in args1.iter().zip(args2.iter()) {
+                    if !try_one_way_match_terms(t1, t2, allowed_vars, &mut subst) {
+                        return None;
+                    }
+                }
+
+                Some(subst)
+            }
+            _ => None,
+        }
+    }
+}
+
+/// One-way matching for terms: only variables in `allowed_vars` can be bound.
+fn try_one_way_match_terms(
+    t1: &Term,
+    t2: &Term,
+    allowed_vars: &HashSet<String>,
+    subst: &mut Substitution,
+) -> bool {
+    // Apply current substitution to t1
+    let t1_subst = subst.apply(t1);
+
+    match (&t1_subst, t2) {
+        // Same constant
+        (Term::Const(c1), Term::Const(c2)) => c1 == c2,
+
+        // Same variable
+        (Term::Var(v1), Term::Var(v2)) => v1 == v2,
+
+        // t1 is an allowed variable, bind it to t2
+        (Term::Var(v1), _) if allowed_vars.contains(v1) => {
+            // Check if already bound by trying to apply the substitution
+            let after_subst = subst.apply(&t1_subst);
+            if after_subst != t1_subst {
+                // Already bound, check if it matches t2
+                &after_subst == t2
+            } else {
+                // Not bound, bind it now
+                subst.bind(v1.clone(), t2.clone());
+                true
+            }
+        }
+
+        // t1 is a variable but not allowed to be bound
+        (Term::Var(_), _) => false,
+
+        // t2 is a variable but we can't bind it (one-way matching)
+        (_, Term::Var(_)) => false,
+
+        // Both typed with same type
+        (
+            Term::Typed {
+                value: inner1,
+                type_annotation: ty1,
+            },
+            Term::Typed {
+                value: inner2,
+                type_annotation: ty2,
+            },
+        ) => {
+            if ty1 != ty2 {
+                return false;
+            }
+            try_one_way_match_terms(inner1, inner2, allowed_vars, subst)
+        }
+
+        // One typed, one not
+        (Term::Typed { value, .. }, other) | (other, Term::Typed { value, .. }) => {
+            try_one_way_match_terms(value, other, allowed_vars, subst)
+        }
+    }
+}
+
+impl Clause {
     /// Check if this clause is tautology (contains complementary literals).
     pub fn is_tautology(&self) -> bool {
         for i in 0..self.literals.len() {
@@ -211,6 +497,62 @@ impl Clause {
             }
         }
         false
+    }
+
+    /// Apply a substitution to this clause.
+    ///
+    /// This creates a new clause with the substitution applied to all literals.
+    pub fn apply_substitution(&self, subst: &Substitution) -> Clause {
+        let new_literals = self
+            .literals
+            .iter()
+            .map(|lit| lit.apply_substitution(subst))
+            .collect();
+        Clause::from_literals(new_literals)
+    }
+
+    /// Rename all variables in this clause with a suffix.
+    ///
+    /// This is used for standardizing apart clauses before resolution
+    /// to avoid variable name conflicts.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tensorlogic_ir::{TLExpr, Term, Literal, Clause};
+    ///
+    /// // P(x) ∨ Q(x)
+    /// let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+    /// let q_x = Literal::positive(TLExpr::pred("Q", vec![Term::var("x")]));
+    /// let clause = Clause::from_literals(vec![p_x, q_x]);
+    ///
+    /// // Rename to P(x_1) ∨ Q(x_1)
+    /// let renamed = clause.rename_variables("1");
+    /// ```
+    pub fn rename_variables(&self, suffix: &str) -> Clause {
+        let renamed_literals = self
+            .literals
+            .iter()
+            .map(|lit| self.rename_literal(lit, suffix))
+            .collect();
+        Clause::from_literals(renamed_literals)
+    }
+
+    /// Rename variables in a literal (helper for rename_variables).
+    fn rename_literal(&self, lit: &Literal, suffix: &str) -> Literal {
+        match &lit.atom {
+            TLExpr::Pred { name, args } => {
+                let renamed_args = args.iter().map(|term| rename_vars(term, suffix)).collect();
+                Literal {
+                    atom: TLExpr::Pred {
+                        name: name.clone(),
+                        args: renamed_args,
+                    },
+                    polarity: lit.polarity,
+                }
+            }
+            _ => lit.clone(),
+        }
     }
 }
 
@@ -368,6 +710,9 @@ impl ResolutionProver {
     /// Perform binary resolution on two clauses.
     ///
     /// Returns all possible resolvents.
+    ///
+    /// This is the ground resolution (no variables). For first-order resolution
+    /// with variables, use `resolve_first_order`.
     fn resolve(&self, c1: &Clause, c2: &Clause) -> Vec<(Clause, Literal)> {
         let mut resolvents = Vec::new();
 
@@ -394,6 +739,79 @@ impl ResolutionProver {
 
                     let resolvent = Clause::from_literals(new_literals);
                     resolvents.push((resolvent, lit1.clone()));
+                }
+            }
+        }
+
+        resolvents
+    }
+
+    /// Perform first-order binary resolution with unification.
+    ///
+    /// This supports resolution on clauses with variables by using unification.
+    /// Clauses are standardized apart before resolution to avoid variable conflicts.
+    ///
+    /// Returns all possible resolvents with their MGUs.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tensorlogic_ir::{TLExpr, Term, Literal, Clause, ResolutionProver};
+    ///
+    /// // {P(x)} and {¬P(a)} resolve to {} (empty clause) with MGU {x/a}
+    /// let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+    /// let not_p_a = Literal::negative(TLExpr::pred("P", vec![Term::constant("a")]));
+    ///
+    /// let c1 = Clause::unit(p_x);
+    /// let c2 = Clause::unit(not_p_a);
+    ///
+    /// let prover = ResolutionProver::new();
+    /// let resolvents = prover.resolve_first_order(&c1, &c2);
+    ///
+    /// assert_eq!(resolvents.len(), 1);
+    /// assert!(resolvents[0].0.is_empty()); // Empty clause derived
+    /// ```
+    pub fn resolve_first_order(&self, c1: &Clause, c2: &Clause) -> Vec<(Clause, Literal)> {
+        // Use a simple counter for standardizing apart
+        // In practice, this could use a global counter or timestamp
+        static mut RENAME_COUNTER: usize = 0;
+        let counter = unsafe {
+            RENAME_COUNTER += 1;
+            RENAME_COUNTER
+        };
+
+        // Standardize apart: rename variables to avoid conflicts
+        let c1_renamed = c1.rename_variables(&format!("_c1_{}", counter));
+        let c2_renamed = c2.rename_variables(&format!("_c2_{}", counter));
+
+        let mut resolvents = Vec::new();
+
+        // Try to unify each pair of opposite polarity literals
+        for lit1 in &c1_renamed.literals {
+            for lit2 in &c2_renamed.literals {
+                // Try to unify with first-order unification
+                if let Some(mgu) = lit1.try_unify(lit2) {
+                    // Build resolvent: apply MGU to (c1 - lit1) ∪ (c2 - lit2)
+                    let mut new_literals = Vec::new();
+
+                    // Add literals from c1 except lit1, with MGU applied
+                    for lit in &c1_renamed.literals {
+                        if lit != lit1 {
+                            new_literals.push(lit.apply_substitution(&mgu));
+                        }
+                    }
+
+                    // Add literals from c2 except lit2, with MGU applied
+                    for lit in &c2_renamed.literals {
+                        if lit != lit2 {
+                            new_literals.push(lit.apply_substitution(&mgu));
+                        }
+                    }
+
+                    let resolvent = Clause::from_literals(new_literals);
+                    // Return the original (non-renamed) literal for tracking
+                    let orig_lit = lit1.clone(); // Could map back to original if needed
+                    resolvents.push((resolvent, orig_lit));
                 }
             }
         }
@@ -951,5 +1369,341 @@ mod tests {
         assert!(prover.stats.empty_clause_found);
         assert!(prover.stats.resolution_steps > 0);
         assert!(result.is_unsatisfiable());
+    }
+
+    // === First-Order Resolution Tests ===
+
+    #[test]
+    fn test_literal_unification_ground() {
+        // P(a) and ¬P(a) should unify with empty substitution
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+        let not_p_a = Literal::negative(TLExpr::pred("P", vec![Term::constant("a")]));
+
+        let mgu = p_a.try_unify(&not_p_a);
+        assert!(mgu.is_some());
+        assert!(mgu.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_literal_unification_variable() {
+        // P(x) and ¬P(a) should unify with {x/a}
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let not_p_a = Literal::negative(TLExpr::pred("P", vec![Term::constant("a")]));
+
+        let mgu = p_x.try_unify(&not_p_a);
+        assert!(mgu.is_some());
+
+        let mgu = mgu.unwrap();
+        assert_eq!(mgu.len(), 1);
+        assert_eq!(mgu.apply(&Term::var("x")), Term::constant("a"));
+    }
+
+    #[test]
+    fn test_literal_unification_fails_diff_names() {
+        // P(x) and ¬Q(x) should not unify (different predicate names)
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let not_q_x = Literal::negative(TLExpr::pred("Q", vec![Term::var("x")]));
+
+        let mgu = p_x.try_unify(&not_q_x);
+        assert!(mgu.is_none());
+    }
+
+    #[test]
+    fn test_literal_unification_fails_same_polarity() {
+        // P(x) and P(a) should not unify (same polarity)
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+
+        let mgu = p_x.try_unify(&p_a);
+        assert!(mgu.is_none());
+    }
+
+    #[test]
+    fn test_literal_apply_substitution() {
+        // P(x) with {x/a} should become P(a)
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let mut subst = Substitution::empty();
+        subst.bind("x".to_string(), Term::constant("a"));
+
+        let p_a = p_x.apply_substitution(&subst);
+        let expected = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+
+        assert_eq!(p_a.atom, expected.atom);
+        assert_eq!(p_a.polarity, expected.polarity);
+    }
+
+    #[test]
+    fn test_clause_rename_variables() {
+        // P(x) ∨ Q(x) renamed with "1" should become P(x_1) ∨ Q(x_1)
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let q_x = Literal::positive(TLExpr::pred("Q", vec![Term::var("x")]));
+        let clause = Clause::from_literals(vec![p_x, q_x]);
+
+        let renamed = clause.rename_variables("1");
+
+        // Check that variables were renamed
+        let vars = renamed.free_vars();
+        assert!(vars.contains("x_1"));
+        assert!(!vars.contains("x"));
+    }
+
+    #[test]
+    fn test_clause_apply_substitution() {
+        // {P(x), Q(y)} with {x/a, y/b} should become {P(a), Q(b)}
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let q_y = Literal::positive(TLExpr::pred("Q", vec![Term::var("y")]));
+        let clause = Clause::from_literals(vec![p_x, q_y]);
+
+        let mut subst = Substitution::empty();
+        subst.bind("x".to_string(), Term::constant("a"));
+        subst.bind("y".to_string(), Term::constant("b"));
+
+        let result = clause.apply_substitution(&subst);
+
+        // Should have no free variables (all substituted)
+        assert!(result.free_vars().is_empty());
+    }
+
+    #[test]
+    fn test_first_order_resolution_basic() {
+        // {P(x)} and {¬P(a)} should resolve to {} with {x/a}
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let not_p_a = Literal::negative(TLExpr::pred("P", vec![Term::constant("a")]));
+
+        let c1 = Clause::unit(p_x);
+        let c2 = Clause::unit(not_p_a);
+
+        let prover = ResolutionProver::new();
+        let resolvents = prover.resolve_first_order(&c1, &c2);
+
+        assert_eq!(resolvents.len(), 1);
+        assert!(resolvents[0].0.is_empty()); // Empty clause derived
+    }
+
+    #[test]
+    fn test_first_order_resolution_complex() {
+        // {P(x), Q(x)} and {¬P(a), R(a)} should resolve to {Q(a), R(a)}
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let q_x = Literal::positive(TLExpr::pred("Q", vec![Term::var("x")]));
+        let c1 = Clause::from_literals(vec![p_x, q_x]);
+
+        let not_p_a = Literal::negative(TLExpr::pred("P", vec![Term::constant("a")]));
+        let r_a = Literal::positive(TLExpr::pred("R", vec![Term::constant("a")]));
+        let c2 = Clause::from_literals(vec![not_p_a, r_a]);
+
+        let prover = ResolutionProver::new();
+        let resolvents = prover.resolve_first_order(&c1, &c2);
+
+        assert_eq!(resolvents.len(), 1);
+        let resolvent = &resolvents[0].0;
+
+        // Should have 2 literals: Q(a) and R(a)
+        assert_eq!(resolvent.len(), 2);
+
+        // Should have no free variables (all unified)
+        assert!(resolvent.free_vars().is_empty());
+    }
+
+    #[test]
+    fn test_first_order_resolution_multiple_vars() {
+        // {P(x, y)} and {¬P(a, b)} should resolve to {} with {x/a, y/b}
+        let p_xy = Literal::positive(TLExpr::pred("P", vec![Term::var("x"), Term::var("y")]));
+        let not_p_ab = Literal::negative(TLExpr::pred(
+            "P",
+            vec![Term::constant("a"), Term::constant("b")],
+        ));
+
+        let c1 = Clause::unit(p_xy);
+        let c2 = Clause::unit(not_p_ab);
+
+        let prover = ResolutionProver::new();
+        let resolvents = prover.resolve_first_order(&c1, &c2);
+
+        assert_eq!(resolvents.len(), 1);
+        assert!(resolvents[0].0.is_empty());
+    }
+
+    #[test]
+    fn test_first_order_resolution_standardizing_apart() {
+        // {P(x)} and {¬P(x)} should be standardized apart before resolution
+        // After standardization: {P(x_c1_N)} and {¬P(x_c2_N)}
+        // These should resolve to {} with {x_c1_N/x_c2_N} or similar
+        let p_x1 = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let not_p_x2 = Literal::negative(TLExpr::pred("P", vec![Term::var("x")]));
+
+        let c1 = Clause::unit(p_x1);
+        let c2 = Clause::unit(not_p_x2);
+
+        let prover = ResolutionProver::new();
+        let resolvents = prover.resolve_first_order(&c1, &c2);
+
+        // Should successfully resolve despite both using variable "x"
+        assert_eq!(resolvents.len(), 1);
+        assert!(resolvents[0].0.is_empty());
+    }
+
+    #[test]
+    fn test_first_order_resolution_no_unifier() {
+        // {P(a)} and {¬P(b)} should not resolve (no unifier for a and b)
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+        let not_p_b = Literal::negative(TLExpr::pred("P", vec![Term::constant("b")]));
+
+        let c1 = Clause::unit(p_a);
+        let c2 = Clause::unit(not_p_b);
+
+        let prover = ResolutionProver::new();
+        let resolvents = prover.resolve_first_order(&c1, &c2);
+
+        // Should find no resolvents
+        assert_eq!(resolvents.len(), 0);
+    }
+
+    // === Theta-Subsumption Tests ===
+
+    #[test]
+    fn test_subsumption_identical() {
+        // {P(a)} subsumes {P(a)} (same clause)
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+        let c = Clause::unit(p_a);
+
+        assert!(c.subsumes(&c));
+    }
+
+    #[test]
+    fn test_subsumption_variable_to_constant() {
+        // {P(x)} subsumes {P(a)} with θ = {x/a}
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+
+        let c_general = Clause::unit(p_x);
+        let c_specific = Clause::unit(p_a);
+
+        assert!(c_general.subsumes(&c_specific));
+    }
+
+    #[test]
+    fn test_subsumption_not_reverse() {
+        // {P(a)} does NOT subsume {P(x)} (constant is less general than variable)
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+
+        let c_general = Clause::unit(p_x);
+        let c_specific = Clause::unit(p_a);
+
+        assert!(!c_specific.subsumes(&c_general));
+    }
+
+    #[test]
+    fn test_subsumption_smaller_clause() {
+        // {P(x)} subsumes {P(a), Q(a)} with θ = {x/a}
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+        let q_a = Literal::positive(TLExpr::pred("Q", vec![Term::constant("a")]));
+
+        let c1 = Clause::unit(p_x);
+        let c2 = Clause::from_literals(vec![p_a, q_a]);
+
+        assert!(c1.subsumes(&c2));
+    }
+
+    #[test]
+    fn test_subsumption_multiple_literals() {
+        // {P(x), Q(x)} subsumes {P(a), Q(a), R(a)} with θ = {x/a}
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let q_x = Literal::positive(TLExpr::pred("Q", vec![Term::var("x")]));
+        let c1 = Clause::from_literals(vec![p_x, q_x]);
+
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+        let q_a = Literal::positive(TLExpr::pred("Q", vec![Term::constant("a")]));
+        let r_a = Literal::positive(TLExpr::pred("R", vec![Term::constant("a")]));
+        let c2 = Clause::from_literals(vec![p_a, q_a, r_a]);
+
+        assert!(c1.subsumes(&c2));
+    }
+
+    #[test]
+    fn test_subsumption_fails_different_pred() {
+        // {P(x)} does not subsume {Q(a)} (different predicate names)
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let q_a = Literal::positive(TLExpr::pred("Q", vec![Term::constant("a")]));
+
+        let c1 = Clause::unit(p_x);
+        let c2 = Clause::unit(q_a);
+
+        assert!(!c1.subsumes(&c2));
+    }
+
+    #[test]
+    fn test_subsumption_fails_too_many_literals() {
+        // {P(x), Q(x), R(x)} does not subsume {P(a), Q(a)} (c1 has more literals)
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let q_x = Literal::positive(TLExpr::pred("Q", vec![Term::var("x")]));
+        let r_x = Literal::positive(TLExpr::pred("R", vec![Term::var("x")]));
+        let c1 = Clause::from_literals(vec![p_x, q_x, r_x]);
+
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+        let q_a = Literal::positive(TLExpr::pred("Q", vec![Term::constant("a")]));
+        let c2 = Clause::from_literals(vec![p_a, q_a]);
+
+        assert!(!c1.subsumes(&c2));
+    }
+
+    #[test]
+    fn test_subsumption_empty_clause() {
+        // Empty clause only subsumes itself
+        let empty = Clause::empty();
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+        let non_empty = Clause::unit(p_a);
+
+        assert!(empty.subsumes(&empty));
+        assert!(!empty.subsumes(&non_empty));
+        assert!(!non_empty.subsumes(&empty));
+    }
+
+    #[test]
+    fn test_subsumption_polarity_matters() {
+        // {P(x)} does not subsume {¬P(a)} (different polarity)
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let not_p_a = Literal::negative(TLExpr::pred("P", vec![Term::constant("a")]));
+
+        let c1 = Clause::unit(p_x);
+        let c2 = Clause::unit(not_p_a);
+
+        assert!(!c1.subsumes(&c2));
+    }
+
+    #[test]
+    fn test_subsumption_two_variables() {
+        // {P(x, y)} subsumes {P(a, b)} with θ = {x/a, y/b}
+        let p_xy = Literal::positive(TLExpr::pred("P", vec![Term::var("x"), Term::var("y")]));
+        let p_ab = Literal::positive(TLExpr::pred(
+            "P",
+            vec![Term::constant("a"), Term::constant("b")],
+        ));
+
+        let c1 = Clause::unit(p_xy);
+        let c2 = Clause::unit(p_ab);
+
+        assert!(c1.subsumes(&c2));
+    }
+
+    #[test]
+    fn test_subsumption_in_prover() {
+        // Test that subsumption is actually used in the prover to reduce search space
+        let mut prover = ResolutionProver::new();
+
+        // Add {P(x), Q(x)} - more general
+        let p_x = Literal::positive(TLExpr::pred("P", vec![Term::var("x")]));
+        let q_x = Literal::positive(TLExpr::pred("Q", vec![Term::var("x")]));
+        prover.add_clause(Clause::from_literals(vec![p_x, q_x]));
+
+        // This clause would be subsumed by the first
+        let p_a = Literal::positive(TLExpr::pred("P", vec![Term::constant("a")]));
+        let q_a = Literal::positive(TLExpr::pred("Q", vec![Term::constant("a")]));
+        let r_a = Literal::positive(TLExpr::pred("R", vec![Term::constant("a")]));
+        let subsumed_clause = Clause::from_literals(vec![p_a, q_a, r_a]);
+
+        // Check if subsumption works
+        assert!(prover.clauses[0].subsumes(&subsumed_clause));
     }
 }

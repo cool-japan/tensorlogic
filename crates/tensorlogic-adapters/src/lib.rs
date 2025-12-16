@@ -106,17 +106,21 @@ mod learning;
 mod linear;
 mod locking;
 mod mask;
+mod merge_strategies;
 mod metadata;
 mod parametric;
 mod performance;
 mod predicate;
 mod product;
+mod query_cache;
 mod query_planner;
 mod recommendation;
 mod refinement;
 mod schema_analysis;
 mod signature_matcher;
 mod symbol_table;
+mod synchronization;
+mod utilities;
 mod validation;
 
 #[cfg(test)]
@@ -163,6 +167,10 @@ pub use learning::{
 };
 pub use locking::{LockStats, LockWithTimeout, LockedSymbolTable, Transaction};
 pub use mask::DomainMask;
+pub use merge_strategies::{
+    DomainConflict, MergeConflictResolution, MergeReport, MergeResult, MergeStrategy,
+    PredicateConflict, SchemaMerger, VariableConflict,
+};
 pub use metadata::{
     Documentation, Example, Metadata, Provenance, TagCategory, TagRegistry, VersionEntry,
 };
@@ -183,6 +191,9 @@ pub use evolution::{
 pub use incremental_validation::{
     AffectedComponents, Change, ChangeStats, ChangeTracker, ChangeType, DependencyGraph,
     IncrementalValidationReport, IncrementalValidator, ValidationCache,
+};
+pub use query_cache::{
+    CacheConfig, CacheKey, CachedResult, QueryCache, QueryCacheStats, SymbolTableCache,
 };
 pub use query_planner::{
     IndexStrategy, PredicatePattern, PredicateQuery, QueryPlan, QueryPlanner, QueryStatistics,
@@ -207,4 +218,11 @@ pub use linear::{
 };
 pub use refinement::{
     DependentRelation, RefinementContext, RefinementPredicate, RefinementRegistry, RefinementType,
+};
+pub use synchronization::{
+    ApplyResult, ConflictResolution, EventListener, InMemorySyncProtocol, NodeId, SyncChangeType,
+    SyncEvent, SyncProtocol, SyncStatistics, SynchronizationManager, VectorClock,
+};
+pub use utilities::{
+    BatchOperations, ConversionUtils, QueryUtils, StatisticsUtils, ValidationUtils,
 };

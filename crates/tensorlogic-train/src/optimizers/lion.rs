@@ -1,7 +1,7 @@
 //! Lion (EvoLved Sign Momentum) optimizer.
 //!
 //! Paper: "Symbolic Discovery of Optimization Algorithms" (Chen et al., 2023)
-//! https://arxiv.org/abs/2302.06675
+//! <https://arxiv.org/abs/2302.06675>
 //!
 //! Lion is a simple yet effective optimizer that:
 //! - Uses only the sign of momentum for updates

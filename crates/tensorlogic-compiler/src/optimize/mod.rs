@@ -10,6 +10,7 @@
 //! - **Quantifier optimization**: Hoist loop-invariant code, reorder quantifiers
 //! - **Dead code elimination**: Remove unreachable code and simplify constant conditions
 //! - **Complexity analysis**: Estimate computational cost and memory usage
+//! - **Cost-based optimization**: Explore rewrites and select optimal execution plan
 //! - **Pipeline**: Multi-pass optimization combining all passes intelligently
 //!
 //! # Quick Start
@@ -61,6 +62,7 @@
 pub mod algebraic;
 pub mod complexity;
 pub mod constant_folding;
+pub mod cost_based;
 pub mod dead_code;
 pub mod distributivity;
 pub mod memory_estimation;
@@ -72,6 +74,7 @@ pub mod strength_reduction;
 pub use algebraic::{simplify_algebraic, AlgebraicSimplificationStats};
 pub use complexity::{analyze_complexity, compare_complexity, CostWeights, ExpressionComplexity};
 pub use constant_folding::{fold_constants, ConstantFoldingStats};
+pub use cost_based::{optimize_by_cost, optimize_by_cost_with_config, CostBasedStats, RewriteRule};
 pub use dead_code::{eliminate_dead_code, DeadCodeStats};
 pub use distributivity::{optimize_distributivity, DistributivityStats};
 pub use memory_estimation::{estimate_batch_memory, estimate_memory, MemoryEstimate};
