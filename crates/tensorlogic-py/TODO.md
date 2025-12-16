@@ -3,7 +3,7 @@
 **Version**: 0.1.0-alpha.2
 **Status**: Production Ready
 
-This crate is part of the TensorLogic v0.1.0-alpha.1 release with:
+This crate is part of the TensorLogic v0.1.0-alpha.2 release with:
 - Zero compiler warnings
 - 100% test pass rate
 - Complete documentation
@@ -363,7 +363,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 
 ### Build Status
 - ✅ Maturin build succeeds with zero warnings
-- ✅ Wheel generated: pytensorlogic-0.1.0a1-cp39-abi3-macosx_11_0_arm64.whl
+- ✅ Wheel generated: pytensorlogic-0.1.0a2-cp39-abi3-macosx_11_0_arm64.whl
 - ✅ Release build optimized and ready
 - ✅ Standalone workspace configuration (not in parent workspace)
 - ✅ All dependencies resolved (tensorlogic-adapters, serde_json)

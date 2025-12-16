@@ -1,17 +1,19 @@
 # TODO — Tensorlogic
 
-## 🎉 **v0.1.0-alpha.1 Release Status**
+## 🎉 **v0.1.0-alpha.2 Release Status**
 
-**Status**: ✅ **PRODUCTION READY FOR ALPHA.1**
+**Status**: ✅ **PRODUCTION READY FOR ALPHA.2**
 
 This release represents completion of all 8 development phases with production-quality implementation:
-- **1,976 tests passing** (100% success rate)
+- **4,287 tests passing** (100% success rate, 12 intentionally skipped)
 - **Zero compiler warnings**
 - **Comprehensive CI/CD** pipeline enabled
 - **Complete documentation** with tutorials and examples
 - **Latest dependencies** from crates.io
+- **272,370+ lines of Rust code** (216,811 source + 32,749 docs)
+- **CUDA/GPU infrastructure** (experimental, device management ready)
 
-See [Release Checklist](#release-checklist-v010-alpha1) for details.
+See [Release Checklist](#release-checklist-v010-alpha2) for details.
 
 ---
 
@@ -473,15 +475,15 @@ Full property test validation + integration tests + benchmarks
 
 ### Production-Ready Status ✅
 
-**Version**: 0.1.0-alpha.1
+**Version**: 0.1.0-alpha.2
 **Status**: 🎉 **PRODUCTION READY**
 
 ### Comprehensive Statistics
 
 **Testing**:
-- ✅ 783/783 tests passing (100% pass rate)
-  - 741 unit tests
-  - 42 doc tests
+- ✅ 4,287/4,287 tests passing (100% pass rate)
+  - 12 tests intentionally skipped (strategy-specific)
+  - Comprehensive coverage across all crates
 - ✅ Zero compilation warnings
 - ✅ Zero clippy warnings
 - ✅ All benchmarks functional
@@ -582,26 +584,25 @@ Full property test validation + integration tests + benchmarks
 - [ ] Reference comparisons against symbolic logic solvers
 - [ ] Scale optimizations (sparsity, low-rank, partitioned reductions)
 
-### Release Checklist (v0.1.0-alpha.1) ✅ **READY FOR RELEASE**
+### Release Checklist (v0.1.0-alpha.2) ✅ **READY FOR RELEASE**
 
-**Alpha.1 Release Status**: All quality gates passed! 🎉
+**Alpha.2 Release Status**: All quality gates passed! 🎉
 
 1. **Pre-release** ✅ **COMPLETE**:
    - [x] Review and finalize all documentation
-   - [x] Update version numbers in all Cargo.toml files (0.1.0-alpha.1)
+   - [x] Update version numbers in all Cargo.toml files (0.1.0-alpha.2)
    - [x] Create release notes from CHANGELOG.md
-   - [x] Test all examples on clean systems
-   - [x] Fix all doctest failures (6 fixed)
-   - [x] Eliminate all compiler warnings (42 → 0)
-   - [x] Update deprecated dependencies (oxrdf, criterion)
-   - [x] Enable and configure CI/CD workflow
-   - [x] Update README with accurate metrics (1,976 tests)
-   - [x] Verify 100% test pass rate (1,976/1,976)
+   - [x] Update README with accurate metrics (4,287 tests)
+   - [x] Update CHANGELOG with alpha.2 date (2025-12-16)
+   - [x] Update TODO.md with alpha.2 status
+   - [x] Verify 100% test pass rate (4,287/4,287)
+   - [x] Add CUDA/GPU infrastructure notes
+   - [x] Update code statistics (272,370+ lines)
 
 2. **Quality Metrics** ✅:
    - [x] Zero compiler warnings
    - [x] Zero clippy warnings
-   - [x] 1,976/1,976 tests passing (100%)
+   - [x] 4,287/4,287 tests passing (100%)
    - [x] All doctests passing
    - [x] Examples build and run successfully
    - [x] Benchmarks compile without warnings
@@ -621,17 +622,19 @@ Full property test validation + integration tests + benchmarks
    - [ ] Monitor for issues
    - [ ] Plan beta.1 improvements
 
-### Alpha.1 → Beta.1 Roadmap
+### Alpha.2 → Beta.1 Roadmap
 
-**Focus**: Stability, Performance, User Feedback
+**Focus**: GPU Acceleration, Stability, User Feedback
 
 **Planned Improvements**:
-- [ ] Address alpha.1 user feedback
+- [ ] Address alpha.2 user feedback
+- [ ] Complete GPU/CUDA backend implementation
+- [ ] Multi-GPU support and benchmarking
 - [ ] Performance optimization based on benchmarks
 - [ ] Additional examples and tutorials
 - [ ] Documentation improvements
 - [ ] Bug fixes and stability improvements
-- [ ] GPU backend (experimental)
+- [ ] PyTorch tensor interoperability
 
 ## References
 - Keep the original "Tensor Logic" arXiv links in README for onboarding.

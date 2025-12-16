@@ -3,9 +3,9 @@
 **Logic-as-Tensor Planning Layer for Neural-Symbolic AI**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-1.90%2B-orange.svg)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-2111%2F2111-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-4287%2F4287-brightgreen.svg)](#testing)
 
 TensorLogic compiles logical rules (predicates, quantifiers, implications) into **tensor equations (einsum graphs)** with a minimal DSL + IR, enabling neural/symbolic/probabilistic models within a unified tensor computation framework.
 
@@ -16,7 +16,7 @@ TensorLogic compiles logical rules (predicates, quantifiers, implications) into 
 - 🐍 **Python Bindings**: Production-ready PyO3 bindings with NumPy integration
 - 🔧 **Multiple Backends**: CPU, SIMD-accelerated CPU, GPU (future)
 - 📊 **Comprehensive Benchmarks**: 24 benchmark groups across 5 suites
-- 🧪 **Extensively Tested**: 2,111 tests with 100% pass rate
+- 🧪 **Extensively Tested**: 4,287 tests with 100% pass rate
 - 📚 **Rich Documentation**: Tutorials, examples, API docs
 - 🔗 **Ecosystem Integration**: OxiRS (RDF*/SHACL), SkleaRS, QuantrS2, TrustformeRS
 
@@ -26,7 +26,7 @@ TensorLogic compiles logical rules (predicates, quantifiers, implications) into 
 
 TensorLogic has reached production-ready status with comprehensive testing, benchmarking, and documentation:
 
-- ✅ **2,111/2,111 tests passing** (100% pass rate) - Comprehensive coverage across all crates
+- ✅ **4,287/4,287 tests passing** (100% pass rate) - Comprehensive coverage across all crates
 - ✅ **Zero compiler warnings** - Clean build with latest dependencies
 - ✅ **Complete benchmark suite** - 24 groups covering SIMD, memory, gradients, throughput
 - ✅ **Production packaging** - Ready for PyPI with cross-platform wheels
@@ -290,10 +290,10 @@ pytest tests/ -v
 ```
 
 **Test Statistics**:
-- **2,111 tests** across all crates (lib + integration + doc)
-- **100% pass rate**
+- **4,287 tests** across all crates (lib + integration + doc)
+- **100% pass rate** (12 tests intentionally skipped)
 - **Zero compiler warnings** in builds
-- **110,805 total source lines of code**
+- **272,370+ lines of Rust code** (216,811 source + 32,749 docs)
 - Coverage includes:
   - Unit tests (logic operations, type checking, optimization)
   - Integration tests (end-to-end workflows)

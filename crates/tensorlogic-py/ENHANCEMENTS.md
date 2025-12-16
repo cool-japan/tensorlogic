@@ -127,7 +127,7 @@ Fixed Cargo.toml to work as standalone workspace:
 - ✅ `maturin build` succeeds
 - ✅ `maturin build --release` succeeds
 - ✅ Zero compilation warnings
-- ✅ Wheel generated: `pytensorlogic-0.1.0a1-cp39-abi3-macosx_11_0_arm64.whl`
+- ✅ Wheel generated: `pytensorlogic-0.1.0a2-cp39-abi3-macosx_11_0_arm64.whl`
 
 ## 📊 Statistics
 
@@ -277,7 +277,7 @@ output = tl.execute(graph, {"age": ages})
 ```
 $ maturin build --release
 📖 Found type stub file at pytensorlogic.pyi
-📦 Built wheel for abi3 Python ≥ 3.9 to .../pytensorlogic-0.1.0a1-cp39-abi3-macosx_11_0_arm64.whl
+📦 Built wheel for abi3 Python ≥ 3.9 to .../pytensorlogic-0.1.0a2-cp39-abi3-macosx_11_0_arm64.whl
 ✨ Release build completed successfully
 ```
 

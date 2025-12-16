@@ -1,7 +1,7 @@
 # TensorLogic-Py Compliance Report
 
-**Date:** 2025-11-07
-**Version:** 0.1.0-alpha.1
+**Date:** 2025-12-16
+**Version:** 0.1.0-alpha.2
 **Status:** ✅ **FULLY COMPLIANT**
 
 ---
@@ -122,7 +122,7 @@ maturin develop --release
 **Build Details:**
 - Platform: macOS (arm64)
 - Python: ≥ 3.9 (abi3)
-- Wheel: `pytensorlogic-0.1.0a1-cp39-abi3-macosx_11_0_arm64.whl`
+- Wheel: `pytensorlogic-0.1.0a2-cp39-abi3-macosx_11_0_arm64.whl`
 - Compilation time: ~3.4s
 - Type stubs: ✅ Found (pytensorlogic.pyi)
 

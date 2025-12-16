@@ -85,10 +85,7 @@ fn create_overlapping_tables(
         } else {
             0
         };
-        let pred = PredicateInfo::new(
-            format!("Pred{}", i),
-            vec![format!("Domain{}", domain_idx)],
-        );
+        let pred = PredicateInfo::new(format!("Pred{}", i), vec![format!("Domain{}", domain_idx)]);
         base.add_predicate(pred.clone()).unwrap();
         incoming.add_predicate(pred).unwrap();
     }
@@ -98,7 +95,10 @@ fn create_overlapping_tables(
         let domain_name = if overlap_domains > 0 {
             format!("Domain{}", i % overlap_domains)
         } else {
-            format!("BaseDomain{}", overlap_domains + (i % (num_domains - overlap_domains).max(1)))
+            format!(
+                "BaseDomain{}",
+                overlap_domains + (i % (num_domains - overlap_domains).max(1))
+            )
         };
         base.add_predicate(PredicateInfo::new(
             format!("BasePred{}", i),
@@ -112,7 +112,10 @@ fn create_overlapping_tables(
         let domain_name = if overlap_domains > 0 {
             format!("Domain{}", i % overlap_domains)
         } else {
-            format!("IncomingDomain{}", overlap_domains + (i % (num_domains - overlap_domains).max(1)))
+            format!(
+                "IncomingDomain{}",
+                overlap_domains + (i % (num_domains - overlap_domains).max(1))
+            )
         };
         incoming
             .add_predicate(PredicateInfo::new(

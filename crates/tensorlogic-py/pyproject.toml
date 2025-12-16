@@ -4,16 +4,16 @@ build-backend = "maturin"
 
 [project]
 name = "pytensorlogic"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "Python bindings for TensorLogic - Logic-as-tensor planning layer"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "KitaSan", email = "info@kitasan.io"}
+    {name = "COOLJAPAN OU", email = "contact@cooljapan.tech"}
 ]
 maintainers = [
-    {name = "KitaSan", email = "info@kitasan.io"}
+    {name = "COOLJAPAN OU", email = "contact@cooljapan.tech"}
 ]
 keywords = ["logic", "tensor", "einsum", "reasoning", "neural-symbolic", "ai", "machine-learning", "knowledge-graph", "rdf"]
 classifiers = [

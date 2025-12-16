@@ -6,7 +6,6 @@
 //! **Note**: This benchmark requires the `integration-tests` feature to avoid
 //! circular dev-dependencies with tensorlogic-compiler.
 
-
 #[cfg(feature = "integration-tests")]
 use std::hint::black_box;
 
