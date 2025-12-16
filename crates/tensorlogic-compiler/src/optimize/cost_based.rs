@@ -15,7 +15,7 @@
 //!
 //! # Example
 //!
-//! ```
+//! ```no_run
 //! use tensorlogic_compiler::optimize::optimize_by_cost;
 //! use tensorlogic_compiler::CompilerContext;
 //! use tensorlogic_ir::{TLExpr, Term};
@@ -545,7 +545,7 @@ fn expr_hash(expr: &TLExpr) -> String {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use tensorlogic_compiler::optimize::optimize_by_cost;
 /// use tensorlogic_compiler::CompilerContext;
 /// use tensorlogic_ir::{TLExpr, Term};

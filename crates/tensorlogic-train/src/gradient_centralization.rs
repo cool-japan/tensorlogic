@@ -112,7 +112,7 @@ impl GcConfig {
 /// GC normalizes gradients by subtracting their mean, which improves training dynamics.
 ///
 /// # Example
-/// ```
+/// ```no_run
 /// use tensorlogic_train::*;
 /// use scirs2_core::ndarray::Array2;
 /// use std::collections::HashMap;

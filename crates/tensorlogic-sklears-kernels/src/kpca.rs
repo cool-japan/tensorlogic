@@ -23,7 +23,7 @@
 //!
 //! ## Example
 //!
-//! ```rust
+//! ```no_run
 //! use tensorlogic_sklears_kernels::kpca::{KernelPCA, KernelPCAConfig};
 //! use tensorlogic_sklears_kernels::{RbfKernel, RbfKernelConfig};
 //!

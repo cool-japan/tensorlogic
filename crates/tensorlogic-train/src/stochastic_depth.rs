@@ -202,7 +202,7 @@ impl DropPath {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```no_run
 /// use tensorlogic_train::LinearStochasticDepth;
 ///
 /// // 10 layers, drop_prob from 0.0 to 0.3

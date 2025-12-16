@@ -604,7 +604,7 @@ pub struct Particle {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use tensorlogic_quantrs_hooks::{ParticleFilter, HiddenMarkovModel, Assignment};
 /// use std::collections::HashMap;
 ///

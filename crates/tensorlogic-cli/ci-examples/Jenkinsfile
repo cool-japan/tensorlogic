@@ -5,7 +5,7 @@ pipeline {
     agent any
 
     environment {
-        TENSORLOGIC_VERSION = '0.1.0-alpha.1'
+        TENSORLOGIC_VERSION = '0.1.0-alpha.2'
         CARGO_HOME = "${WORKSPACE}/.cargo"
         PATH = "${CARGO_HOME}/bin:${PATH}"
     }

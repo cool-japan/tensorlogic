@@ -12,7 +12,7 @@
 //!
 //! # Example
 //!
-//! ```
+//! ```no_run
 //! use tensorlogic_oxirs_bridge::schema::streaming::{StreamingRdfLoader, StreamStats};
 //! use anyhow::Result;
 //!

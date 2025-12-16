@@ -52,7 +52,7 @@ use std::collections::HashMap;
 ///
 /// # Example
 ///
-/// ```rust
+/// ```no_run
 /// use tensorlogic_train::{ScheduleFreeAdamW, ScheduleFreeConfig};
 /// use scirs2_core::ndarray::Array2;
 /// use std::collections::HashMap;

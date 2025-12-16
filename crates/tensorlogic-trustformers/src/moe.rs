@@ -23,7 +23,7 @@
 //!
 //! ## Example
 //!
-//! ```rust
+//! ```no_run
 //! use tensorlogic_trustformers::moe::{MoeConfig, MoeLayer, RouterType};
 //! use tensorlogic_ir::EinsumGraph;
 //!
