@@ -738,9 +738,9 @@ mod tests {
 
         let result = registry.execute("softplus", &[&tensor], &mut ctx).unwrap();
 
-        // softplus(-1) ≈ 0.3133, softplus(0) ≈ 0.6931, softplus(1) ≈ 1.3133
+        // softplus(-1) ≈ 0.3133, softplus(0) = ln(2) ≈ 0.6931, softplus(1) ≈ 1.3133
         assert!(result[[0]] > 0.3 && result[[0]] < 0.35);
-        assert!((result[[1]] - 0.6931).abs() < 0.01);
+        assert!((result[[1]] - std::f64::consts::LN_2).abs() < 0.01);
         assert!(result[[2]] > 1.3 && result[[2]] < 1.35);
     }
 

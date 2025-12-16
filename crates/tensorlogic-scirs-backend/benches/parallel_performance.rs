@@ -6,19 +6,25 @@
 //! **Note**: This benchmark requires the `integration-tests` feature to avoid
 //! circular dev-dependencies with tensorlogic-compiler.
 
-#![cfg(feature = "integration-tests")]
-
+#[cfg(feature = "integration-tests")]
 use std::hint::black_box;
 
+#[cfg(feature = "integration-tests")]
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+#[cfg(feature = "integration-tests")]
 use scirs2_core::ndarray::ArrayD;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_compiler::{compile_to_einsum, compile_to_einsum_with_context, CompilerContext};
+#[cfg(feature = "integration-tests")]
 use tensorlogic_infer::TlAutodiff;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_ir::{TLExpr, Term};
-#[cfg(feature = "parallel")]
+#[cfg(all(feature = "integration-tests", feature = "parallel"))]
 use tensorlogic_scirs_backend::ParallelScirs2Exec;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_scirs_backend::Scirs2Exec;
 
+#[cfg(feature = "integration-tests")]
 fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
     ArrayD::from_shape_vec(
         shape.to_vec(),
@@ -30,6 +36,7 @@ fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
 }
 
 /// Benchmark with high parallelism: multiple independent operations
+#[cfg(feature = "integration-tests")]
 fn bench_high_parallelism(c: &mut Criterion) {
     let mut group = c.benchmark_group("high_parallelism");
 
@@ -82,6 +89,7 @@ fn bench_high_parallelism(c: &mut Criterion) {
 }
 
 /// Benchmark with low parallelism: mostly sequential operations
+#[cfg(feature = "integration-tests")]
 fn bench_low_parallelism(c: &mut Criterion) {
     let mut group = c.benchmark_group("low_parallelism");
 
@@ -127,6 +135,7 @@ fn bench_low_parallelism(c: &mut Criterion) {
 }
 
 /// Benchmark with medium parallelism: balanced workload
+#[cfg(feature = "integration-tests")]
 fn bench_medium_parallelism(c: &mut Criterion) {
     let mut group = c.benchmark_group("medium_parallelism");
 
@@ -173,7 +182,7 @@ fn bench_medium_parallelism(c: &mut Criterion) {
 }
 
 /// Benchmark thread scaling: measure performance with different thread counts
-#[cfg(feature = "parallel")]
+#[cfg(all(feature = "integration-tests", feature = "parallel"))]
 fn bench_thread_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("thread_scaling");
 
@@ -216,6 +225,7 @@ fn bench_thread_scaling(c: &mut Criterion) {
 }
 
 /// Benchmark backward pass: parallel vs sequential
+#[cfg(feature = "integration-tests")]
 fn bench_backward_pass(c: &mut Criterion) {
     let mut group = c.benchmark_group("backward_pass");
 
@@ -272,7 +282,7 @@ fn bench_backward_pass(c: &mut Criterion) {
     group.finish();
 }
 
-#[cfg(feature = "parallel")]
+#[cfg(all(feature = "integration-tests", feature = "parallel"))]
 criterion_group!(
     benches,
     bench_high_parallelism,
@@ -282,7 +292,7 @@ criterion_group!(
     bench_backward_pass
 );
 
-#[cfg(not(feature = "parallel"))]
+#[cfg(all(feature = "integration-tests", not(feature = "parallel")))]
 criterion_group!(
     benches,
     bench_high_parallelism,
@@ -291,4 +301,12 @@ criterion_group!(
     bench_backward_pass
 );
 
+#[cfg(feature = "integration-tests")]
 criterion_main!(benches);
+
+// Fallback main when integration-tests feature is not enabled
+#[cfg(not(feature = "integration-tests"))]
+fn main() {
+    eprintln!("This benchmark requires the 'integration-tests' feature to be enabled.");
+    eprintln!("Run with: cargo bench --features integration-tests");
+}

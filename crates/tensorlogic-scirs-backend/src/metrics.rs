@@ -856,9 +856,11 @@ mod tests {
 
     #[test]
     fn test_memory_stats_efficiency() {
-        let mut stats = MemoryStats::default();
-        stats.total_bytes_allocated = 1000;
-        stats.total_bytes_deallocated = 800;
+        let stats = MemoryStats {
+            total_bytes_allocated: 1000,
+            total_bytes_deallocated: 800,
+            ..Default::default()
+        };
         assert!((stats.efficiency() - 0.8).abs() < 0.001);
     }
 
