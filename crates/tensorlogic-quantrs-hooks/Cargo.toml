@@ -17,7 +17,7 @@ tensorlogic-ir.workspace = true
 tensorlogic-compiler.workspace = true
 tensorlogic-infer.workspace = true
 scirs2-core = { workspace = true, features = ["random"] }
-rayon = "1.10"
+rayon = "1.11"
 
 [dev-dependencies]
 approx = "0.5"

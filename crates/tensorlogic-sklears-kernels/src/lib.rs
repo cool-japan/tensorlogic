@@ -245,7 +245,7 @@ pub mod sparse;
 pub mod spectral_kernel;
 pub mod string_kernel;
 pub mod symbolic;
-pub mod tensor_kernel;
+pub mod tensor_kernels;
 pub mod tree_kernel;
 pub mod types;
 
@@ -295,7 +295,7 @@ pub use string_kernel::{
     EditDistanceKernel, NGramKernel, NGramKernelConfig, SubsequenceKernel, SubsequenceKernelConfig,
 };
 pub use symbolic::{KernelBuilder, KernelExpr, SymbolicKernel};
-pub use tensor_kernel::{
+pub use tensor_kernels::{
     ChiSquaredKernel, CosineKernel, HistogramIntersectionKernel, LaplacianKernel, LinearKernel,
     MaternKernel, PeriodicKernel, PolynomialKernel, RationalQuadraticKernel, RbfKernel,
     SigmoidKernel,

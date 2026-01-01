@@ -56,9 +56,11 @@ pub mod batch_executor;
 pub mod capabilities;
 pub mod checkpoint;
 mod conversion;
+pub mod cuda_detect;
 pub mod custom_ops;
 pub mod dependency_analyzer;
 pub mod device;
+pub mod gpu_readiness;
 pub(crate) mod einsum_grad;
 pub mod error;
 pub mod execution_mode;
@@ -70,11 +72,13 @@ pub mod gradient_ops;
 pub mod graph_optimizer;
 pub mod inplace_ops;
 pub mod memory_pool;
+pub mod memory_profiler;
 pub mod metrics;
 mod ops;
 pub mod parallel_executor;
 pub mod precision;
 pub mod profiled_executor;
+pub mod quantization;
 pub mod shape_inference;
 pub mod tracing;
 
@@ -88,12 +92,20 @@ pub type Scirs2Tensor = ArrayD<f64>;
 pub use autodiff::ForwardTape;
 pub use batch_executor::ParallelBatchExecutor;
 pub use checkpoint::{Checkpoint, CheckpointConfig, CheckpointManager, CheckpointMetadata};
+pub use cuda_detect::{
+    cuda_device_count, cuda_devices_to_device_list, detect_cuda_devices, is_cuda_available,
+    CudaDeviceInfo,
+};
 pub use custom_ops::{
     BinaryCustomOp, CustomOp, CustomOpContext, EluOp, GeluOp, HardSigmoidOp, HardSwishOp,
     LeakyReluOp, MishOp, OpRegistry, SoftplusOp, SwishOp,
 };
 pub use dependency_analyzer::{DependencyAnalysis, DependencyStats, OperationDependency};
 pub use device::{Device, DeviceError, DeviceManager, DeviceType};
+pub use gpu_readiness::{
+    assess_gpu_readiness, generate_recommendations, recommend_batch_size, GpuCapability,
+    GpuReadinessReport, WorkloadProfile,
+};
 pub use error::{
     NumericalError, NumericalErrorKind, ShapeMismatchError, TlBackendError, TlBackendResult,
 };
@@ -111,6 +123,9 @@ pub use graph_optimizer::{
     GraphOptimizer, GraphOptimizerBuilder, OptimizationPass, OptimizationStats,
 };
 pub use inplace_ops::{can_execute_inplace, is_shape_preserving, InplaceExecutor, InplaceStats};
+pub use memory_profiler::{
+    AllocationRecord, AtomicMemoryCounter, MemoryProfiler, MemoryStats as ProfilerMemoryStats,
+};
 pub use metrics::{
     format_bytes, shared_metrics, AtomicMetrics, MemoryStats, MetricsCollector, MetricsConfig,
     MetricsSummary, OperationRecord, OperationStats, SharedMetrics, ThroughputStats,
@@ -118,5 +133,9 @@ pub use metrics::{
 pub use parallel_executor::{ParallelConfig, ParallelScirs2Exec, ParallelStats};
 pub use precision::{ComputePrecision, Precision, PrecisionConfig, Scalar};
 pub use profiled_executor::ProfiledScirs2Exec;
+pub use quantization::{
+    calibrate_quantization, QatConfig, QuantizationGranularity, QuantizationParams,
+    QuantizationScheme, QuantizationStats, QuantizationType, QuantizedTensor,
+};
 pub use shape_inference::{validate_tensor_shapes, Scirs2ShapeInference};
 pub use tracing::{ExecutionTracer, TraceEvent, TraceLevel};

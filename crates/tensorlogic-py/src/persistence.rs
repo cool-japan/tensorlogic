@@ -444,12 +444,9 @@ pub fn py_save_full_model(
     package.graph = Some(graph_json);
 
     // Serialize config if provided
-    // Note: We store the config as preset name since CompilationConfig doesn't have Serialize
-    // This is a temporary solution until we add Serialize to CompilationConfig
-    if let Some(_cfg) = config {
-        // For now, just store a placeholder
-        // TODO: Add proper serialization once CompilationConfig has Serialize derive
-        package.config = Some("{}".to_string());
+    if let Some(cfg) = config {
+        let config_json = cfg.to_json()?;
+        package.config = Some(config_json);
     }
 
     // Serialize symbol table if provided
@@ -541,12 +538,9 @@ pub fn py_load_full_model<'py>(
     }
 
     // Deserialize config
-    // Note: Config serialization is not yet fully implemented
-    // For now, return None for config
-    if let Some(_config_json) = package.config {
-        // TODO: Deserialize config once CompilationConfig has Serialize derive
-        // For now, use default config
-        result.set_item("config", PyCompilationConfig::new())?;
+    if let Some(config_json) = package.config {
+        let config = PyCompilationConfig::from_json(config_json)?;
+        result.set_item("config", config)?;
     }
 
     // Deserialize symbol table

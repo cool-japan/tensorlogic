@@ -956,7 +956,7 @@ mod tests {
 
     #[test]
     fn test_scaled_kernel() {
-        use crate::tensor_kernel::LinearKernel;
+        use crate::tensor_kernels::LinearKernel;
 
         let base = LinearKernel::new();
         let scaled = ScaledKernel::new(base, 2.0).unwrap();
@@ -972,7 +972,7 @@ mod tests {
 
     #[test]
     fn test_scaled_kernel_invalid() {
-        use crate::tensor_kernel::LinearKernel;
+        use crate::tensor_kernels::LinearKernel;
 
         let base = LinearKernel::new();
         let result = ScaledKernel::new(base, 0.0);
@@ -981,7 +981,7 @@ mod tests {
 
     #[test]
     fn test_scaled_kernel_psd() {
-        use crate::tensor_kernel::LinearKernel;
+        use crate::tensor_kernels::LinearKernel;
 
         let base = LinearKernel::new();
         let scaled = ScaledKernel::new(base, 2.0).unwrap();

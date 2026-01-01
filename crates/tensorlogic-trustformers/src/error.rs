@@ -22,6 +22,8 @@ pub enum TrustformerError {
     MissingParameter(String),
     /// Compilation error when building einsum graph
     CompilationError(String),
+    /// Error loading checkpoint file
+    CheckpointLoadError(String),
 }
 
 impl fmt::Display for TrustformerError {
@@ -48,6 +50,7 @@ impl fmt::Display for TrustformerError {
             ),
             Self::MissingParameter(param) => write!(f, "Missing required parameter: {}", param),
             Self::CompilationError(msg) => write!(f, "Compilation error: {}", msg),
+            Self::CheckpointLoadError(msg) => write!(f, "Checkpoint load error: {}", msg),
         }
     }
 }

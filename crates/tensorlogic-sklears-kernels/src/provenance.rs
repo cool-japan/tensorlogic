@@ -516,7 +516,7 @@ impl Kernel for ProvenanceKernel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tensor_kernel::LinearKernel;
+    use crate::tensor_kernels::LinearKernel;
 
     #[test]
     fn test_provenance_record_creation() {

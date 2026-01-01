@@ -157,12 +157,21 @@ pub struct DeviceManager {
 impl DeviceManager {
     /// Create a new device manager.
     ///
-    /// This queries the system for available devices.
+    /// This queries the system for available devices, including CUDA GPUs
+    /// if available via nvidia-smi.
     pub fn new() -> Self {
+        #[cfg(test)] // In tests, only CPU is available
         let available_devices = vec![Device::cpu()];
 
-        // In the future, query for GPU devices
-        // For now, only CPU is available
+        #[cfg(not(test))] // In production, detect CUDA devices
+        let available_devices = {
+            let mut devices = vec![Device::cpu()];
+            let cuda_devices = crate::cuda_detect::detect_cuda_devices();
+            for cuda_info in cuda_devices {
+                devices.push(Device::cuda(cuda_info.index));
+            }
+            devices
+        };
 
         Self {
             available_devices: available_devices.clone(),

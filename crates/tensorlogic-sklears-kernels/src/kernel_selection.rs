@@ -503,7 +503,7 @@ impl KernelSelector {
         targets: &[f64],
         gammas: &[f64],
     ) -> Result<GammaSearchResult> {
-        use crate::tensor_kernel::RbfKernel;
+        use crate::tensor_kernels::RbfKernel;
         use crate::types::RbfKernelConfig;
 
         let mut best_gamma = gammas[0];
@@ -685,7 +685,7 @@ fn shuffle_indices(indices: &mut [usize], seed: u64) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tensor_kernel::{LinearKernel, RbfKernel};
+    use crate::tensor_kernels::{LinearKernel, RbfKernel};
     use crate::types::RbfKernelConfig;
 
     #[test]

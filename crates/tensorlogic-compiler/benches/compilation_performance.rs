@@ -5,7 +5,8 @@ use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use tensorlogic_compiler::{
-    compile_to_einsum, compile_to_einsum_with_context, CompilationConfig, CompilerContext,
+    compile_to_einsum, compile_to_einsum_with_config, compile_to_einsum_with_context,
+    CompilationConfig, CompilerContext,
 };
 use tensorlogic_ir::{TLExpr, Term};
 
@@ -204,9 +205,7 @@ fn bench_strategy_comparison_and(c: &mut Criterion) {
     for (name, config) in strategies {
         group.bench_with_input(BenchmarkId::new("compile", name), &config, |b, config| {
             b.iter(|| {
-                let mut ctx = CompilerContext::new();
-                ctx.config = config.clone();
-                let graph = compile_to_einsum_with_context(black_box(&expr), &mut ctx).unwrap();
+                let graph = compile_to_einsum_with_config(black_box(&expr), config).unwrap();
                 black_box(graph);
             });
         });
@@ -242,9 +241,7 @@ fn bench_strategy_comparison_complex(c: &mut Criterion) {
     for (name, config) in strategies {
         group.bench_with_input(BenchmarkId::new("compile", name), &config, |b, config| {
             b.iter(|| {
-                let mut ctx = CompilerContext::new();
-                ctx.config = config.clone();
-                let graph = compile_to_einsum_with_context(black_box(&expr), &mut ctx).unwrap();
+                let graph = compile_to_einsum_with_config(black_box(&expr), config).unwrap();
                 black_box(graph);
             });
         });

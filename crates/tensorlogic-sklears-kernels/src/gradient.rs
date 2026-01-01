@@ -38,7 +38,7 @@
 //! ```
 
 use crate::error::{KernelError, Result};
-use crate::tensor_kernel::{
+use crate::tensor_kernels::{
     LaplacianKernel, MaternKernel, PolynomialKernel, RationalQuadraticKernel, RbfKernel,
 };
 

@@ -59,3 +59,11 @@ harness = false
 [[bench]]
 name = "operation_benchmarks"
 harness = false
+
+[[bench]]
+name = "simd_specific"
+harness = false
+
+[[bench]]
+name = "end_to_end"
+harness = false

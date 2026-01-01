@@ -10,6 +10,7 @@ rust-version.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+serde.workspace = true
 tensorlogic-adapters.workspace = true
 tensorlogic-ir.workspace = true
 rayon = { workspace = true, optional = true }
@@ -32,6 +33,7 @@ integration-tests = []
 
 [dev-dependencies]
 criterion.workspace = true
+serde_json.workspace = true
 scirs2-core.workspace = true
 tensorlogic-infer.workspace = true
 # tensorlogic-scirs-backend.workspace = true  # Disabled: circular dev-dependency

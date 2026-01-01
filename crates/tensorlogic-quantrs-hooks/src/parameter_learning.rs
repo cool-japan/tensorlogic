@@ -69,7 +69,7 @@ impl SimpleHMM {
 
     /// Create an HMM with random initialization.
     pub fn new_random(num_states: usize, num_observations: usize) -> Self {
-        use scirs2_core::random::{thread_rng, Rng};
+        use scirs2_core::random::thread_rng;
 
         let mut rng = thread_rng();
         let mut hmm = Self::new(num_states, num_observations);

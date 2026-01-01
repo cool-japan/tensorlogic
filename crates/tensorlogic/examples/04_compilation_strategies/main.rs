@@ -11,7 +11,7 @@
 //! - fuzzy_lukasiewicz: Łukasiewicz fuzzy logic
 //! - probabilistic: Probabilistic interpretation
 
-use tensorlogic_compiler::{compile_to_einsum, CompilationConfig};
+use tensorlogic_compiler::{compile_to_einsum_with_config, CompilationConfig};
 use tensorlogic_infer::TlAutodiff;
 use tensorlogic_ir::{TLExpr, Term};
 use tensorlogic_scirs_backend::{Scirs2Exec, Scirs2Tensor};
@@ -124,9 +124,9 @@ fn main() {
     let sep = "=".repeat(70);
     println!("{}", sep);
     println!();
-    println!("Note: Different strategies may produce similar results for AND");
-    println!("when using the default compilation. Full configuration support");
-    println!("with distinct strategy behavior will be available in future updates.");
+    println!("Note: This example demonstrates how different compilation strategies");
+    println!("affect the semantics of logical operations. Each strategy compiles");
+    println!("the same logical expression to different tensor operations.");
     println!();
     let sep = "=".repeat(70);
     println!("{}", sep);
@@ -139,13 +139,10 @@ fn test_strategy(
     expr: &TLExpr,
     p_data: &Scirs2Tensor,
     q_data: &Scirs2Tensor,
-    _config: CompilationConfig, // TODO: Use when API supports config
+    config: CompilationConfig,
 ) {
-    // Note: Currently compile_to_einsum doesn't accept config
-    // This is a placeholder for when the API is updated
-    // For now, it uses the default compilation strategy
-
-    let graph = compile_to_einsum(expr).unwrap();
+    // Compile with the specified configuration
+    let graph = compile_to_einsum_with_config(expr, &config).unwrap();
 
     let mut executor = Scirs2Exec::new();
 

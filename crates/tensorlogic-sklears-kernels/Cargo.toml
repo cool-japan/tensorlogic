@@ -16,6 +16,7 @@ tensorlogic-ir.workspace = true
 tensorlogic-compiler.workspace = true
 tensorlogic-infer.workspace = true
 scirs2-core.workspace = true
+rayon.workspace = true
 
 # SkleaRS integration (optional feature)
 sklears-core = { workspace = true, optional = true }

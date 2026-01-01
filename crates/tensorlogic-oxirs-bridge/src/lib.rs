@@ -257,7 +257,7 @@ mod tests;
 
 pub use compilation::compile_rules;
 pub use error::{BridgeError, ParseLocation};
-pub use graphql::GraphQLConverter;
+pub use graphql::{DirectiveValue, GraphQLConverter, GraphQLDirective};
 pub use provenance::ProvenanceTracker;
 pub use rdfstar::{
     MetadataBuilder, ProvenanceStats, QuotedTriple, RdfStarProvenanceStore, StatementMetadata,

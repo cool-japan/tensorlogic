@@ -431,7 +431,7 @@ pub fn select_n_components(eigenvalues: &[f64], target_ratio: f64) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tensor_kernel::{LinearKernel, RbfKernel};
+    use crate::tensor_kernels::{LinearKernel, RbfKernel};
     use crate::types::RbfKernelConfig;
 
     #[test]

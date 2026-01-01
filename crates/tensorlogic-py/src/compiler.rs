@@ -4,7 +4,10 @@ use crate::adapters::PyCompilerContext;
 use crate::types::{PyEinsumGraph, PyTLExpr};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use tensorlogic_compiler::{compile_to_einsum, compile_to_einsum_with_context, CompilationConfig};
+use tensorlogic_compiler::{
+    compile_to_einsum, compile_to_einsum_with_config, compile_to_einsum_with_context,
+    CompilationConfig,
+};
 
 /// Compilation configuration
 #[pyclass(name = "CompilationConfig")]
@@ -110,38 +113,51 @@ impl PyCompilationConfig {
         compilation_config_html(name, desc)
     }
 
-    /// Export to JSON string (placeholder for now)
+    /// Export to JSON string
     ///
-    /// Note: Full serialization not yet implemented.
-    /// Returns a placeholder JSON object.
+    /// Serializes the compilation configuration to a JSON string.
+    /// This can be used to save configurations for later use or to transfer
+    /// them between different environments.
     ///
     /// Returns:
     ///     JSON representation of the configuration
     ///
+    /// Raises:
+    ///     RuntimeError: If serialization fails
+    ///
     /// Example:
+    ///     >>> config = CompilationConfig.soft_differentiable()
     ///     >>> json_str = config.to_json()
+    ///     >>> print(json_str)
     pub fn to_json(&self) -> PyResult<String> {
-        // TODO: Implement proper serialization once CompilationConfig has Serialize derive
-        Ok("{}".to_string())
+        serde_json::to_string(&self.inner).map_err(|e| {
+            PyRuntimeError::new_err(format!("Failed to serialize CompilationConfig: {}", e))
+        })
     }
 
-    /// Import from JSON string (placeholder for now)
+    /// Import from JSON string
     ///
-    /// Note: Full deserialization not yet implemented.
-    /// Returns default configuration.
+    /// Deserializes a compilation configuration from a JSON string.
+    /// This allows loading previously saved configurations.
     ///
     /// Args:
-    ///     json: JSON string
+    ///     json: JSON string representing a CompilationConfig
     ///
     /// Returns:
-    ///     CompilationConfig (default for now)
+    ///     CompilationConfig instance
+    ///
+    /// Raises:
+    ///     RuntimeError: If deserialization fails
     ///
     /// Example:
+    ///     >>> json_str = '{"and_strategy":"Product",...}'
     ///     >>> config = CompilationConfig.from_json(json_str)
     #[staticmethod]
-    pub fn from_json(_json: String) -> PyResult<Self> {
-        // TODO: Implement proper deserialization once CompilationConfig has Serialize derive
-        Ok(PyCompilationConfig::new())
+    pub fn from_json(json: String) -> PyResult<Self> {
+        let inner = serde_json::from_str(&json).map_err(|e| {
+            PyRuntimeError::new_err(format!("Failed to deserialize CompilationConfig: {}", e))
+        })?;
+        Ok(PyCompilationConfig { inner })
     }
 }
 
@@ -194,12 +210,9 @@ pub fn py_compile(expr: &PyTLExpr) -> PyResult<PyEinsumGraph> {
 #[pyfunction(name = "compile_with_config")]
 pub fn py_compile_with_config(
     expr: &PyTLExpr,
-    _config: &PyCompilationConfig,
+    config: &PyCompilationConfig,
 ) -> PyResult<PyEinsumGraph> {
-    // Note: We need to extend the compiler API to accept config
-    // For now, compile with default config
-    // TODO: Add compile_to_einsum_with_config to tensorlogic-compiler
-    match compile_to_einsum(&expr.inner) {
+    match compile_to_einsum_with_config(&expr.inner, &config.inner) {
         Ok(graph) => Ok(PyEinsumGraph { inner: graph }),
         Err(e) => Err(PyRuntimeError::new_err(format!(
             "Compilation failed: {}",

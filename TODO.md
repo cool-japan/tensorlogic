@@ -57,14 +57,26 @@ Production-ready backend with SIMD acceleration + comprehensive benchmarks
     - [x] Transparent SIMD acceleration (automatic when built with simd feature)
     - [x] Default backend selection (prefers SIMD when available)
     - [x] All 4,287 tests passing with SIMD enabled
-  - [x] **Comprehensive Benchmark Suite** ✅ **COMPLETE**
-    - [x] simd_comparison.rs (200+ lines, 5 benchmark groups) - SIMD vs non-SIMD comparison
-    - [x] memory_footprint.rs (150+ lines, 3 benchmark groups) - Memory allocation patterns
-    - [x] gradient_stability.rs (207 lines, 5 benchmark groups) - Gradient computation performance
-    - [x] throughput.rs (235 lines, 5 benchmark groups) - Operations per second measurement
-    - [x] forward_pass.rs (197 lines, 6 benchmark groups) - Forward pass performance
+  - [x] **Comprehensive Benchmark Suite** ✅ **COMPLETE** (2,425 lines, 9 files)
+    - [x] end_to_end.rs (415 lines, 11 benchmark groups) - Complete pipeline from compilation to execution
+      - Simple predicates, AND/OR/NOT, EXISTS/FORALL quantifiers, implication
+      - Complex nested operations, training iterations (forward+backward), batch processing, graph scaling
+    - [x] operation_benchmarks.rs (360 lines) - Core operation performance
+    - [x] parallel_performance.rs (312 lines) - Multi-threaded execution
+    - [x] simd_specific.rs (272 lines) - SIMD-specific optimizations
+    - [x] gradient_stability.rs (235 lines, 5 benchmark groups) - Gradient computation performance
+    - [x] throughput.rs (233 lines, 5 benchmark groups) - Operations per second measurement
+    - [x] forward_pass.rs (224 lines, 6 benchmark groups) - Forward pass performance
+    - [x] simd_comparison.rs (201 lines, 5 benchmark groups) - SIMD vs non-SIMD comparison
+    - [x] memory_footprint.rs (173 lines, 3 benchmark groups) - Memory allocation patterns
     - [x] All benchmarks use compiler API for maintainability
-    - [x] Coverage: element-wise, matrix, reduction, complex, batch, and gradient operations
+    - [x] Coverage: predicates, logic ops, quantifiers, training, batching, SIMD, memory, parallel
+  - [x] **Benchmark Regression Tracking** ✅ **NEW** (tools/bench-tracker)
+    - [x] Automated baseline management with git commit tracking
+    - [x] Performance comparison with configurable thresholds
+    - [x] Multiple report formats (text, JSON, HTML)
+    - [x] Statistical analysis (mean, median, confidence intervals)
+    - [x] CI/CD integration ready
   - [ ] Features: `gpu` (FUTURE)
 
 ## Phase 4 — OxiRS Bridge ✅ **PRODUCTION READY** (100% completion)
@@ -95,9 +107,9 @@ Full-featured RDF/SHACL/GraphQL/SPARQL bridge with comprehensive examples
   - [x] **6 comprehensive examples** (2099 lines, all features demonstrated)
   - [x] Modular structure (schema/, provenance, error, compilation, sparql, graphql, shacl)
   - [x] Comprehensive test suite (103 tests, 100% passing, zero warnings)
-  - [ ] Full SPARQL 1.1 (CONSTRUCT/ASK/DESCRIBE, OPTIONAL, UNION) (FUTURE)
-  - [ ] JSON-LD serialization (FUTURE)
-  - [ ] GraphQL directives → constraint rules (FUTURE)
+  - [x] **Full SPARQL 1.1** ✅ COMPLETE (CONSTRUCT/ASK/DESCRIBE, OPTIONAL, UNION)
+  - [x] **JSON-LD serialization** ✅ COMPLETE (bidirectional, roundtrip support)
+  - [x] **GraphQL directives → constraint rules** ✅ COMPLETE (5 directive types, 18 tests)
 
 ## Phase 4.5 — Core Enhancements ✅ PRODUCTION READY
 Major enhancement to planning layer with production-grade features
@@ -257,9 +269,9 @@ Three interop crates with production-ready core features
   - [x] Marginalization and conditioning operations
   - [x] 15 comprehensive tests (100% passing, zero warnings)
   - [x] Error handling with PgmError types
-  - [ ] Full belief propagation with convergence (future)
-  - [ ] Variational inference methods (future)
-  - [ ] Sampling-based inference (future)
+  - [x] **Full belief propagation with convergence** ✅ COMPLETE (sum-product, damping, early termination)
+  - [x] **Variational inference methods** ✅ COMPLETE (mean-field, Q-distribution optimization)
+  - [x] **Sampling-based inference** ✅ COMPLETE (Gibbs, importance sampling, particle filter)
 
 - [x] **`tensorlogic-trustformers`**: self-attention/FFN as einsum graphs; transformer components. ✅ **100% COMPLETE**
   - [x] Self-attention as einsum operations
@@ -279,8 +291,8 @@ Three interop crates with production-ready core features
   - [x] Error handling with IrError conversion
   - [x] **123 comprehensive tests** (100% passing, zero warnings)
   - [x] Complete README with examples
-  - [ ] Pre-trained model loading (future)
-  - [ ] Performance benchmarks (future)
+  - [x] **Pre-trained model loading** ✅ COMPLETE (JSON & binary checkpoint formats, name mapping)
+  - [x] **Performance benchmarks** ✅ COMPLETE (5 benchmark groups, attention/FFN/encoder stacks)
 
 ## Phase 6 — Training Scaffolds ✅ **PRODUCTION READY** (100% completion)
 Comprehensive training infrastructure with 25,402 lines of production code
@@ -417,7 +429,7 @@ Production-ready Python API with comprehensive testing, tutorials, backend selec
     - [x] Advanced topics (optimization, caching, multi-package)
     - [x] GitHub Actions workflow template (python-wheels.yml.example)
     - [x] Makefile with common packaging tasks
-  - [ ] Expose: get_provenance() - FUTURE
+  - [x] **Expose: get_provenance()** ✅ COMPLETE (full RDF* provenance API with metadata extraction)
   - [ ] PyTorch tensor support - FUTURE
 
 ## Phase 8 — Validation & Scale ✅ **COMPLETE** (100%)

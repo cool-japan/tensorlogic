@@ -356,7 +356,7 @@ impl KernelAlignment {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tensor_kernel::{CosineKernel, LinearKernel, RbfKernel};
+    use crate::tensor_kernels::{CosineKernel, LinearKernel, RbfKernel};
     use crate::types::RbfKernelConfig;
 
     #[test]

@@ -163,16 +163,14 @@ pub(crate) fn compile_abducible(
     let abducible_name = format!("abducible_{}", name);
     let abducible_idx = graph.add_tensor(abducible_name.clone());
 
-    // Store the cost as metadata
-    let metadata = format!("abducible:{}:cost:{}", name, cost);
-    graph
-        .tensors
-        .get_mut(abducible_idx)
-        .unwrap()
-        .push_str(&format!("#{}", metadata));
+    // Store the cost in proper metadata using the tensor_metadata HashMap
+    use tensorlogic_ir::Metadata;
+    let metadata = Metadata::new()
+        .with_name(format!("Abducible: {}", name))
+        .with_attribute("abducible_cost", cost.to_string());
+    graph.tensor_metadata.insert(abducible_idx, metadata);
 
     // Register this abducible in context for tracking
-    // We'll use the custom data mechanism
     register_abducible(ctx, name, cost, abducible_idx)?;
 
     // Return a scalar decision variable (no axes)
@@ -228,7 +226,7 @@ pub(crate) fn compile_explain(
     let formula_result = compile_expr(formula, ctx, graph)?;
 
     // Get all registered abducibles and their costs
-    let abducibles = get_registered_abducibles(ctx)?;
+    let abducibles = get_registered_abducibles(ctx, graph)?;
 
     if abducibles.is_empty() {
         // No abducibles available - just return the formula as-is
@@ -281,23 +279,19 @@ pub(crate) fn compile_explain(
 
 /// Register an abducible in the compiler context.
 ///
-/// We use a simple storage mechanism in the context's custom data.
+/// Stores the abducible's tensor index in the context's let_bindings map
+/// with the prefix "abd_" for easy retrieval. The cost is stored in the
+/// tensor's metadata in the graph.
 fn register_abducible(
     ctx: &mut CompilerContext,
     name: &str,
     _cost: f64,
     tensor_idx: usize,
 ) -> Result<()> {
-    // For now, we'll use the let_bindings map to track abducibles
-    // In a full implementation, we'd add a dedicated field to CompilerContext
-    //
-    // We store them with a special prefix "abd_"
+    // Store abducibles in let_bindings with "abd_" prefix
+    // The cost is stored in graph.tensor_metadata via the "abducible_cost" attribute
     let key = format!("abd_{}", name);
     ctx.let_bindings.insert(key, tensor_idx);
-
-    // Also store the cost (we'll encode it in a special way)
-    // For simplicity, we'll just track the tensor index
-    // The cost is already in the metadata of the tensor
 
     Ok(())
 }
@@ -305,15 +299,27 @@ fn register_abducible(
 /// Get all registered abducibles from the compiler context.
 ///
 /// Returns a vector of (name, cost, tensor_idx) tuples.
-fn get_registered_abducibles(ctx: &CompilerContext) -> Result<Vec<(String, f64, usize)>> {
+fn get_registered_abducibles(
+    ctx: &CompilerContext,
+    graph: &EinsumGraph,
+) -> Result<Vec<(String, f64, usize)>> {
     let mut abducibles = Vec::new();
 
     for (key, &tensor_idx) in &ctx.let_bindings {
         if let Some(name) = key.strip_prefix("abd_") {
             // Extract cost from tensor metadata
-            // This is a simplified approach - in production we'd have proper tracking
-            // For now, assume a default cost of 1.0
-            let cost = 1.0; // TODO: extract from graph.tensors metadata
+            let cost = if let Some(metadata) = graph.tensor_metadata.get(&tensor_idx) {
+                // Try to get the cost attribute
+                if let Some(cost_str) = metadata.get_attribute("abducible_cost") {
+                    cost_str
+                        .parse::<f64>()
+                        .unwrap_or(1.0) // Default to 1.0 if parsing fails
+                } else {
+                    1.0 // Default cost if attribute not found
+                }
+            } else {
+                1.0 // Default cost if no metadata
+            };
 
             abducibles.push((name.to_string(), cost, tensor_idx));
         }
@@ -584,4 +590,87 @@ mod tests {
         // Indices should be different
         assert_ne!(result1.tensor_idx, result2.tensor_idx);
     }
+
+    #[test]
+    fn test_abducible_cost_metadata_storage() {
+        let mut ctx = CompilerContext::new();
+        let mut graph = EinsumGraph::new();
+
+        // Create abducibles with different costs
+        let result1 = compile_abducible("cheap", 0.5, &mut ctx, &mut graph).unwrap();
+        let result2 = compile_abducible("expensive", 10.0, &mut ctx, &mut graph).unwrap();
+        let result3 = compile_abducible("moderate", 2.5, &mut ctx, &mut graph).unwrap();
+
+        // Verify costs are stored in metadata
+        let meta1 = graph.tensor_metadata.get(&result1.tensor_idx).unwrap();
+        assert_eq!(meta1.get_attribute("abducible_cost"), Some("0.5"));
+
+        let meta2 = graph.tensor_metadata.get(&result2.tensor_idx).unwrap();
+        assert_eq!(meta2.get_attribute("abducible_cost"), Some("10"));
+
+        let meta3 = graph.tensor_metadata.get(&result3.tensor_idx).unwrap();
+        assert_eq!(meta3.get_attribute("abducible_cost"), Some("2.5"));
+    }
+
+    #[test]
+    fn test_get_registered_abducibles_extracts_costs() {
+        let mut ctx = CompilerContext::new();
+        let mut graph = EinsumGraph::new();
+
+        // Create abducibles with known costs
+        compile_abducible("H1", 1.0, &mut ctx, &mut graph).unwrap();
+        compile_abducible("H2", 2.5, &mut ctx, &mut graph).unwrap();
+        compile_abducible("H3", 0.3, &mut ctx, &mut graph).unwrap();
+
+        // Get registered abducibles
+        let abducibles = get_registered_abducibles(&ctx, &graph).unwrap();
+
+        // Should have 3 abducibles
+        assert_eq!(abducibles.len(), 3);
+
+        // Verify costs are correctly extracted
+        // Note: order might vary so we check all possible names
+        for (name, cost, _idx) in &abducibles {
+            match name.as_str() {
+                "H1" => assert_eq!(*cost, 1.0),
+                "H2" => assert_eq!(*cost, 2.5),
+                "H3" => assert_eq!(*cost, 0.3),
+                _ => panic!("Unexpected abducible name: {}", name),
+            }
+        }
+    }
+
+    #[test]
+    fn test_explain_uses_correct_costs() {
+        let mut ctx = CompilerContext::new();
+        let mut graph = EinsumGraph::new();
+
+        // Register abducibles with specific costs
+        compile_abducible("H1", 1.0, &mut ctx, &mut graph).unwrap();
+        compile_abducible("H2", 5.0, &mut ctx, &mut graph).unwrap();
+
+        // Create a formula to explain
+        let formula = TLExpr::pred("Safe", vec![]);
+
+        // Compile the explanation
+        compile_explain(&formula, &mut ctx, &mut graph).unwrap();
+
+        // The graph should have computed cost terms
+        // We can't easily verify the exact computation here,
+        // but we can check that nodes were created
+        assert!(!graph.nodes.is_empty());
+
+        // Verify that the abducibles still have their correct costs in metadata
+        let abducibles = get_registered_abducibles(&ctx, &graph).unwrap();
+        assert_eq!(abducibles.len(), 2);
+
+        for (name, cost, _) in &abducibles {
+            if name == "H1" {
+                assert_eq!(*cost, 1.0);
+            } else if name == "H2" {
+                assert_eq!(*cost, 5.0);
+            }
+        }
+    }
 }
+

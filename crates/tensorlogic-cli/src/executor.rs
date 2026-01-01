@@ -8,7 +8,7 @@
 
 use anyhow::Result;
 use scirs2_core::ndarray::{Array, IxDyn};
-use scirs2_core::random::{thread_rng, Rng};
+use scirs2_core::random::thread_rng;
 use std::collections::HashMap;
 use tensorlogic_infer::TlAutodiff;
 use tensorlogic_ir::EinsumGraph;

@@ -4,7 +4,7 @@
 
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic--scirs--backend-orange)](https://crates.io/crates/tensorlogic-scirs-backend)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-scirs-backend)
-[![Tests](https://img.shields.io/badge/tests-138%2F138-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-195%2F195-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
 
 ## Overview
@@ -73,7 +73,7 @@ let input_grads = executor.backward(&graph, grads)?;
 - **Gradient Checking**: Numeric verification for autodiff correctness
 
 ### ✅ Testing
-- **138 Tests**: All passing with comprehensive coverage
+- **195 Tests**: All passing with comprehensive coverage (including 8 CUDA detection tests)
 - **Optimization Tests**: 9 tests for DCE, CSE, and memory planning
 - **In-Place Tests**: 16 tests for zero-allocation operations
 - **Checkpoint Tests**: 11 tests for save/load/restore functionality
@@ -81,6 +81,7 @@ let input_grads = executor.backward(&graph, grads)?;
 - **Gradient Tests**: Numeric gradient checking verifies autodiff accuracy
 - **Integration Tests**: End-to-end TLExpr → Graph → Execution
 - **Parallel Tests**: 8 tests for multi-threaded execution
+- **Device Tests**: 8 tests for CUDA device detection and management
 
 ## Architecture
 
@@ -648,6 +649,8 @@ Combines multi-threaded execution with SIMD vectorization for maximum performanc
 tensorlogic-scirs-backend = { version = "0.1", features = ["gpu"] }
 ```
 
+**Note:** CUDA device detection is already available! The backend can detect NVIDIA GPUs using nvidia-smi and report device information (name, memory, compute capability). Full GPU execution support will be added when scirs2-core gains GPU features.
+
 ## Advanced Backend Features
 
 ### Execution Modes
@@ -692,14 +695,29 @@ Manage compute devices (CPU/GPU) with the device API:
 
 ```rust
 use tensorlogic_scirs_backend::{DeviceManager, Device, DeviceType};
+use tensorlogic_scirs_backend::{detect_cuda_devices, is_cuda_available};
 
-// Query available devices
+// Query available devices (automatically detects CUDA via nvidia-smi)
 let manager = DeviceManager::new();
 println!("Available devices: {:?}", manager.available_devices());
 
 // Check for GPU availability
 if manager.has_gpu() {
     println!("GPU devices found: {}", manager.count_devices(DeviceType::Cuda));
+}
+
+// Detailed CUDA device detection
+if is_cuda_available() {
+    let cuda_devices = detect_cuda_devices();
+    for device_info in cuda_devices {
+        println!("GPU {}: {} ({} MB)",
+                 device_info.index,
+                 device_info.name,
+                 device_info.memory_mb);
+        if let Some((major, minor)) = device_info.compute_capability {
+            println!("  Compute Capability: {}.{}", major, minor);
+        }
+    }
 }
 
 // Select a specific device
@@ -715,10 +733,12 @@ if manager.is_available(&device) {
 
 **Supported Device Types:**
 - **CPU**: Always available, default
-- **CUDA**: NVIDIA GPUs (future)
+- **CUDA**: NVIDIA GPUs (detection ready, execution planned)
 - **Metal**: Apple GPUs (future)
 - **Vulkan**: Cross-platform compute (future)
 - **ROCm**: AMD GPUs (future)
+
+**CUDA Detection:** The backend now includes automatic CUDA device detection using nvidia-smi. When you create a DeviceManager, it will automatically detect available CUDA devices and populate the device list. This allows you to prepare your code for GPU execution even before full GPU support is implemented.
 
 ### Precision Control
 
