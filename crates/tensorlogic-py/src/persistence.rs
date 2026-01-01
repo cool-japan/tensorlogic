@@ -137,7 +137,7 @@ impl PyModelPackage {
         Ok(package)
     }
 
-    /// Save package to binary file (bincode format)
+    /// Save package to binary file (oxicode format)
     ///
     /// Args:
     ///     path: File path to save to
@@ -146,7 +146,7 @@ impl PyModelPackage {
     ///     >>> package = tl.ModelPackage()
     ///     >>> package.save_binary("model.bin")
     fn save_binary(&self, path: String) -> PyResult<()> {
-        let bytes = bincode::serialize(self).map_err(|e| {
+        let bytes = oxicode::serde::encode_to_vec(self, oxicode::config::standard()).map_err(|e| {
             PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
                 "Binary serialization failed: {}",
                 e
@@ -160,7 +160,7 @@ impl PyModelPackage {
         Ok(())
     }
 
-    /// Load package from binary file (bincode format)
+    /// Load package from binary file (oxicode format)
     ///
     /// Args:
     ///     path: File path to load from
@@ -176,7 +176,7 @@ impl PyModelPackage {
             PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to read file: {}", e))
         })?;
 
-        let package: PyModelPackage = bincode::deserialize(&bytes).map_err(|e| {
+        let (package, _bytes_read): (PyModelPackage, usize) = oxicode::serde::decode_owned_from_slice(&bytes, oxicode::config::standard()).map_err(|e| {
             PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
                 "Binary deserialization failed: {}",
                 e
@@ -221,7 +221,7 @@ impl PyModelPackage {
     /// Returns:
     ///     Binary representation as bytes
     fn to_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
-        let bytes = bincode::serialize(self).map_err(|e| {
+        let bytes = oxicode::serde::encode_to_vec(self, oxicode::config::standard()).map_err(|e| {
             PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
                 "Binary serialization failed: {}",
                 e
@@ -240,7 +240,7 @@ impl PyModelPackage {
     ///     ModelPackage instance
     #[staticmethod]
     fn from_bytes(bytes: &[u8]) -> PyResult<Self> {
-        let result: Self = bincode::deserialize(bytes).map_err(|e| {
+        let (result, _bytes_read): (Self, usize) = oxicode::serde::decode_owned_from_slice(bytes, oxicode::config::standard()).map_err(|e| {
             PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!(
                 "Binary deserialization failed: {}",
                 e
