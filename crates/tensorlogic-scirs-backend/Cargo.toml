@@ -14,6 +14,8 @@ cpu = []
 simd = ["cpu", "scirs2-core/simd", "scirs2-linalg/simd"]
 gpu = []
 parallel = ["scirs2-core/parallel"]
+# ToRSh tensor interoperability (pure Rust PyTorch alternative)
+torsh = ["dep:torsh-core", "dep:torsh-tensor"]
 # Enable integration tests that require tensorlogic-compiler
 integration-tests = []
 
@@ -26,6 +28,9 @@ anyhow.workspace = true
 thiserror.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
+# ToRSh interoperability (pure Rust PyTorch alternative)
+torsh-core = { workspace = true, optional = true }
+torsh-tensor = { workspace = true, optional = true }
 
 [dev-dependencies]
 tensorlogic-compiler.workspace = true

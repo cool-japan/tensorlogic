@@ -82,6 +82,9 @@ pub mod quantization;
 pub mod shape_inference;
 pub mod tracing;
 
+#[cfg(feature = "torsh")]
+pub mod torsh_interop;
+
 #[cfg(test)]
 mod tests;
 

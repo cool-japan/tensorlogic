@@ -80,6 +80,10 @@ scirs2-linalg = "0.1.1"
 scirs2-autograd = "0.1.1"
 scirs2-optimize = "0.1.1"
 
+# ToRSh dependencies (from crates.io) - Pure Rust PyTorch alternative
+torsh-core = "0.1.0-alpha.2"
+torsh-tensor = "0.1.0-alpha.2"
+
 # SkleaRS dependencies (local paths for development)
 sklears-core = { version = "0.1.0-alpha.2", path = "../sklears/crates/sklears-core" }
 sklears-kernel-approximation = { version = "0.1.0-alpha.2", path = "../sklears/crates/sklears-kernel-approximation" }
