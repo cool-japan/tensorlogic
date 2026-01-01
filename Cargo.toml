@@ -84,9 +84,9 @@ scirs2-optimize = "0.1.1"
 torsh-core = "0.1.0-alpha.2"
 torsh-tensor = "0.1.0-alpha.2"
 
-# SkleaRS dependencies (local paths for development)
-sklears-core = { version = "0.1.0-alpha.2", path = "../sklears/crates/sklears-core" }
-sklears-kernel-approximation = { version = "0.1.0-alpha.2", path = "../sklears/crates/sklears-kernel-approximation" }
+# SkleaRS dependencies (from crates.io)
+sklears-core = "0.1.0-beta.1"
+sklears-kernel-approximation = "0.1.0-beta.1"
 
 # Internal tensorlogic crates
 tensorlogic-ir = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-ir" }
