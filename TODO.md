@@ -5,12 +5,13 @@
 **Status**: ✅ **PRODUCTION READY FOR ALPHA.2**
 
 This release represents completion of all 8 development phases with production-quality implementation:
-- **4,287 tests passing** (100% success rate, 12 intentionally skipped)
-- **Zero compiler warnings**
+- **4,363 tests passing** (100% success rate, 12 intentionally skipped, +76 new tests)
+- **Zero compiler warnings, zero clippy warnings**
+- **ToRSh tensor interoperability** (pure Rust neurosymbolic AI integration)
 - **Comprehensive CI/CD** pipeline enabled
 - **Complete documentation** with tutorials and examples
-- **Latest dependencies** from crates.io
-- **272,370+ lines of Rust code** (216,811 source + 32,749 docs)
+- **Latest dependencies** from crates.io (oxicode 0.1.1, ToRSh 0.1.0-alpha.2)
+- **311,686+ lines of code** (277,371 Rust, 42,858 comments, 50,385 blank)
 - **CUDA/GPU infrastructure** (experimental, device management ready)
 
 See [Release Checklist](#release-checklist-v010-alpha2) for details.
@@ -430,7 +431,14 @@ Production-ready Python API with comprehensive testing, tutorials, backend selec
     - [x] GitHub Actions workflow template (python-wheels.yml.example)
     - [x] Makefile with common packaging tasks
   - [x] **Expose: get_provenance()** ✅ COMPLETE (full RDF* provenance API with metadata extraction)
-  - [ ] PyTorch tensor support - FUTURE
+  - [x] **ToRSh Tensor Interoperability** ✅ COMPLETE (pure Rust PyTorch alternative)
+    - [x] Bidirectional conversion (TensorLogic ↔ ToRSh)
+    - [x] Type support (f32/f64 with automatic conversion)
+    - [x] Module: torsh_interop.rs (462 lines, 7 tests, 100% passing)
+    - [x] Example: torsh_integration.rs (150+ lines, 4 scenarios)
+    - [x] Feature-gated: --features torsh (optional dependency)
+    - [x] Use cases: Neurosymbolic AI, differentiable logic, hybrid systems
+  - [ ] PyTorch (tch-rs) tensor support - NOT NEEDED (using ToRSh instead)
 
 ## Phase 8 — Validation & Scale ✅ **COMPLETE** (100%)
 Full property test validation + integration tests + benchmarks
@@ -477,7 +485,9 @@ Full property test validation + integration tests + benchmarks
   - [x] Strategy comparison benchmarks (6 strategies × multiple scenarios)
   - [x] Multi-arity predicate benchmarks (arity 2-5)
   - [x] Criterion-based benchmarking infrastructure
-- [x] **Test Suite Health**: 4,287/4,287 tests passing (100%) ✅ (12 skipped)
+- [x] **Test Suite Health**: 4,363/4,363 tests passing (100%) ✅ (12 skipped)
+  - Updated from 4,287 → 4,363 tests (+76 new tests)
+  - Includes ToRSh interop tests (7 tests)
 - [ ] Fuzzing with cargo-fuzz (FUTURE)
 - [ ] Reference comparisons against symbolic logic solvers (FUTURE)
 - [ ] Scale knobs: sparsity, low-rank, partitioned reductions (FUTURE)
@@ -493,9 +503,11 @@ Full property test validation + integration tests + benchmarks
 ### Comprehensive Statistics
 
 **Testing**:
-- ✅ 4,287/4,287 tests passing (100% pass rate)
+- ✅ 4,363/4,363 tests passing (100% pass rate)
+  - Updated from 4,287 (+76 new tests)
   - 12 tests intentionally skipped (strategy-specific)
   - Comprehensive coverage across all crates
+  - Includes ToRSh interop tests (7 tests, 100% passing)
 - ✅ Zero compilation warnings
 - ✅ Zero clippy warnings
 - ✅ All benchmarks functional
