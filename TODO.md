@@ -488,9 +488,17 @@ Full property test validation + integration tests + benchmarks
 - [x] **Test Suite Health**: 4,363/4,363 tests passing (100%) ✅ (12 skipped)
   - Updated from 4,287 → 4,363 tests (+76 new tests)
   - Includes ToRSh interop tests (7 tests)
-- [ ] Fuzzing with cargo-fuzz (FUTURE)
+- [x] **Fuzzing infrastructure with cargo-fuzz** ✅ COMPLETE
+  - [x] Set up fuzzing for tensorlogic-ir crate
+  - [x] Created 3 fuzz targets (TLExpr, EinsumGraph, optimizations)
+  - [x] Independent workspace configuration (requires nightly to run)
+- [x] **Advanced neurosymbolic AI examples** ✅ COMPLETE
+  - [x] knowledge_graph_reasoning.rs (267 lines, 4 scenarios)
+  - [x] constrained_neural_optimization.rs (290 lines, 6 parts)
+  - [x] Both integrate TensorLogic + ToRSh for hybrid AI
 - [ ] Reference comparisons against symbolic logic solvers (FUTURE)
 - [ ] Scale knobs: sparsity, low-rank, partitioned reductions (FUTURE)
+  - Note: Sparse tensor support already exists (1,194 lines in sparse_tensor.rs)
 - [ ] GPU backend path (Phase 3 follow-up) (FUTURE)
 
 ## Project Summary
@@ -575,7 +583,9 @@ Full property test validation + integration tests + benchmarks
 11. tensorlogic-py (Python bindings with abi3)
 
 **Examples**:
-- 15 Rust examples
+- 17 Rust examples (+2 neurosymbolic AI)
+  - knowledge_graph_reasoning.rs (267 lines, 4 scenarios)
+  - constrained_neural_optimization.rs (290 lines, 6 parts)
 - 10 Python examples
 - 2 comprehensive Jupyter tutorials (1700+ lines)
 
