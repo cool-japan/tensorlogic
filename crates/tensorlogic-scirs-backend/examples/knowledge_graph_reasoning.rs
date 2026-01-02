@@ -23,7 +23,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     use scirs2_core::ndarray::ArrayD;
     use tensorlogic_scirs_backend::torsh_interop::*;
     use torsh_core::device::DeviceType;
-    use torsh_core::dtype::DType;
     use torsh_tensor::Tensor;
 
     println!("🔗 Knowledge Graph Reasoning with Neurosymbolic AI\n");
@@ -53,13 +52,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let friend_of_matrix = ArrayD::from_shape_vec(vec![num_entities, num_entities], friend_of_data)?;
 
     println!("  Initial friendOf matrix:");
-    println!("  {:?}\n", friend_of_matrix.clone().into_raw_vec());
+    println!("  {:?}\n", friend_of_matrix.iter().copied().collect::<Vec<_>>());
 
     // Apply transitivity rule: A·B where A and B are adjacency matrices
     // This computes 2-hop friendships
     let friend_of_2hop = {
-        let a = friend_of_matrix.clone().into_raw_vec();
-        let b = friend_of_matrix.clone().into_raw_vec();
+        let a: Vec<f64> = friend_of_matrix.iter().copied().collect();
+        let b: Vec<f64> = friend_of_matrix.iter().copied().collect();
 
         // Matrix multiplication for transitivity
         let mut result = vec![0.0; num_entities * num_entities];
@@ -81,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     println!("  2-hop friendships (transitivity):");
-    println!("  {:?}\n", friend_of_2hop.clone().into_raw_vec());
+    println!("  {:?}\n", friend_of_2hop.iter().copied().collect::<Vec<_>>());
 
     // Combine direct and transitive friendships
     let combined_friends = {
@@ -101,7 +100,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     println!("  Combined friendships (direct + transitive):");
-    println!("  {:?}\n", combined_friends.clone().into_raw_vec());
+    println!("  {:?}\n", combined_friends.iter().copied().collect::<Vec<_>>());
 
     // ============================================================
     // Part 2: Neural Embeddings for Entity Similarity

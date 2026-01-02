@@ -313,12 +313,34 @@ verify_constraints(&logic_constraints)?;
 - **Explainable AI**: Logic constraints on neural network outputs
 - **Knowledge-guided learning**: Inject symbolic knowledge into neural models
 
-**Example**:
+**Basic Example**:
 ```bash
 cargo run --example torsh_integration --features torsh
 ```
 
-See [examples/torsh_integration.rs](crates/tensorlogic-scirs-backend/examples/torsh_integration.rs) for comprehensive usage scenarios.
+### Advanced Neurosymbolic Examples
+
+**Knowledge Graph Reasoning** ([knowledge_graph_reasoning.rs](crates/tensorlogic-scirs-backend/examples/knowledge_graph_reasoning.rs)):
+```bash
+cargo run --example knowledge_graph_reasoning --features torsh
+```
+Demonstrates hybrid logic-neural reasoning for knowledge completion:
+- Symbolic rules: transitivity, symmetry (friendOf relations)
+- Neural embeddings: entity similarity via learned representations
+- Hybrid scoring: α·logic + (1-α)·neural with configurable weights
+- Constraint validation: bidirectional conversion for verification
+
+**Constrained Neural Optimization** ([constrained_neural_optimization.rs](crates/tensorlogic-scirs-backend/examples/constrained_neural_optimization.rs)):
+```bash
+cargo run --example constrained_neural_optimization --features torsh
+```
+Shows how to enforce logical constraints on neural network outputs:
+- Logical constraints: mutual exclusivity, hierarchical rules
+- Violation detection: automatic constraint checking
+- Guided correction: constraint-aware prediction adjustments
+- Training integration: constraint loss for gradient descent
+
+See also: [torsh_integration.rs](crates/tensorlogic-scirs-backend/examples/torsh_integration.rs) for basic ToRSh interop usage.
 
 ## 🧪 Testing
 
