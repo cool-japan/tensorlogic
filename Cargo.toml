@@ -29,7 +29,6 @@ edition = "2021"
 license = "Apache-2.0"
 homepage = "https://github.com/cool-japan/tensorlogic"
 repository = "https://github.com/cool-japan/tensorlogic"
-rust-version = "1.90"
 
 [workspace.dependencies]
 # External dependencies
