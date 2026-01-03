@@ -252,6 +252,7 @@ fn hybrid_kernel_example() {
 }
 
 /// Helper function to check matrix symmetry
+#[allow(clippy::needless_range_loop)]
 fn is_symmetric(matrix: &[Vec<f64>]) -> bool {
     for i in 0..matrix.len() {
         for j in 0..matrix.len() {

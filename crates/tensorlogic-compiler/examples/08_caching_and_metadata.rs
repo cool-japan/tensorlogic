@@ -64,7 +64,7 @@ fn main() {
 
     // Example 3: Multiple different expressions
     println!("\n4. Compiling multiple different expressions:");
-    let expressions = vec![
+    let expressions = [
         TLExpr::pred("lives_in", vec![Term::var("x"), Term::var("c")]),
         TLExpr::And(
             Box::new(TLExpr::pred("knows", vec![Term::var("x"), Term::var("y")])),

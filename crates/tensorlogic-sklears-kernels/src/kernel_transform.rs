@@ -268,7 +268,7 @@ impl Kernel for NormalizedKernel {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)] // Allow K for kernel matrices (mathematical notation)
+#[allow(non_snake_case, clippy::needless_range_loop)] // Allow K for kernel matrices, range loops for 2D matrix access
 mod tests {
     use super::*;
     use crate::{LinearKernel, RbfKernel, RbfKernelConfig};

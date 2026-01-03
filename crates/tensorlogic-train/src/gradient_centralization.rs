@@ -21,10 +21,11 @@ use scirs2_core::ndarray::Array2;
 use std::collections::HashMap;
 
 /// Gradient centralization strategy.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum GcStrategy {
     /// Centralize each layer's gradients independently (most common).
     /// For each parameter matrix: g = g - mean(g)
+    #[default]
     LayerWise,
 
     /// Centralize all gradients globally (experimental).
@@ -38,12 +39,6 @@ pub enum GcStrategy {
     /// Centralize per column (for weight matrices).
     /// For weight matrix: g\[:,j\] = g\[:,j\] - mean(g\[:,j\])
     PerColumn,
-}
-
-impl Default for GcStrategy {
-    fn default() -> Self {
-        Self::LayerWise
-    }
 }
 
 /// Configuration for gradient centralization.

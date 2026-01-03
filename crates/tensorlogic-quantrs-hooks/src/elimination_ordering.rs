@@ -9,9 +9,10 @@ use crate::graph::FactorGraph;
 use std::collections::{HashMap, HashSet};
 
 /// Strategy for computing variable elimination ordering.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum EliminationStrategy {
     /// Min-degree: Choose variable with fewest neighbors
+    #[default]
     MinDegree,
     /// Min-fill: Choose variable that introduces fewest new edges
     MinFill,
@@ -21,12 +22,6 @@ pub enum EliminationStrategy {
     MinWidth,
     /// Max-cardinality search: Greedy algorithm that tends to produce good orderings
     MaxCardinalitySearch,
-}
-
-impl Default for EliminationStrategy {
-    fn default() -> Self {
-        Self::MinDegree
-    }
 }
 
 /// Compute elimination ordering for variable elimination.

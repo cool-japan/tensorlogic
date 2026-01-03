@@ -10,9 +10,10 @@ use serde::{Deserialize, Serialize};
 use crate::{EinsumGraph, IrError};
 
 /// Memory layout strategy for tensors.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum LayoutStrategy {
     /// Row-major order (C-style, default for most systems)
+    #[default]
     RowMajor,
     /// Column-major order (Fortran-style, good for column operations)
     ColumnMajor,
@@ -27,12 +28,6 @@ pub enum LayoutStrategy {
     ZOrder,
     /// Hilbert curve for even better locality
     Hilbert,
-}
-
-impl Default for LayoutStrategy {
-    fn default() -> Self {
-        Self::RowMajor
-    }
 }
 
 impl LayoutStrategy {

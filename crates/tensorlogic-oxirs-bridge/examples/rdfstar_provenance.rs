@@ -245,8 +245,7 @@ fn main() -> Result<()> {
 
 fn extract_local_name(iri: &str) -> String {
     iri.split(['/', '#'])
-        .filter(|s| !s.is_empty())
-        .next_back()
+        .rfind(|s| !s.is_empty())
         .unwrap_or(iri)
         .to_string()
 }

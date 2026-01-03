@@ -366,6 +366,7 @@ impl BaumWelchLearner {
     /// # Returns
     ///
     /// Final log-likelihood
+    #[allow(clippy::needless_range_loop)]
     pub fn learn(&self, hmm: &mut SimpleHMM, observation_sequences: &[Vec<usize>]) -> Result<f64> {
         let num_states = hmm.num_states;
         let num_observations = hmm.num_observations;
@@ -456,7 +457,7 @@ impl BaumWelchLearner {
     }
 
     /// Forward-backward algorithm.
-    #[allow(clippy::type_complexity)]
+    #[allow(clippy::type_complexity, clippy::needless_range_loop)]
     fn forward_backward(
         &self,
         hmm: &SimpleHMM,

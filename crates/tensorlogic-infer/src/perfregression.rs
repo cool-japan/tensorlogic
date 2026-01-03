@@ -315,13 +315,9 @@ impl BenchmarkComparison {
         };
 
         // Perform Mann-Whitney U test if distributions are available
-        let p_value = if current.distribution.is_some() && baseline.distribution.is_some() {
-            mann_whitney_u_test(
-                current.distribution.as_ref().unwrap(),
-                baseline.distribution.as_ref().unwrap(),
-            )
-        } else {
-            None
+        let p_value = match (&current.distribution, &baseline.distribution) {
+            (Some(curr_dist), Some(base_dist)) => mann_whitney_u_test(curr_dist, base_dist),
+            _ => None,
         };
 
         let is_significant = p_value.map(|p| p < 0.05).unwrap_or(false);
