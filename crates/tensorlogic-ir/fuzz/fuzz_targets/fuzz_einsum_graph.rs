@@ -1,82 +1,90 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use tensorlogic_ir::{EinsumGraph, EinsumNode, ElemOp, OpType, ReduceOp};
+use tensorlogic_ir::{EinsumGraph, EinsumNode};
 
 fuzz_target!(|data: &[u8]| {
     if data.len() < 3 {
         return;
     }
 
-    let num_nodes = (data[0] % 10) as usize + 1; // 1-10 nodes
+    let num_operations = (data[0] % 10) as usize + 1; // 1-10 operations
     let mut graph = EinsumGraph::new();
 
-    // Create nodes with various operation types
-    for i in 0..num_nodes.min(data.len() / 3) {
+    // Create some input tensors
+    let t0 = graph.add_tensor("input0");
+    let t1 = graph.add_tensor("input1");
+    let t2 = graph.add_tensor("input2");
+
+    // Mark inputs
+    let _ = graph.add_input(t0);
+    let _ = graph.add_input(t1);
+
+    let mut last_tensor = t2;
+
+    // Create nodes with various operation types based on fuzz input
+    for i in 0..num_operations.min(data.len() / 3) {
         let idx = i * 3;
         if idx + 2 >= data.len() {
             break;
         }
 
         let op_type_byte = data[idx];
-        let node_id = format!("node_{}", i);
+        let output_tensor = graph.add_tensor(format!("t{}", i + 3));
 
-        let op_type = match op_type_byte % 5 {
-            0 => OpType::Einsum {
-                spec: "ij,jk->ik".to_string(),
-                inputs: vec!["input0".to_string(), "input1".to_string()],
-            },
-            1 => OpType::ElemUnary {
-                op: ElemOp::Neg,
-                input: "input0".to_string(),
-            },
-            2 => OpType::ElemBinary {
-                op: tensorlogic_ir::BinOp::Mul,
-                lhs: "input0".to_string(),
-                rhs: "input1".to_string(),
-            },
-            3 => OpType::Reduce {
-                op: ReduceOp::Sum,
-                input: "input0".to_string(),
-                axes: vec![0],
-            },
-            _ => OpType::Constant {
-                value: 1.0,
-                shape: vec![2, 2],
-            },
+        let node = match op_type_byte % 5 {
+            0 => {
+                // Einsum: matrix multiplication
+                EinsumNode::einsum("ij,jk->ik", vec![t0, t1], vec![output_tensor])
+            }
+            1 => {
+                // Element-wise unary: negation
+                EinsumNode::elem_unary("neg", last_tensor, output_tensor)
+            }
+            2 => {
+                // Element-wise binary: multiplication
+                EinsumNode::elem_binary("mul", t0, last_tensor, output_tensor)
+            }
+            3 => {
+                // Reduction: sum over axis 0
+                EinsumNode::reduce("sum", vec![0], last_tensor, output_tensor)
+            }
+            _ => {
+                // Element-wise binary: addition
+                EinsumNode::elem_binary("add", t1, last_tensor, output_tensor)
+            }
         };
 
-        let node = EinsumNode {
-            id: node_id.clone(),
-            op_type,
-            output_axes: vec!["i".to_string(), "j".to_string()],
-            metadata: None,
-        };
-
-        graph.add_node(node);
+        if graph.add_node(node).is_ok() {
+            last_tensor = output_tensor;
+        }
     }
 
-    // Test graph operations
-    let _ = graph.num_nodes();
-    let _ = graph.output_nodes();
+    // Mark the last tensor as output
+    let _ = graph.add_output(last_tensor);
 
-    // Test serialization
+    // Test graph operations (shouldn't panic)
+    let _ = graph.validate();
+    let _ = graph.is_empty();
+
+    // Test serialization (JSON only - no bincode per COOLJAPAN policy)
     if let Ok(serialized) = serde_json::to_string(&graph) {
         let _: Result<EinsumGraph, _> = serde_json::from_str(&serialized);
-    }
-
-    // Test bincode serialization
-    if let Ok(encoded) = bincode::encode_to_vec(&graph, bincode::config::standard()) {
-        let _: Result<(EinsumGraph, _), _> =
-            bincode::decode_from_slice(&encoded, bincode::config::standard());
     }
 
     // Test debug formatting
     let _ = format!("{:?}", graph);
 
-    // Test topological properties (shouldn't panic)
-    for node_id in graph.output_nodes() {
-        let _ = graph.get_node(&node_id);
+    // Test iteration over nodes
+    for node in &graph.nodes {
+        let _ = node.primary_output();
+        let _ = node.operation_description();
+        let _ = node.parse_einsum_spec();
+    }
+
+    // Test tensor metadata operations
+    for i in 0..graph.tensors.len() {
+        let _ = graph.get_tensor_metadata(i);
     }
 
     drop(graph);

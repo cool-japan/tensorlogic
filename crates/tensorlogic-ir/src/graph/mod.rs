@@ -31,6 +31,10 @@ pub use dot_export::{export_to_dot, export_to_dot_with_options, DotExportOptions
 pub use einsum_spec::EinsumSpec;
 pub use node::EinsumNode;
 pub use optype::OpType;
+pub use optimization::{
+    eliminate_common_subexpressions, eliminate_dead_code, optimize_graph,
+    simplify_identity_operations, OptimizationStats,
+};
 // Public API traits for graph transformation - meant for external use
 #[allow(unused_imports)]
 pub use transform::{GraphMutVisitor, GraphVisitor};

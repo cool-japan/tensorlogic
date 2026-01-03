@@ -323,10 +323,12 @@ pub use graph::tiling::{
     TileConfig, TilingResult, TilingStrategy,
 };
 pub use graph::{
-    are_graphs_equivalent, canonical_hash, canonicalize_graph, export_to_dot,
-    export_to_dot_with_options, validate_graph, DotExportOptions, EinsumGraph, EinsumNode,
-    GraphValidationStats, OpType, ValidationError, ValidationErrorKind, ValidationReport,
-    ValidationWarning, ValidationWarningKind,
+    are_graphs_equivalent, canonical_hash, canonicalize_graph,
+    eliminate_common_subexpressions, eliminate_dead_code, export_to_dot,
+    export_to_dot_with_options, optimize_graph, simplify_identity_operations, validate_graph,
+    DotExportOptions, EinsumGraph, EinsumNode, GraphValidationStats, OptimizationStats, OpType,
+    ValidationError, ValidationErrorKind, ValidationReport, ValidationWarning,
+    ValidationWarningKind,
 };
 pub use linear::{
     Capability, LinearContext, LinearResource, LinearType, LinearityChecker, Multiplicity, Usage,
