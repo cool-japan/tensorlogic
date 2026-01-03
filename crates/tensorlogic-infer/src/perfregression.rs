@@ -1074,9 +1074,6 @@ mod tests {
 
     #[test]
     fn test_statistical_significance() {
-        let mut config = BenchmarkConfig::thorough(); // Use more samples for distribution
-        config.save_distribution = true;
-
         // Create distributions with large difference
         let baseline_samples: Vec<u64> = (0..100).map(|_| 100).collect();
         let current_samples: Vec<u64> = (0..100).map(|_| 150).collect();
