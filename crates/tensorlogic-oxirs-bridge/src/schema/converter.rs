@@ -309,7 +309,7 @@ impl SchemaAnalyzer {
 /// # Arguments
 ///
 /// * `table` - The SymbolTable to export
-/// * `base_iri` - Base IRI for generated resources (e.g., "http://example.org/")
+/// * `base_iri` - Base IRI for generated resources (e.g., `"http://example.org/"`)
 ///
 /// # Returns
 ///

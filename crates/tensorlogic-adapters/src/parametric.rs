@@ -25,7 +25,7 @@ use crate::error::AdapterError;
 pub struct ParametricType {
     /// The type constructor name (e.g., "List", "Option", "Pair")
     pub constructor: String,
-    /// The type parameters (e.g., ["Person"] for List<Person>)
+    /// The type parameters (e.g., `["Person"]` for `List<Person>`)
     pub parameters: Vec<TypeParameter>,
 }
 
@@ -34,7 +34,7 @@ pub struct ParametricType {
 pub enum TypeParameter {
     /// A concrete type name (e.g., "Person", "Int")
     Concrete(String),
-    /// A nested parametric type (e.g., List<Option<Person>>)
+    /// A nested parametric type (e.g., `List<Option<Person>>`)
     Parametric(Box<ParametricType>),
 }
 
@@ -47,12 +47,12 @@ impl ParametricType {
         }
     }
 
-    /// Creates a List<T> parametric type.
+    /// Creates a `List<T>` parametric type.
     pub fn list(inner: TypeParameter) -> Self {
         ParametricType::new("List", vec![inner])
     }
 
-    /// Creates an Option<T> parametric type.
+    /// Creates an `Option<T>` parametric type.
     pub fn option(inner: TypeParameter) -> Self {
         ParametricType::new("Option", vec![inner])
     }

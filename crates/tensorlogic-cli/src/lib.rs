@@ -45,7 +45,7 @@
 //! - [`benchmark`]: Performance benchmarking utilities
 //! - [`analysis`]: Graph analysis and metrics
 //! - [`conversion`]: Format conversion utilities
-//! - [`config`]: Configuration management
+//! - `config`: Configuration management (internal)
 //! - [`output`]: Output formatting and colors
 //!
 //! # Library Mode Benefits

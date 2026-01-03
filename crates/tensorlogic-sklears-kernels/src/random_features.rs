@@ -284,7 +284,7 @@ impl RandomFourierFeatures {
 
     /// Approximate the kernel matrix for a set of data points.
     ///
-    /// K[i,j] ≈ z(x_i)^T z(x_j)
+    /// `K[i,j] ≈ z(x_i)^T z(x_j)`
     pub fn approximate_kernel_matrix(&self, data: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
         let features = self.transform_batch(data)?;
         let n = features.len();

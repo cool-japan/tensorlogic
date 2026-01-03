@@ -24,7 +24,7 @@ pub trait Kernel: Send + Sync {
     /// * `inputs` - Slice of input feature vectors
     ///
     /// # Returns
-    /// Kernel matrix K where K[i,j] = kernel(inputs[i], inputs[j])
+    /// Kernel matrix K where `K[i,j] = kernel(inputs[i], inputs[j])`
     fn compute_matrix(&self, inputs: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
         let n = inputs.len();
         let mut matrix = vec![vec![0.0; n]; n];

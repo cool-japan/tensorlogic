@@ -616,7 +616,7 @@ impl ForgetfulKernelMatrix {
 
     /// Get the weighted kernel matrix.
     ///
-    /// Each entry K[i,j] is multiplied by sqrt(w_i * w_j) to maintain PSD property.
+    /// Each entry `K[i,j]` is multiplied by `sqrt(w_i * w_j)` to maintain PSD property.
     pub fn get_weighted_matrix(&self) -> Vec<Vec<f64>> {
         let n = self.matrix.len();
         let mut weighted = vec![vec![0.0; n]; n];

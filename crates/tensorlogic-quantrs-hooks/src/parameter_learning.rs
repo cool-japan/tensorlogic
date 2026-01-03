@@ -37,7 +37,7 @@ pub struct SimpleHMM {
     pub num_states: usize,
     /// Number of observable symbols
     pub num_observations: usize,
-    /// Initial state distribution π: [num_states]
+    /// Initial state distribution π: `[num_states]`
     pub initial_distribution: Array1<f64>,
     /// Transition probabilities A: [from_state, to_state]
     pub transition_probabilities: Array2<f64>,

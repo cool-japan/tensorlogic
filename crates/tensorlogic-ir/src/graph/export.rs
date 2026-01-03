@@ -101,7 +101,7 @@ impl Default for TorchScriptExportOptions {
 /// let onnx = export_to_onnx_text(&graph).unwrap();
 /// assert!(onnx.contains("ir_version"));
 /// assert!(onnx.contains("Add"));
-/// ```no_run
+/// ```
 pub fn export_to_onnx_text(graph: &EinsumGraph) -> Result<String, IrError> {
     export_to_onnx_text_with_options(graph, &OnnxExportOptions::default())
 }
@@ -289,7 +289,7 @@ fn export_node_to_onnx(
 ///
 /// let script = export_to_torchscript_text(&graph).unwrap();
 /// assert!(script.contains("torch.einsum"));
-/// ```no_run
+/// ```
 pub fn export_to_torchscript_text(graph: &EinsumGraph) -> Result<String, IrError> {
     export_to_torchscript_text_with_options(graph, &TorchScriptExportOptions::default())
 }

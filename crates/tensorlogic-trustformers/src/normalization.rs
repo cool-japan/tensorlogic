@@ -101,12 +101,12 @@ impl LayerNorm {
     /// Build einsum graph for layer normalization
     ///
     /// Input tensors:
-    /// - 0: x (input) [batch, seq_len, d_model]
-    /// - 1: gamma (scale) [d_model] (if elementwise_affine)
-    /// - 2: beta (shift) [d_model] (if elementwise_affine)
+    /// - 0: x (input) `[batch, seq_len, d_model]`
+    /// - 1: gamma (scale) `[d_model]` (if elementwise_affine)
+    /// - 2: beta (shift) `[d_model]` (if elementwise_affine)
     ///
     /// Output tensors:
-    /// - output: [batch, seq_len, d_model] (normalized)
+    /// - output: `[batch, seq_len, d_model]` (normalized)
     pub fn build_layernorm_graph(&self, graph: &mut EinsumGraph) -> Result<Vec<usize>> {
         // Step 1: Compute mean over feature dimension
         // mean = reduce_mean(x, axis=-1, keepdims=True)
@@ -199,11 +199,11 @@ impl RMSNorm {
     /// Build einsum graph for RMS normalization
     ///
     /// Input tensors:
-    /// - 0: x (input) [batch, seq_len, d_model]
-    /// - 1: gamma (scale) [d_model] (if elementwise_affine)
+    /// - 0: x (input) `[batch, seq_len, d_model]`
+    /// - 1: gamma (scale) `[d_model]` (if elementwise_affine)
     ///
     /// Output tensors:
-    /// - output: [batch, seq_len, d_model] (normalized)
+    /// - output: `[batch, seq_len, d_model]` (normalized)
     pub fn build_rmsnorm_graph(&self, graph: &mut EinsumGraph) -> Result<Vec<usize>> {
         // Step 1: Compute x^2
         let squared_tensor = graph.add_tensor("rms_squared");

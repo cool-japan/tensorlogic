@@ -468,7 +468,7 @@ impl RelativePositionEncoding {
 /// information without adding extra parameters.
 ///
 /// Reference: "RoFormer: Enhanced Transformer with Rotary Position Embedding"
-/// https://arxiv.org/abs/2104.09864
+/// <https://arxiv.org/abs/2104.09864>
 #[derive(Clone, Debug)]
 pub struct RotaryPositionEncoding {
     /// Configuration
@@ -576,7 +576,7 @@ impl RotaryPositionEncoding {
 /// This allows extrapolation to longer sequences than seen during training.
 ///
 /// Reference: "Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation"
-/// https://arxiv.org/abs/2108.12409
+/// <https://arxiv.org/abs/2108.12409>
 #[derive(Clone, Debug)]
 pub struct AlibiPositionEncoding {
     /// Configuration
@@ -600,16 +600,16 @@ impl AlibiPositionEncoding {
     /// Build einsum graph for ALiBi bias
     ///
     /// ALiBi adds linear biases to attention scores based on query-key distance:
-    /// bias(i, j) = -m * |i - j|
+    /// `bias(i, j) = -m * |i - j|`
     /// where m is a head-specific slope
     ///
     /// Input tensors:
-    /// - 0: attention_scores [batch, n_heads, seq_len, seq_len]
-    /// - 1: alibi_slopes [n_heads] (precomputed slopes, one per head)
-    /// - 2: distance_matrix [seq_len, seq_len] (|i - j| for all positions)
+    /// - 0: attention_scores `[batch, n_heads, seq_len, seq_len]`
+    /// - 1: alibi_slopes `[n_heads]` (precomputed slopes, one per head)
+    /// - 2: distance_matrix `[seq_len, seq_len]` (`|i - j|` for all positions)
     ///
     /// Output tensors:
-    /// - output: [batch, n_heads, seq_len, seq_len] (scores with ALiBi bias)
+    /// - output: `[batch, n_heads, seq_len, seq_len]` (scores with ALiBi bias)
     pub fn build_bias_graph(&self, graph: &mut EinsumGraph) -> Result<Vec<usize>> {
         // Compute -m * |i - j| for each head
         // slopes: [n_heads, 1, 1]

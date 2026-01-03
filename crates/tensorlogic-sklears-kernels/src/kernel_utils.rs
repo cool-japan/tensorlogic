@@ -161,7 +161,7 @@ pub fn distances_from_kernel(kernel_matrix: &[Vec<f64>]) -> Result<Vec<Vec<f64>>
 ///
 /// A valid kernel matrix must be:
 /// 1. Square
-/// 2. Symmetric: K[i,j] = K[j,i]
+/// 2. Symmetric: `K[i,j] = K[j,i]`
 /// 3. Positive semi-definite (all eigenvalues ≥ 0)
 ///
 /// Note: This function only checks symmetry. Full PSD checking requires
@@ -283,7 +283,7 @@ pub fn estimate_kernel_rank(kernel_matrix: &[Vec<f64>], variance_threshold: f64)
 /// * `kernel` - Kernel function
 ///
 /// # Returns
-/// * Kernel matrix K where K[i][j] = kernel(data[i], data[j])
+/// * Kernel matrix K where `K[i][j] = kernel(data[i], data[j])`
 pub fn compute_gram_matrix(data: &[Vec<f64>], kernel: &dyn Kernel) -> Result<Vec<Vec<f64>>> {
     kernel.compute_matrix(data)
 }

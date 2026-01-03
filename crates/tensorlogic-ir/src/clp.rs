@@ -324,7 +324,7 @@ pub enum GlobalConstraintType {
     AllDifferent,
     /// Cumulative resource constraint (scheduling)
     Cumulative,
-    /// Element constraint: arr[index] = value
+    /// Element constraint: `arr[index] = value`
     Element,
     /// Cardinality constraint: count occurrences
     Cardinality,

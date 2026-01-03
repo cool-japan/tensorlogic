@@ -279,7 +279,7 @@ impl KernelPCA {
 
 /// Center a kernel matrix in place.
 ///
-/// K_c[i,j] = K[i,j] - mean(K[i,:]) - mean(K[:,j]) + mean(K)
+/// `K_c[i,j] = K[i,j] - mean(K[i,:]) - mean(K[:,j]) + mean(K)`
 pub fn center_kernel_matrix(matrix: &mut [Vec<f64>]) {
     let n = matrix.len();
     if n == 0 {

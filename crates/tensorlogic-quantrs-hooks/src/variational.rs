@@ -432,7 +432,7 @@ impl BetheApproximation {
 /// Uses a convex combination of spanning trees to provide an upper bound
 /// on the log partition function. More robust than standard BP for loopy graphs.
 ///
-/// Messages are reweighted by edge appearance probabilities ρ_e ∈ [0,1].
+/// Messages are reweighted by edge appearance probabilities ρ_e ∈ `[0,1]`.
 pub struct TreeReweightedBP {
     /// Maximum iterations
     pub max_iterations: usize,

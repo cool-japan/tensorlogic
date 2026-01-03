@@ -14,7 +14,7 @@ pub struct DomainInfo {
     pub description: Option<String>,
     /// Rich metadata including provenance, documentation, tags
     pub metadata: Option<Metadata>,
-    /// Parametric type definition (e.g., List<T>)
+    /// Parametric type definition (e.g., `List<T>`)
     pub parametric_type: Option<ParametricType>,
 }
 
