@@ -41,7 +41,10 @@ impl QuantizationType {
 
     /// Check if this is a floating-point quantization.
     pub fn is_float(&self) -> bool {
-        matches!(self, QuantizationType::Fp16 | QuantizationType::BFloat16 | QuantizationType::None)
+        matches!(
+            self,
+            QuantizationType::Fp16 | QuantizationType::BFloat16 | QuantizationType::None
+        )
     }
 
     /// Check if this is an integer quantization.
@@ -481,7 +484,12 @@ mod tests {
 
         // Check that dequantized values are close to original
         for (orig, deq) in tensor.iter().zip(dequantized.iter()) {
-            assert!((orig - deq).abs() < 0.1, "Original: {}, Dequantized: {}", orig, deq);
+            assert!(
+                (orig - deq).abs() < 0.1,
+                "Original: {}, Dequantized: {}",
+                orig,
+                deq
+            );
         }
     }
 

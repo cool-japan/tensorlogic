@@ -12,7 +12,9 @@ use tensorlogic_scirs_backend::Scirs2Exec;
 
 fn create_test_tensor(shape: &[usize]) -> scirs2_core::ndarray::ArrayD<f64> {
     let size = shape.iter().product();
-    let data: Vec<f64> = (0..size).map(|i| if i % 2 == 0 { 1.0 } else { 0.0 }).collect();
+    let data: Vec<f64> = (0..size)
+        .map(|i| if i % 2 == 0 { 1.0 } else { 0.0 })
+        .collect();
     scirs2_core::ndarray::ArrayD::from_shape_vec(scirs2_core::ndarray::IxDyn(shape), data).unwrap()
 }
 
@@ -204,10 +206,7 @@ fn bench_graph_scaling(c: &mut Criterion) {
                 // Build expression with multiple ANDs
                 let mut expr = TLExpr::pred("P0", vec![Term::var("x")]);
                 for i in 1..num_ops {
-                    expr = TLExpr::and(
-                        expr,
-                        TLExpr::pred(format!("P{}", i), vec![Term::var("x")]),
-                    );
+                    expr = TLExpr::and(expr, TLExpr::pred(format!("P{}", i), vec![Term::var("x")]));
                 }
                 let graph = compile_to_einsum(&expr).unwrap();
 

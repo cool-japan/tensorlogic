@@ -24,13 +24,10 @@ impl Kernel for PeriodicKernel {
         }
         let dist = Self::euclidean_distance(x, y);
         let sin_term = (std::f64::consts::PI * dist / self.period).sin();
-        let result = (-2.0 * sin_term * sin_term
-            / (self.length_scale * self.length_scale))
-            .exp();
+        let result = (-2.0 * sin_term * sin_term / (self.length_scale * self.length_scale)).exp();
         Ok(result)
     }
     fn name(&self) -> &str {
         "Periodic"
     }
 }
-

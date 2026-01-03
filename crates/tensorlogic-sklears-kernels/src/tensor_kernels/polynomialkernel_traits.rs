@@ -30,4 +30,3 @@ impl Kernel for PolynomialKernel {
         "Polynomial"
     }
 }
-

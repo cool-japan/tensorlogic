@@ -30,11 +30,9 @@ impl Kernel for HistogramIntersectionKernel {
             });
         }
         if x.iter().any(|&v| v < 0.0) || y.iter().any(|&v| v < 0.0) {
-            return Err(
-                KernelError::ComputationError(
-                    "Histogram features must be non-negative".to_string(),
-                ),
-            );
+            return Err(KernelError::ComputationError(
+                "Histogram features must be non-negative".to_string(),
+            ));
         }
         let result = Self::intersection(x, y);
         Ok(result)
@@ -43,4 +41,3 @@ impl Kernel for HistogramIntersectionKernel {
         "HistogramIntersection"
     }
 }
-

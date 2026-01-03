@@ -477,11 +477,7 @@ impl GraphQLConverter {
     }
 
     /// Convert field directives to TensorLogic constraint expressions
-    pub fn directives_to_constraints(
-        &self,
-        type_name: &str,
-        field: &GraphQLField,
-    ) -> Vec<TLExpr> {
+    pub fn directives_to_constraints(&self, type_name: &str, field: &GraphQLField) -> Vec<TLExpr> {
         let mut constraints = Vec::new();
         let field_var = format!("{}_{}", type_name, field.name);
 
@@ -862,7 +858,8 @@ mod tests {
     #[test]
     fn test_parse_directive_string_argument() {
         let converter = GraphQLConverter::new();
-        let directives = converter.parse_directives(r#"email: String @constraint(pattern: "^[a-z]+$")"#);
+        let directives =
+            converter.parse_directives(r#"email: String @constraint(pattern: "^[a-z]+$")"#);
 
         assert_eq!(directives.len(), 1);
         assert_eq!(
@@ -874,7 +871,8 @@ mod tests {
     #[test]
     fn test_parse_multiple_directives() {
         let converter = GraphQLConverter::new();
-        let directives = converter.parse_directives(r#"name: String @length(min: 3, max: 50) @pattern(value: "[a-z]+")"#);
+        let directives = converter
+            .parse_directives(r#"name: String @length(min: 3, max: 50) @pattern(value: "[a-z]+")"#);
 
         assert_eq!(directives.len(), 2);
         assert_eq!(directives[0].name, "length");
@@ -1027,7 +1025,10 @@ mod tests {
         let converter = GraphQLConverter::new();
 
         let mut directive_args = HashMap::new();
-        directive_args.insert("format".to_string(), DirectiveValue::String("email".to_string()));
+        directive_args.insert(
+            "format".to_string(),
+            DirectiveValue::String("email".to_string()),
+        );
 
         let directive = GraphQLDirective {
             name: "constraint".to_string(),

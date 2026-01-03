@@ -5,7 +5,6 @@
 use crate::error::{KernelError, Result};
 use crate::types::RbfKernelConfig;
 
-
 /// Rational Quadratic kernel: K(x, y) = (1 + ||x-y||² / (2 * alpha * l²))^(-alpha)
 ///
 /// Can be seen as a scale mixture of RBF kernels with different length scales.
@@ -50,7 +49,10 @@ impl RationalQuadraticKernel {
                 reason: "alpha must be positive".to_string(),
             });
         }
-        Ok(Self { length_scale, alpha })
+        Ok(Self {
+            length_scale,
+            alpha,
+        })
     }
     /// Get the length scale parameter
     pub fn length_scale(&self) -> f64 {
@@ -77,11 +79,7 @@ impl RationalQuadraticKernel {
     /// let y = vec![3.0, 4.0];
     /// let (value, grad_l) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
     /// ```
-    pub fn compute_with_length_scale_gradient(
-        &self,
-        x: &[f64],
-        y: &[f64],
-    ) -> Result<(f64, f64)> {
+    pub fn compute_with_length_scale_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
         if x.len() != y.len() {
             return Err(KernelError::DimensionMismatch {
                 expected: vec![x.len()],
@@ -94,17 +92,17 @@ impl RationalQuadraticKernel {
         let term = 1.0 + sq_dist / (2.0 * self.alpha * l_sq);
         let k = term.powf(-self.alpha);
         let denom = self.length_scale * (2.0 * self.alpha * l_sq + sq_dist);
-        let grad_l = if denom.abs() > 1e-10 { k * sq_dist / denom } else { 0.0 };
+        let grad_l = if denom.abs() > 1e-10 {
+            k * sq_dist / denom
+        } else {
+            0.0
+        };
         Ok((k, grad_l))
     }
     /// Compute the kernel value and gradient with respect to alpha.
     ///
     /// Returns (K(x,y), dK/d_alpha) where alpha is the scale mixture parameter.
-    pub fn compute_with_alpha_gradient(
-        &self,
-        x: &[f64],
-        y: &[f64],
-    ) -> Result<(f64, f64)> {
+    pub fn compute_with_alpha_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
         if x.len() != y.len() {
             return Err(KernelError::DimensionMismatch {
                 expected: vec![x.len()],
@@ -123,11 +121,7 @@ impl RationalQuadraticKernel {
     /// Compute the kernel value and all gradients (length_scale and alpha).
     ///
     /// Returns (K(x,y), dK/dl, dK/d_alpha).
-    pub fn compute_with_all_gradients(
-        &self,
-        x: &[f64],
-        y: &[f64],
-    ) -> Result<(f64, f64, f64)> {
+    pub fn compute_with_all_gradients(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64, f64)> {
         if x.len() != y.len() {
             return Err(KernelError::DimensionMismatch {
                 expected: vec![x.len()],
@@ -141,7 +135,11 @@ impl RationalQuadraticKernel {
         let term = 1.0 + u;
         let k = term.powf(-self.alpha);
         let denom = self.length_scale * (2.0 * self.alpha * l_sq + sq_dist);
-        let grad_l = if denom.abs() > 1e-10 { k * sq_dist / denom } else { 0.0 };
+        let grad_l = if denom.abs() > 1e-10 {
+            k * sq_dist / denom
+        } else {
+            0.0
+        };
         let grad_alpha = k * (u / term - term.ln());
         Ok((k, grad_l, grad_alpha))
     }
@@ -218,7 +216,11 @@ impl MaternKernel {
     }
     /// Compute Euclidean distance
     pub(super) fn euclidean_distance(x: &[f64], y: &[f64]) -> f64 {
-        x.iter().zip(y.iter()).map(|(a, b)| (a - b) * (a - b)).sum::<f64>().sqrt()
+        x.iter()
+            .zip(y.iter())
+            .map(|(a, b)| (a - b) * (a - b))
+            .sum::<f64>()
+            .sqrt()
     }
     /// Compute the kernel value and gradient with respect to length_scale.
     ///
@@ -234,11 +236,7 @@ impl MaternKernel {
     /// let y = vec![3.0, 4.0];
     /// let (value, grad_l) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
     /// ```
-    pub fn compute_with_length_scale_gradient(
-        &self,
-        x: &[f64],
-        y: &[f64],
-    ) -> Result<(f64, f64)> {
+    pub fn compute_with_length_scale_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
         if x.len() != y.len() {
             return Err(KernelError::DimensionMismatch {
                 expected: vec![x.len()],
@@ -383,11 +381,7 @@ impl LaplacianKernel {
     /// Compute the kernel gradient with respect to sigma (where gamma = 1/sigma).
     ///
     /// Returns (K(x,y), dK/d_sigma) for length-scale parameterization.
-    pub fn compute_with_sigma_gradient(
-        &self,
-        x: &[f64],
-        y: &[f64],
-    ) -> Result<(f64, f64)> {
+    pub fn compute_with_sigma_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
         if x.len() != y.len() {
             return Err(KernelError::DimensionMismatch {
                 expected: vec![x.len()],
@@ -462,11 +456,7 @@ impl RbfKernel {
     /// Compute the kernel gradient with respect to length scale (sigma = 1/sqrt(2*gamma)).
     ///
     /// This is useful when parameterizing in terms of length scale instead of gamma.
-    pub fn compute_with_length_scale_gradient(
-        &self,
-        x: &[f64],
-        y: &[f64],
-    ) -> Result<(f64, f64)> {
+    pub fn compute_with_length_scale_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
         if x.len() != y.len() {
             return Err(KernelError::DimensionMismatch {
                 expected: vec![x.len()],
@@ -602,11 +592,7 @@ impl PolynomialKernel {
     /// let y = vec![3.0, 4.0];
     /// let (value, grad_c) = kernel.compute_with_constant_gradient(&x, &y).unwrap();
     /// ```
-    pub fn compute_with_constant_gradient(
-        &self,
-        x: &[f64],
-        y: &[f64],
-    ) -> Result<(f64, f64)> {
+    pub fn compute_with_constant_gradient(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64)> {
         if x.len() != y.len() {
             return Err(KernelError::DimensionMismatch {
                 expected: vec![x.len()],
@@ -630,11 +616,7 @@ impl PolynomialKernel {
     /// - dK/dd is the gradient w.r.t. degree (treating degree as continuous)
     ///
     /// Note: dK/dd = K * ln(dot + c), useful for continuous degree optimization.
-    pub fn compute_with_all_gradients(
-        &self,
-        x: &[f64],
-        y: &[f64],
-    ) -> Result<(f64, f64, f64)> {
+    pub fn compute_with_all_gradients(&self, x: &[f64], y: &[f64]) -> Result<(f64, f64, f64)> {
         if x.len() != y.len() {
             return Err(KernelError::DimensionMismatch {
                 expected: vec![x.len()],
@@ -703,7 +685,10 @@ impl PeriodicKernel {
                 reason: "length_scale must be positive".to_string(),
             });
         }
-        Ok(Self { period, length_scale })
+        Ok(Self {
+            period,
+            length_scale,
+        })
     }
     /// Get the period parameter
     pub fn period(&self) -> f64 {
@@ -715,7 +700,11 @@ impl PeriodicKernel {
     }
     /// Compute Euclidean distance
     pub(super) fn euclidean_distance(x: &[f64], y: &[f64]) -> f64 {
-        x.iter().zip(y.iter()).map(|(a, b)| (a - b) * (a - b)).sum::<f64>().sqrt()
+        x.iter()
+            .zip(y.iter())
+            .map(|(a, b)| (a - b) * (a - b))
+            .sum::<f64>()
+            .sqrt()
     }
 }
 /// Chi-squared kernel: K(x, y) = exp(-gamma * Σ((x_i - y_i)² / (x_i + y_i)))

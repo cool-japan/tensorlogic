@@ -64,7 +64,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tl_constraints = torsh_to_tl(&torsh_output)?;
 
     println!("  TensorLogic tensor shape: {:?}", tl_constraints.shape());
-    println!("  TensorLogic data: {:?}\n", tl_constraints.iter().copied().collect::<Vec<_>>());
+    println!(
+        "  TensorLogic data: {:?}\n",
+        tl_constraints.iter().copied().collect::<Vec<_>>()
+    );
 
     // Check constraint: all values should be > 0.5 (thresholding)
     let satisfies_constraint = tl_constraints.iter().all(|&x| x > 0.5);
@@ -85,7 +88,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let torsh_intermediate = tl_to_torsh(&original, DeviceType::Cpu)?;
     let roundtrip = torsh_to_tl(&torsh_intermediate)?;
 
-    println!("  After roundtrip: {:?}", roundtrip.iter().copied().collect::<Vec<_>>());
+    println!(
+        "  After roundtrip: {:?}",
+        roundtrip.iter().copied().collect::<Vec<_>>()
+    );
 
     // Verify lossless conversion
     let original_vec: Vec<f64> = original.iter().copied().collect();
@@ -123,7 +129,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Convert back to TensorLogic for logic integration
     let tl_processed = torsh_f32_to_tl(&processed)?;
 
-    println!("  Back to TensorLogic: {:?}\n", tl_processed.iter().copied().collect::<Vec<_>>());
+    println!(
+        "  Back to TensorLogic: {:?}\n",
+        tl_processed.iter().copied().collect::<Vec<_>>()
+    );
 
     // ============================================================
     // Summary

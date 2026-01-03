@@ -227,7 +227,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let avg_violation_loss = total_violation_loss / num_samples as f32;
 
-    println!("  Average constraint violation loss: {:.4}", avg_violation_loss);
+    println!(
+        "  Average constraint violation loss: {:.4}",
+        avg_violation_loss
+    );
     println!("  (This can be added to training loss to enforce constraints)\n");
 
     // ============================================================
@@ -235,9 +238,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ============================================================
     println!("🎉 Constrained Neural Optimization Summary:");
     println!("  ✅ Defined logic constraints (mutual exclusivity, hierarchy)");
-    println!("  ✅ Detected {} constraint violations in raw predictions", violations.len());
+    println!(
+        "  ✅ Detected {} constraint violations in raw predictions",
+        violations.len()
+    );
     println!("  ✅ Applied constraint-guided corrections");
-    println!("  ✅ Reduced violations from {} → {}", violations.len(), new_violations);
+    println!(
+        "  ✅ Reduced violations from {} → {}",
+        violations.len(),
+        new_violations
+    );
     println!("  ✅ Computed violation loss for gradient-based training");
     println!();
 

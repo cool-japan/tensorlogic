@@ -33,4 +33,3 @@ impl Kernel for SigmoidKernel {
         false
     }
 }
-

@@ -49,10 +49,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         0.0, 1.0, 0.0, // Charlie -> Bob (symmetric)
     ];
 
-    let friend_of_matrix = ArrayD::from_shape_vec(vec![num_entities, num_entities], friend_of_data)?;
+    let friend_of_matrix =
+        ArrayD::from_shape_vec(vec![num_entities, num_entities], friend_of_data)?;
 
     println!("  Initial friendOf matrix:");
-    println!("  {:?}\n", friend_of_matrix.iter().copied().collect::<Vec<_>>());
+    println!(
+        "  {:?}\n",
+        friend_of_matrix.iter().copied().collect::<Vec<_>>()
+    );
 
     // Apply transitivity rule: A·B where A and B are adjacency matrices
     // This computes 2-hop friendships
@@ -80,7 +84,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     println!("  2-hop friendships (transitivity):");
-    println!("  {:?}\n", friend_of_2hop.iter().copied().collect::<Vec<_>>());
+    println!(
+        "  {:?}\n",
+        friend_of_2hop.iter().copied().collect::<Vec<_>>()
+    );
 
     // Combine direct and transitive friendships
     let combined_friends = {
@@ -100,7 +107,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     println!("  Combined friendships (direct + transitive):");
-    println!("  {:?}\n", combined_friends.iter().copied().collect::<Vec<_>>());
+    println!(
+        "  {:?}\n",
+        combined_friends.iter().copied().collect::<Vec<_>>()
+    );
 
     // ============================================================
     // Part 2: Neural Embeddings for Entity Similarity
@@ -111,7 +121,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Convert to ToRSh tensor
     let torsh_friends = tl_to_torsh_f32(&combined_friends, DeviceType::Cpu)?;
 
-    println!("  ToRSh friendship tensor: {:?}", torsh_friends.shape().dims());
+    println!(
+        "  ToRSh friendship tensor: {:?}",
+        torsh_friends.shape().dims()
+    );
 
     // Simulate entity embeddings (3 entities × 4 dimensions)
     // In practice, these would be learned by a neural network
@@ -124,7 +137,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let embeddings_tensor = Tensor::from_data(entity_embeddings, vec![3, 4], DeviceType::Cpu)?;
 
-    println!("  Entity embeddings shape: {:?}", embeddings_tensor.shape().dims());
+    println!(
+        "  Entity embeddings shape: {:?}",
+        embeddings_tensor.shape().dims()
+    );
 
     // Compute embedding similarity (dot product)
     // This gives us neural scores for potential friendships
@@ -220,7 +236,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎉 Neurosymbolic Knowledge Graph Reasoning Summary:");
     println!("  ✅ Applied symbolic logic rules (transitivity, symmetry)");
     println!("  ✅ Computed neural embedding similarities");
-    println!("  ✅ Combined logic and neural scores (α={}, 1-α={})", alpha, 1.0 - alpha);
+    println!(
+        "  ✅ Combined logic and neural scores (α={}, 1-α={})",
+        alpha,
+        1.0 - alpha
+    );
     println!("  ✅ Made hybrid predictions with constraint checking");
     println!();
 

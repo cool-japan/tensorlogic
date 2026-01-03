@@ -31,7 +31,11 @@ pub fn generate_text_report(
 ) -> Result<()> {
     println!("{}", "=== Benchmark Comparison Report ===".bold());
     println!();
-    println!("Baseline: {} ({})", baseline.name.cyan(), baseline.created_at);
+    println!(
+        "Baseline: {} ({})",
+        baseline.name.cyan(),
+        baseline.created_at
+    );
     if let Some(commit) = &baseline.commit {
         println!("Baseline commit: {}", commit);
     }
@@ -100,7 +104,9 @@ pub fn generate_text_report(
         } else {
             1
         };
-        a_priority.cmp(&b_priority).then_with(|| a.name.cmp(&b.name))
+        a_priority
+            .cmp(&b_priority)
+            .then_with(|| a.name.cmp(&b.name))
     });
 
     let table = Table::new(rows).with(Style::modern()).to_string();
@@ -139,7 +145,10 @@ pub fn generate_text_report(
     }
 
     if !missing_current.is_empty() {
-        println!("{}", "Missing benchmarks (in baseline but not current):".red());
+        println!(
+            "{}",
+            "Missing benchmarks (in baseline but not current):".red()
+        );
         for name in missing_current {
             println!("  - {}", name);
         }
@@ -276,10 +285,7 @@ pub fn generate_html_report(
 pub fn show_stats(name: &str, criterion_dir: &Path) -> Result<()> {
     let results = parser::parse_criterion_output(criterion_dir)?;
 
-    let matching: Vec<_> = results
-        .iter()
-        .filter(|r| r.name == name)
-        .collect();
+    let matching: Vec<_> = results.iter().filter(|r| r.name == name).collect();
 
     if matching.is_empty() {
         anyhow::bail!("No benchmark found with name: {}", name);
@@ -313,8 +319,7 @@ pub fn show_stats(name: &str, criterion_dir: &Path) -> Result<()> {
         println!("    Point estimate: {:.2} ns", est.median.point_estimate);
         println!(
             "    95% CI: [{:.2}, {:.2}] ns",
-            est.median.confidence_interval.lower_bound,
-            est.median.confidence_interval.upper_bound
+            est.median.confidence_interval.lower_bound, est.median.confidence_interval.upper_bound
         );
         println!();
 

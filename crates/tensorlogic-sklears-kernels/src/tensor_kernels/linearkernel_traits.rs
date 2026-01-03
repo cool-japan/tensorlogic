@@ -35,4 +35,3 @@ impl Kernel for LinearKernel {
         "Linear"
     }
 }
-

@@ -83,9 +83,8 @@ impl GpuCapability {
         let memory_bandwidth_gbs = estimate_memory_bandwidth(&info.name, info.memory_mb);
 
         // Estimate CUDA cores based on compute capability
-        let cuda_cores = compute_capability.and_then(|(major, minor)| {
-            estimate_cuda_cores(&info.name, major, minor)
-        });
+        let cuda_cores = compute_capability
+            .and_then(|(major, minor)| estimate_cuda_cores(&info.name, major, minor));
 
         Self {
             device: Device::cuda(info.index),
@@ -223,7 +222,8 @@ pub fn assess_gpu_readiness() -> GpuReadinessReport {
         ));
 
         if best.has_tensor_cores {
-            recommendation_reasons.push("GPU has Tensor Cores for accelerated matrix operations".to_string());
+            recommendation_reasons
+                .push("GPU has Tensor Cores for accelerated matrix operations".to_string());
         }
 
         recommendation_reasons.push(format!(
@@ -325,7 +325,10 @@ pub fn generate_recommendations(
     let mut recommendations = Vec::new();
 
     if !report.gpu_available {
-        recommendations.push("Consider using SIMD optimizations with the 'simd' feature for CPU acceleration".to_string());
+        recommendations.push(
+            "Consider using SIMD optimizations with the 'simd' feature for CPU acceleration"
+                .to_string(),
+        );
         recommendations.push("Use the 'parallel' feature for multi-threaded execution".to_string());
         return recommendations;
     }
@@ -334,16 +337,21 @@ pub fn generate_recommendations(
 
     // GPU-specific recommendations
     if best_gpu.has_tensor_cores {
-        recommendations.push("Enable FP16 mixed precision to utilize Tensor Cores (future feature)".to_string());
+        recommendations.push(
+            "Enable FP16 mixed precision to utilize Tensor Cores (future feature)".to_string(),
+        );
     }
 
     if best_gpu.supports_int8 {
-        recommendations.push("Consider INT8 quantization for inference workloads (future feature)".to_string());
+        recommendations.push(
+            "Consider INT8 quantization for inference workloads (future feature)".to_string(),
+        );
     }
 
     // Memory recommendations
     if best_gpu.memory_mb < 8192 {
-        recommendations.push("GPU has <8GB memory: Use gradient checkpointing for training".to_string());
+        recommendations
+            .push("GPU has <8GB memory: Use gradient checkpointing for training".to_string());
     } else if best_gpu.memory_mb >= 40960 {
         recommendations.push("Large GPU memory available: Can use larger batch sizes".to_string());
     }
@@ -357,7 +365,8 @@ pub fn generate_recommendations(
         ));
 
         if wl.compute_intensity < 10.0 {
-            recommendations.push("Low compute intensity: Memory bandwidth is bottleneck".to_string());
+            recommendations
+                .push("Low compute intensity: Memory bandwidth is bottleneck".to_string());
         } else {
             recommendations.push("High compute intensity: Good for GPU acceleration".to_string());
         }
@@ -373,14 +382,20 @@ mod tests {
     #[test]
     fn test_estimate_memory_bandwidth() {
         assert_eq!(estimate_memory_bandwidth("NVIDIA A100", 40960), 1555.0);
-        assert_eq!(estimate_memory_bandwidth("NVIDIA GeForce RTX 3090", 24576), 936.0);
+        assert_eq!(
+            estimate_memory_bandwidth("NVIDIA GeForce RTX 3090", 24576),
+            936.0
+        );
         assert!(estimate_memory_bandwidth("Unknown GPU", 16384) > 0.0);
     }
 
     #[test]
     fn test_estimate_cuda_cores() {
         assert_eq!(estimate_cuda_cores("NVIDIA A100", 8, 0), Some(6912));
-        assert_eq!(estimate_cuda_cores("NVIDIA GeForce RTX 3090", 8, 6), Some(10496));
+        assert_eq!(
+            estimate_cuda_cores("NVIDIA GeForce RTX 3090", 8, 6),
+            Some(10496)
+        );
     }
 
     #[test]

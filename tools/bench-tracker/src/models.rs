@@ -114,11 +114,7 @@ pub struct ComparisonResult {
 }
 
 impl ComparisonResult {
-    pub fn new(
-        baseline: &BenchmarkResult,
-        current: &BenchmarkResult,
-        threshold: f64,
-    ) -> Self {
+    pub fn new(baseline: &BenchmarkResult, current: &BenchmarkResult, threshold: f64) -> Self {
         let baseline_mean = baseline.estimates.mean.point_estimate;
         let current_mean = current.estimates.mean.point_estimate;
         let change_percent = ((current_mean - baseline_mean) / baseline_mean) * 100.0;

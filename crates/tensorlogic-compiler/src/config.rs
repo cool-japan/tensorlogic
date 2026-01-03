@@ -559,7 +559,10 @@ mod tests {
     #[test]
     fn test_serialization_all_presets() {
         let configs = vec![
-            ("soft_differentiable", CompilationConfig::soft_differentiable()),
+            (
+                "soft_differentiable",
+                CompilationConfig::soft_differentiable(),
+            ),
             ("hard_boolean", CompilationConfig::hard_boolean()),
             ("fuzzy_godel", CompilationConfig::fuzzy_godel()),
             ("fuzzy_lukasiewicz", CompilationConfig::fuzzy_lukasiewicz()),
@@ -571,11 +574,7 @@ mod tests {
                 .unwrap_or_else(|_| panic!("Failed to serialize {}", name));
             let deserialized: CompilationConfig = serde_json::from_str(&json)
                 .unwrap_or_else(|_| panic!("Failed to deserialize {}", name));
-            assert_eq!(
-                config, deserialized,
-                "Mismatch for preset: {}",
-                name
-            );
+            assert_eq!(config, deserialized, "Mismatch for preset: {}", name);
         }
     }
 }

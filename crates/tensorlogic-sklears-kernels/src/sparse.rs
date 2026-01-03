@@ -493,7 +493,12 @@ impl<'a> Iterator for SparseMatrixIterator<'a> {
             }
 
             self.current_row += 1;
-            self.current_idx = self.matrix.row_ptr.get(self.current_row).copied().unwrap_or(0);
+            self.current_idx = self
+                .matrix
+                .row_ptr
+                .get(self.current_row)
+                .copied()
+                .unwrap_or(0);
         }
 
         None
@@ -503,7 +508,11 @@ impl<'a> Iterator for SparseMatrixIterator<'a> {
 /// Parallel sparse kernel matrix builder
 impl SparseKernelMatrixBuilder {
     /// Build sparse kernel matrix with parallel computation
-    pub fn build_parallel(&self, data: &[Vec<f64>], kernel: &dyn Kernel) -> Result<SparseKernelMatrix> {
+    pub fn build_parallel(
+        &self,
+        data: &[Vec<f64>],
+        kernel: &dyn Kernel,
+    ) -> Result<SparseKernelMatrix> {
         use rayon::prelude::*;
 
         let n = data.len();
@@ -529,7 +538,8 @@ impl SparseKernelMatrixBuilder {
                 // If max_entries_per_row is set, keep only top-k entries
                 if let Some(max_entries) = self.max_entries_per_row {
                     if row_entries.len() > max_entries {
-                        row_entries.sort_by(|(_, a), (_, b)| b.abs().partial_cmp(&a.abs()).unwrap());
+                        row_entries
+                            .sort_by(|(_, a), (_, b)| b.abs().partial_cmp(&a.abs()).unwrap());
                         row_entries.truncate(max_entries);
                     }
                 }

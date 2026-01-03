@@ -48,7 +48,10 @@ use torsh_tensor::Tensor;
 pub enum TorshInteropError {
     /// Shape mismatch between tensors
     #[error("Shape mismatch: expected {expected:?}, got {got:?}")]
-    ShapeMismatch { expected: Vec<usize>, got: Vec<usize> },
+    ShapeMismatch {
+        expected: Vec<usize>,
+        got: Vec<usize>,
+    },
 
     /// Device mismatch
     #[error("Device mismatch: TensorLogic only supports CPU execution currently")]
@@ -254,12 +257,11 @@ mod tests {
         let tl_tensor = ArrayD::from_shape_vec(vec![2, 2], data.clone())
             .expect("Failed to create TensorLogic tensor");
 
-        let torsh_tensor = tl_to_torsh(&tl_tensor, DeviceType::Cpu)
-            .expect("Failed to convert TL to ToRSh");
+        let torsh_tensor =
+            tl_to_torsh(&tl_tensor, DeviceType::Cpu).expect("Failed to convert TL to ToRSh");
 
         assert_eq!(torsh_tensor.shape().dims(), &[2, 2]);
-        let result_data = torsh_tensor.to_vec()
-            .expect("Failed to extract ToRSh data");
+        let result_data = torsh_tensor.to_vec().expect("Failed to extract ToRSh data");
         assert_eq!(result_data, data);
     }
 
@@ -273,7 +275,8 @@ mod tests {
             .expect("Failed to convert TL to ToRSh f32");
 
         assert_eq!(torsh_tensor.shape().dims(), &[2, 2]);
-        let result_data = torsh_tensor.to_vec()
+        let result_data = torsh_tensor
+            .to_vec()
             .expect("Failed to extract ToRSh f32 data");
         let expected: Vec<f32> = data.iter().map(|&x| x as f32).collect();
         assert_eq!(result_data, expected);
@@ -281,11 +284,10 @@ mod tests {
 
     #[test]
     fn test_torsh_to_tl_f64() {
-        let torsh_tensor = Tensor::zeros(&[3, 3], DeviceType::Cpu)
-            .expect("Failed to create ToRSh zero tensor");
+        let torsh_tensor =
+            Tensor::zeros(&[3, 3], DeviceType::Cpu).expect("Failed to create ToRSh zero tensor");
 
-        let tl_tensor = torsh_to_tl(&torsh_tensor)
-            .expect("Failed to convert ToRSh to TL");
+        let tl_tensor = torsh_to_tl(&torsh_tensor).expect("Failed to convert ToRSh to TL");
 
         assert_eq!(tl_tensor.shape(), &[3, 3]);
         assert_eq!(tl_tensor.len(), 9);
@@ -298,8 +300,7 @@ mod tests {
         let torsh_tensor = Tensor::from_data(data.clone(), vec![2, 2], DeviceType::Cpu)
             .expect("Failed to create ToRSh f32 tensor");
 
-        let tl_tensor = torsh_f32_to_tl(&torsh_tensor)
-            .expect("Failed to convert ToRSh f32 to TL");
+        let tl_tensor = torsh_f32_to_tl(&torsh_tensor).expect("Failed to convert ToRSh f32 to TL");
 
         assert_eq!(tl_tensor.shape(), &[2, 2]);
         let expected: Vec<f64> = data.iter().map(|&x| x as f64).collect();
@@ -314,10 +315,8 @@ mod tests {
             .expect("Failed to create original tensor");
 
         // TL → ToRSh → TL
-        let torsh = tl_to_torsh(&original, DeviceType::Cpu)
-            .expect("Failed TL to ToRSh conversion");
-        let roundtrip = torsh_to_tl(&torsh)
-            .expect("Failed ToRSh to TL conversion");
+        let torsh = tl_to_torsh(&original, DeviceType::Cpu).expect("Failed TL to ToRSh conversion");
+        let roundtrip = torsh_to_tl(&torsh).expect("Failed ToRSh to TL conversion");
 
         assert_eq!(original.shape(), roundtrip.shape());
         let original_vec: Vec<f64> = original.iter().copied().collect();
@@ -343,8 +342,7 @@ mod tests {
             .expect("Failed to convert 3D tensor TL to ToRSh");
         assert_eq!(torsh_tensor.shape().dims(), &[2, 3, 4]);
 
-        let back = torsh_to_tl(&torsh_tensor)
-            .expect("Failed to convert 3D tensor ToRSh to TL");
+        let back = torsh_to_tl(&torsh_tensor).expect("Failed to convert 3D tensor ToRSh to TL");
         assert_eq!(back.shape(), &[2, 3, 4]);
 
         let back_vec: Vec<f64> = back.iter().copied().collect();

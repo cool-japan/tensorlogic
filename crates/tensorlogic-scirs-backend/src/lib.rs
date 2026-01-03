@@ -60,13 +60,13 @@ pub mod cuda_detect;
 pub mod custom_ops;
 pub mod dependency_analyzer;
 pub mod device;
-pub mod gpu_readiness;
 pub(crate) mod einsum_grad;
 pub mod error;
 pub mod execution_mode;
 mod executor;
 pub mod fallback;
 pub mod fusion;
+pub mod gpu_readiness;
 pub mod gradient_check;
 pub mod gradient_ops;
 pub mod graph_optimizer;
@@ -105,10 +105,6 @@ pub use custom_ops::{
 };
 pub use dependency_analyzer::{DependencyAnalysis, DependencyStats, OperationDependency};
 pub use device::{Device, DeviceError, DeviceManager, DeviceType};
-pub use gpu_readiness::{
-    assess_gpu_readiness, generate_recommendations, recommend_batch_size, GpuCapability,
-    GpuReadinessReport, WorkloadProfile,
-};
 pub use error::{
     NumericalError, NumericalErrorKind, ShapeMismatchError, TlBackendError, TlBackendResult,
 };
@@ -117,6 +113,10 @@ pub use execution_mode::{
 };
 pub use executor::Scirs2Exec;
 pub use fallback::{is_valid, sanitize_tensor, FallbackConfig};
+pub use gpu_readiness::{
+    assess_gpu_readiness, generate_recommendations, recommend_batch_size, GpuCapability,
+    GpuReadinessReport, WorkloadProfile,
+};
 pub use gradient_ops::{
     gumbel_softmax, gumbel_softmax_backward, soft_exists, soft_exists_backward, soft_forall,
     soft_forall_backward, ste_threshold, ste_threshold_backward, GumbelSoftmaxConfig,

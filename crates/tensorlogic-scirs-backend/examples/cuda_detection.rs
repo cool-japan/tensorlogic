@@ -43,7 +43,11 @@ fn main() {
         for device in &cuda_devices {
             println!("   GPU {}:", device.index);
             println!("     Name: {}", device.name);
-            println!("     Memory: {} MB ({:.2} GB)", device.memory_mb, device.memory_mb as f64 / 1024.0);
+            println!(
+                "     Memory: {} MB ({:.2} GB)",
+                device.memory_mb,
+                device.memory_mb as f64 / 1024.0
+            );
 
             if let Some((major, minor)) = device.compute_capability {
                 println!("     Compute Capability: {}.{}", major, minor);
@@ -74,13 +78,19 @@ fn main() {
     println!("   --------------");
     let manager = DeviceManager::new();
 
-    println!("   Available devices: {}", manager.available_devices().len());
+    println!(
+        "   Available devices: {}",
+        manager.available_devices().len()
+    );
     for device in manager.available_devices() {
         println!("     - {}", device);
     }
 
     println!("\n   Default device: {}", manager.default_device());
-    println!("   GPU support: {}", if manager.has_gpu() { "Yes" } else { "No" });
+    println!(
+        "   GPU support: {}",
+        if manager.has_gpu() { "Yes" } else { "No" }
+    );
 
     // Count devices by type
     println!("\n   Device counts by type:");

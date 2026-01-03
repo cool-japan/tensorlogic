@@ -350,20 +350,23 @@ fn test_compile_or_with_different_configs() {
 
     // Test with different configs
     let configs = vec![
-        ("soft_differentiable", CompilationConfig::soft_differentiable()),
+        (
+            "soft_differentiable",
+            CompilationConfig::soft_differentiable(),
+        ),
         ("hard_boolean", CompilationConfig::hard_boolean()),
         ("fuzzy_godel", CompilationConfig::fuzzy_godel()),
     ];
 
     for (name, config) in configs {
         let result = compile_to_einsum_with_config(&or_expr, &config);
+        assert!(result.is_ok(), "OR compilation failed with {} config", name);
+        let graph = result.unwrap();
         assert!(
-            result.is_ok(),
-            "OR compilation failed with {} config",
+            !graph.nodes.is_empty(),
+            "{} config produced empty graph",
             name
         );
-        let graph = result.unwrap();
-        assert!(!graph.nodes.is_empty(), "{} config produced empty graph", name);
     }
 }
 
@@ -374,7 +377,10 @@ fn test_compile_not_with_different_configs() {
 
     // Test with different configs
     let configs = vec![
-        ("soft_differentiable", CompilationConfig::soft_differentiable()),
+        (
+            "soft_differentiable",
+            CompilationConfig::soft_differentiable(),
+        ),
         ("hard_boolean", CompilationConfig::hard_boolean()),
     ];
 
@@ -386,7 +392,11 @@ fn test_compile_not_with_different_configs() {
             name
         );
         let graph = result.unwrap();
-        assert!(!graph.nodes.is_empty(), "{} config produced empty graph", name);
+        assert!(
+            !graph.nodes.is_empty(),
+            "{} config produced empty graph",
+            name
+        );
     }
 }
 

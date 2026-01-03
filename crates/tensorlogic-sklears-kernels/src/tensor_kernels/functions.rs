@@ -2,8 +2,6 @@
 //!
 //! 🤖 Generated with [SplitRS](https://github.com/cool-japan/splitrs)
 
-
-
 #[cfg(test)]
 mod tests {
     use crate::tensor_kernels::types::*;
@@ -72,7 +70,7 @@ mod tests {
         let result = kernel.compute(&x, &y).unwrap();
         assert!(result.abs() < 1e-10);
         let x = vec![1.0, 2.0];
-        let y = vec![- 1.0, - 2.0];
+        let y = vec![-1.0, -2.0];
         let result = kernel.compute(&x, &y).unwrap();
         assert!((result + 1.0).abs() < 1e-10);
     }
@@ -96,7 +94,7 @@ mod tests {
         let result = kernel.compute(&x, &y).unwrap();
         assert!(result < 1.0);
         assert!(result > 0.0);
-        assert!((result - 0.5_f64.mul_add(- 3.0, 0.0).exp()).abs() < 1e-10);
+        assert!((result - 0.5_f64.mul_add(-3.0, 0.0).exp()).abs() < 1e-10);
     }
     #[test]
     fn test_laplacian_kernel_from_sigma() {
@@ -142,11 +140,11 @@ mod tests {
     fn test_sigmoid_kernel_basic() {
         let kernel = SigmoidKernel::new(0.01, -1.0).unwrap();
         assert_eq!(kernel.name(), "Sigmoid");
-        assert!(! kernel.is_psd());
+        assert!(!kernel.is_psd());
         let x = vec![1.0, 2.0, 3.0];
         let y = vec![4.0, 5.0, 6.0];
         let result = kernel.compute(&x, &y).unwrap();
-        assert!(result >= - 1.0);
+        assert!(result >= -1.0);
         assert!(result <= 1.0);
     }
     #[test]
@@ -155,7 +153,7 @@ mod tests {
         let x = vec![1.0, 2.0];
         let y = vec![3.0, 4.0];
         let result = kernel.compute(&x, &y).unwrap();
-        assert!(result >= - 1.0);
+        assert!(result >= -1.0);
         assert!(result <= 1.0);
     }
     #[test]
@@ -244,7 +242,7 @@ mod tests {
     #[test]
     fn test_histogram_intersection_negative_values() {
         let kernel = HistogramIntersectionKernel::new();
-        let hist1 = vec![0.5, - 0.3, 0.2];
+        let hist1 = vec![0.5, -0.3, 0.2];
         let hist2 = vec![0.3, 0.4, 0.3];
         let result = kernel.compute(&hist1, &hist2);
         assert!(result.is_err());
@@ -273,8 +271,8 @@ mod tests {
         let y = vec![1.0, 1.0, 1.0];
         let rbf_sim = rbf.compute(&x, &y).unwrap();
         let lap_sim = lap.compute(&x, &y).unwrap();
-        assert!((0.0..= 1.0).contains(& rbf_sim));
-        assert!((0.0..= 1.0).contains(& lap_sim));
+        assert!((0.0..=1.0).contains(&rbf_sim));
+        assert!((0.0..=1.0).contains(&lap_sim));
         assert!((rbf_sim - lap_sim).abs() < 1e-10);
         let x2 = vec![0.0, 0.0];
         let y2 = vec![2.0, 0.0];
@@ -286,7 +284,7 @@ mod tests {
     fn test_all_new_kernels_symmetry() {
         let kernels: Vec<Box<dyn Kernel>> = vec![
             Box::new(LaplacianKernel::new(0.5).unwrap()),
-            Box::new(SigmoidKernel::new(0.01, - 1.0).unwrap()),
+            Box::new(SigmoidKernel::new(0.01, -1.0).unwrap()),
             Box::new(ChiSquaredKernel::new(1.0).unwrap()),
             Box::new(HistogramIntersectionKernel::new()),
         ];
@@ -296,7 +294,9 @@ mod tests {
             let k_xy = kernel.compute(&x, &y).unwrap();
             let k_yx = kernel.compute(&y, &x).unwrap();
             assert!(
-                (k_xy - k_yx).abs() < 1e-10, "Kernel {} not symmetric", kernel.name()
+                (k_xy - k_yx).abs() < 1e-10,
+                "Kernel {} not symmetric",
+                kernel.name()
             );
         }
     }
@@ -310,8 +310,10 @@ mod tests {
         for kernel in kernels {
             let k_xx = kernel.compute(&x, &x).unwrap();
             assert!(
-                (k_xx - 1.0).abs() < 1e-10, "Kernel {} self-similarity not 1.0: got {}",
-                kernel.name(), k_xx
+                (k_xx - 1.0).abs() < 1e-10,
+                "Kernel {} self-similarity not 1.0: got {}",
+                kernel.name(),
+                k_xx
             );
         }
     }
@@ -351,16 +353,16 @@ mod tests {
     #[test]
     fn test_matern_kernel_invalid_parameters() {
         assert!(MaternKernel::new(0.0, 1.5).is_err());
-        assert!(MaternKernel::new(- 1.0, 1.5).is_err());
+        assert!(MaternKernel::new(-1.0, 1.5).is_err());
         assert!(MaternKernel::new(1.0, 0.0).is_err());
-        assert!(MaternKernel::new(1.0, - 1.0).is_err());
+        assert!(MaternKernel::new(1.0, -1.0).is_err());
     }
     #[test]
     fn test_matern_kernel_dimension_mismatch() {
         let kernel = MaternKernel::nu_3_2(1.0).unwrap();
         let x = vec![1.0, 2.0];
         let y = vec![1.0, 2.0, 3.0];
-        assert!(kernel.compute(& x, & y).is_err());
+        assert!(kernel.compute(&x, &y).is_err());
     }
     #[test]
     fn test_matern_kernel_symmetry() {
@@ -405,9 +407,9 @@ mod tests {
     #[test]
     fn test_rational_quadratic_invalid_parameters() {
         assert!(RationalQuadraticKernel::new(0.0, 2.0).is_err());
-        assert!(RationalQuadraticKernel::new(- 1.0, 2.0).is_err());
+        assert!(RationalQuadraticKernel::new(-1.0, 2.0).is_err());
         assert!(RationalQuadraticKernel::new(1.0, 0.0).is_err());
-        assert!(RationalQuadraticKernel::new(1.0, - 1.0).is_err());
+        assert!(RationalQuadraticKernel::new(1.0, -1.0).is_err());
     }
     #[test]
     fn test_rational_quadratic_symmetry() {
@@ -454,9 +456,9 @@ mod tests {
     #[test]
     fn test_periodic_kernel_invalid_parameters() {
         assert!(PeriodicKernel::new(0.0, 1.0).is_err());
-        assert!(PeriodicKernel::new(- 1.0, 1.0).is_err());
+        assert!(PeriodicKernel::new(-1.0, 1.0).is_err());
         assert!(PeriodicKernel::new(10.0, 0.0).is_err());
-        assert!(PeriodicKernel::new(10.0, - 1.0).is_err());
+        assert!(PeriodicKernel::new(10.0, -1.0).is_err());
     }
     #[test]
     fn test_periodic_kernel_symmetry() {
@@ -485,9 +487,9 @@ mod tests {
         let periodic = PeriodicKernel::new(10.0, 1.0).unwrap();
         let x = vec![1.0, 2.0];
         let y = vec![1.0, 2.0, 3.0];
-        assert!(matern.compute(& x, & y).is_err());
-        assert!(rq.compute(& x, & y).is_err());
-        assert!(periodic.compute(& x, & y).is_err());
+        assert!(matern.compute(&x, &y).is_err());
+        assert!(rq.compute(&x, &y).is_err());
+        assert!(periodic.compute(&x, &y).is_err());
     }
     #[test]
     fn test_rbf_kernel_gradient_basic() {
@@ -521,7 +523,9 @@ mod tests {
         let k_plus = kernel_plus.compute(&x, &y).unwrap();
         let numerical_grad = (k_plus - k) / eps;
         assert!(
-            (grad - numerical_grad).abs() < 1e-4, "Analytical: {}, Numerical: {}", grad,
+            (grad - numerical_grad).abs() < 1e-4,
+            "Analytical: {}, Numerical: {}",
+            grad,
             numerical_grad
         );
     }
@@ -554,8 +558,10 @@ mod tests {
         assert!((grad_c - 243.0).abs() < 1e-8);
         let expected_grad_d = 729.0 * 9.0_f64.ln();
         assert!(
-            (grad_d - expected_grad_d).abs() < 1e-6, "Expected: {}, Got: {}",
-            expected_grad_d, grad_d
+            (grad_d - expected_grad_d).abs() < 1e-6,
+            "Expected: {}, Got: {}",
+            expected_grad_d,
+            grad_d
         );
     }
     #[test]
@@ -570,8 +576,10 @@ mod tests {
         let k_plus = kernel_plus.compute(&x, &y).unwrap();
         let numerical_grad = (k_plus - k) / eps;
         assert!(
-            (grad_c - numerical_grad).abs() < 1e-3, "Analytical: {}, Numerical: {}",
-            grad_c, numerical_grad
+            (grad_c - numerical_grad).abs() < 1e-3,
+            "Analytical: {}, Numerical: {}",
+            grad_c,
+            numerical_grad
         );
     }
     #[test]
@@ -668,9 +676,7 @@ mod tests {
         let (k, grad_l, grad_alpha) = kernel.compute_with_all_gradients(&x, &y).unwrap();
         let k_std = kernel.compute(&x, &y).unwrap();
         assert!((k - k_std).abs() < 1e-10);
-        let (_, grad_l_single) = kernel
-            .compute_with_length_scale_gradient(&x, &y)
-            .unwrap();
+        let (_, grad_l_single) = kernel.compute_with_length_scale_gradient(&x, &y).unwrap();
         let (_, grad_alpha_single) = kernel.compute_with_alpha_gradient(&x, &y).unwrap();
         assert!((grad_l - grad_l_single).abs() < 1e-10);
         assert!((grad_alpha - grad_alpha_single).abs() < 1e-10);
@@ -693,10 +699,10 @@ mod tests {
         let rq = RationalQuadraticKernel::new(1.0, 2.0).unwrap();
         let x = vec![1.0, 2.0];
         let y = vec![1.0, 2.0, 3.0];
-        assert!(rbf.compute_with_gradient(& x, & y).is_err());
-        assert!(poly.compute_with_constant_gradient(& x, & y).is_err());
-        assert!(lap.compute_with_gradient(& x, & y).is_err());
-        assert!(matern.compute_with_length_scale_gradient(& x, & y).is_err());
-        assert!(rq.compute_with_length_scale_gradient(& x, & y).is_err());
+        assert!(rbf.compute_with_gradient(&x, &y).is_err());
+        assert!(poly.compute_with_constant_gradient(&x, &y).is_err());
+        assert!(lap.compute_with_gradient(&x, &y).is_err());
+        assert!(matern.compute_with_length_scale_gradient(&x, &y).is_err());
+        assert!(rq.compute_with_length_scale_gradient(&x, &y).is_err());
     }
 }

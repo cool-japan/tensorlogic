@@ -42,4 +42,3 @@ impl Kernel for MaternKernel {
         "Matérn"
     }
 }
-

@@ -23,8 +23,7 @@ impl Kernel for RationalQuadraticKernel {
             });
         }
         let sq_dist = Self::squared_distance(x, y);
-        let term = 1.0
-            + sq_dist / (2.0 * self.alpha * self.length_scale * self.length_scale);
+        let term = 1.0 + sq_dist / (2.0 * self.alpha * self.length_scale * self.length_scale);
         let result = term.powf(-self.alpha);
         Ok(result)
     }
@@ -32,4 +31,3 @@ impl Kernel for RationalQuadraticKernel {
         "RationalQuadratic"
     }
 }
-

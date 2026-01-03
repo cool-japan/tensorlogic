@@ -30,4 +30,3 @@ impl Kernel for LaplacianKernel {
         "Laplacian"
     }
 }
-

@@ -132,7 +132,8 @@ pub fn save_suite(suite: &BenchmarkSuite, path: &Path) -> Result<()> {
     let content = serde_json::to_string_pretty(suite)
         .with_context(|| "Failed to serialize benchmark suite")?;
 
-    fs::write(path, content).with_context(|| format!("Failed to write baseline file: {:?}", path))?;
+    fs::write(path, content)
+        .with_context(|| format!("Failed to write baseline file: {:?}", path))?;
 
     Ok(())
 }
@@ -196,8 +197,8 @@ mod tests {
         let test_file = temp_dir.join("test_estimates.json");
         fs::write(&test_file, test_json).expect("Failed to write test file");
 
-        let result = parse_estimates_file(&test_file, "test_bench", Some("10"))
-            .expect("Failed to parse");
+        let result =
+            parse_estimates_file(&test_file, "test_bench", Some("10")).expect("Failed to parse");
 
         assert!(result.is_some());
         let result = result.unwrap();

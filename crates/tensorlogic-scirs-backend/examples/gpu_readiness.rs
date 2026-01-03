@@ -51,7 +51,10 @@ fn main() {
             println!("\n   GPU {} ({}): {}", idx, gpu.device, gpu.name);
             println!("   ─────────────────────────");
             println!("     Memory: {} GB", gpu.memory_mb / 1024);
-            println!("     Memory Bandwidth: {:.0} GB/s", gpu.memory_bandwidth_gbs);
+            println!(
+                "     Memory Bandwidth: {:.0} GB/s",
+                gpu.memory_bandwidth_gbs
+            );
 
             if let Some((major, minor)) = gpu.compute_capability {
                 println!("     Compute Capability: {}.{}", major, minor);
@@ -61,11 +64,23 @@ fn main() {
                 println!("     CUDA Cores: ~{}", cores);
             }
 
-            println!("     Tensor Cores: {}", if gpu.has_tensor_cores { "Yes" } else { "No" });
-            println!("     FP16 Support: {}", if gpu.supports_fp16 { "Yes" } else { "No" });
-            println!("     INT8 Support: {}", if gpu.supports_int8 { "Yes" } else { "No" });
+            println!(
+                "     Tensor Cores: {}",
+                if gpu.has_tensor_cores { "Yes" } else { "No" }
+            );
+            println!(
+                "     FP16 Support: {}",
+                if gpu.supports_fp16 { "Yes" } else { "No" }
+            );
+            println!(
+                "     INT8 Support: {}",
+                if gpu.supports_int8 { "Yes" } else { "No" }
+            );
             println!("     Capability Score: {:.1}", gpu.capability_score());
-            println!("     Recommended: {}", if gpu.recommended { "★ YES ★" } else { "No" });
+            println!(
+                "     Recommended: {}",
+                if gpu.recommended { "★ YES ★" } else { "No" }
+            );
         }
         println!();
     } else {
@@ -111,7 +126,10 @@ fn main() {
 
     println!("   Small Workload (64 MB):");
     println!("     Operations: {}", small_workload.operation_count);
-    println!("     Compute Intensity: {:.1} FLOPs/byte", small_workload.compute_intensity);
+    println!(
+        "     Compute Intensity: {:.1} FLOPs/byte",
+        small_workload.compute_intensity
+    );
 
     if !report.gpus.is_empty() {
         let batch_size = recommend_batch_size(&report.gpus[0], &small_workload);
@@ -125,7 +143,10 @@ fn main() {
 
     println!("\n   Medium Workload (512 MB):");
     println!("     Operations: {}", medium_workload.operation_count);
-    println!("     Compute Intensity: {:.1} FLOPs/byte", medium_workload.compute_intensity);
+    println!(
+        "     Compute Intensity: {:.1} FLOPs/byte",
+        medium_workload.compute_intensity
+    );
 
     if !report.gpus.is_empty() {
         let batch_size = recommend_batch_size(&report.gpus[0], &medium_workload);
@@ -139,7 +160,10 @@ fn main() {
 
     println!("\n   Large Workload (4 GB):");
     println!("     Operations: {}", large_workload.operation_count);
-    println!("     Compute Intensity: {:.1} FLOPs/byte", large_workload.compute_intensity);
+    println!(
+        "     Compute Intensity: {:.1} FLOPs/byte",
+        large_workload.compute_intensity
+    );
 
     if !report.gpus.is_empty() {
         let batch_size = recommend_batch_size(&report.gpus[0], &large_workload);

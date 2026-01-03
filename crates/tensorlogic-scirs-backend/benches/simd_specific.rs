@@ -21,7 +21,9 @@ fn bench_elementwise_simd(c: &mut Criterion) {
 
         // ReLU activation
         group.bench_with_input(BenchmarkId::new("relu", size), &size, |b, &size| {
-            let data: Vec<f64> = (0..size).map(|i| (i as f64 - size as f64 / 2.0) * 0.01).collect();
+            let data: Vec<f64> = (0..size)
+                .map(|i| (i as f64 - size as f64 / 2.0) * 0.01)
+                .collect();
             let tensor = Array2::from_shape_vec((size, 1), data).unwrap();
 
             b.iter(|| {
@@ -32,7 +34,9 @@ fn bench_elementwise_simd(c: &mut Criterion) {
 
         // Sigmoid activation
         group.bench_with_input(BenchmarkId::new("sigmoid", size), &size, |b, &size| {
-            let data: Vec<f64> = (0..size).map(|i| (i as f64 - size as f64 / 2.0) * 0.01).collect();
+            let data: Vec<f64> = (0..size)
+                .map(|i| (i as f64 - size as f64 / 2.0) * 0.01)
+                .collect();
             let tensor = Array2::from_shape_vec((size, 1), data).unwrap();
 
             b.iter(|| {
@@ -125,7 +129,9 @@ fn bench_matrix_simd(c: &mut Criterion) {
         // Matrix multiplication
         group.bench_with_input(BenchmarkId::new("matmul", size), &size, |b, &size| {
             let data1: Vec<f64> = (0..size * size).map(|i| i as f64 * 0.01).collect();
-            let data2: Vec<f64> = (0..size * size).map(|i| (size * size - i) as f64 * 0.01).collect();
+            let data2: Vec<f64> = (0..size * size)
+                .map(|i| (size * size - i) as f64 * 0.01)
+                .collect();
             let mat1 = Array2::from_shape_vec((size, size), data1).unwrap();
             let mat2 = Array2::from_shape_vec((size, size), data2).unwrap();
 
@@ -242,8 +248,12 @@ fn bench_tensorlogic_simd(c: &mut Criterion) {
         let mut executor = Scirs2Exec::new();
 
         // Create input tensors
-        let p_data: Vec<f64> = (0..1000).map(|i| if i % 2 == 0 { 1.0 } else { 0.0 }).collect();
-        let q_data: Vec<f64> = (0..1000).map(|i| if i % 3 == 0 { 1.0 } else { 0.0 }).collect();
+        let p_data: Vec<f64> = (0..1000)
+            .map(|i| if i % 2 == 0 { 1.0 } else { 0.0 })
+            .collect();
+        let q_data: Vec<f64> = (0..1000)
+            .map(|i| if i % 3 == 0 { 1.0 } else { 0.0 })
+            .collect();
 
         let p_tensor = Scirs2Exec::from_vec(p_data, vec![1000]).unwrap();
         let q_tensor = Scirs2Exec::from_vec(q_data, vec![1000]).unwrap();

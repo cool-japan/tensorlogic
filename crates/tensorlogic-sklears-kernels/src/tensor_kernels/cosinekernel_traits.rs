@@ -41,4 +41,3 @@ impl Kernel for CosineKernel {
         "Cosine"
     }
 }
-

@@ -1,7 +1,7 @@
-mod models;
-mod parser;
 mod baseline;
 mod compare;
+mod models;
+mod parser;
 mod report;
 
 use anyhow::Result;
@@ -75,16 +75,28 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Save { criterion_dir, output, name } => {
+        Commands::Save {
+            criterion_dir,
+            output,
+            name,
+        } => {
             baseline::save_baseline(&criterion_dir, &output, name.as_deref())?;
         }
-        Commands::Compare { criterion_dir, baseline, threshold, format } => {
+        Commands::Compare {
+            criterion_dir,
+            baseline,
+            threshold,
+            format,
+        } => {
             compare::compare_benchmarks(&criterion_dir, &baseline, threshold, &format)?;
         }
         Commands::List { baseline } => {
             baseline::list_baselines(&baseline)?;
         }
-        Commands::Stats { name, criterion_dir } => {
+        Commands::Stats {
+            name,
+            criterion_dir,
+        } => {
             report::show_stats(&name, &criterion_dir)?;
         }
     }

@@ -45,9 +45,9 @@ pub fn compare_benchmarks(
         let name = parts[0];
         let parameter = parts.get(1).copied();
 
-        let found = current_results.iter().any(|r| {
-            r.name == name && r.parameter.as_deref() == parameter
-        });
+        let found = current_results
+            .iter()
+            .any(|r| r.name == name && r.parameter.as_deref() == parameter);
 
         if !found {
             missing_current.push(key.clone());

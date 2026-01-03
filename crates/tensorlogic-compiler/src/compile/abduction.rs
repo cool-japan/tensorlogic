@@ -311,9 +311,7 @@ fn get_registered_abducibles(
             let cost = if let Some(metadata) = graph.tensor_metadata.get(&tensor_idx) {
                 // Try to get the cost attribute
                 if let Some(cost_str) = metadata.get_attribute("abducible_cost") {
-                    cost_str
-                        .parse::<f64>()
-                        .unwrap_or(1.0) // Default to 1.0 if parsing fails
+                    cost_str.parse::<f64>().unwrap_or(1.0) // Default to 1.0 if parsing fails
                 } else {
                     1.0 // Default cost if attribute not found
                 }
@@ -673,4 +671,3 @@ mod tests {
         }
     }
 }
-
