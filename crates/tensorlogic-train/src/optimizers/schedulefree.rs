@@ -70,7 +70,7 @@ use std::collections::HashMap;
 ///
 /// // Evaluation mode - switch to averaged parameters
 /// optimizer.set_training_mode(false);
-/// let eval_params = optimizer.get_parameters();
+/// let eval_params = optimizer.get_eval_parameters();
 /// ```
 #[derive(Debug, Clone)]
 pub struct ScheduleFreeAdamW {

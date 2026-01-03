@@ -26,12 +26,12 @@
 //!     let mut loader = StreamingRdfLoader::new();
 //!
 //!     // Register a handler for all triples
-//!     loader.on_triple(|subject, predicate, object| {
+//!     loader = loader.on_triple(|subject, predicate, object| {
 //!         println!("{} {} {}", subject, predicate, object);
 //!     });
 //!
 //!     // Process the data
-//!     let stats = loader.process_turtle(turtle)?;
+//!     let (stats, _graph) = loader.process_turtle(turtle)?;
 //!     println!("Processed {} triples", stats.triples_processed);
 //!     Ok(())
 //! }

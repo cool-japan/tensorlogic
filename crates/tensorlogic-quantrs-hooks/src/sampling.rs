@@ -608,12 +608,8 @@ pub struct Particle {
 /// use tensorlogic_quantrs_hooks::{ParticleFilter, HiddenMarkovModel, Assignment};
 /// use std::collections::HashMap;
 ///
-/// // Create HMM
-/// let hmm = HiddenMarkovModel::new(
-///     vec!["state".to_string()],
-///     vec!["obs".to_string()],
-///     2, 3
-/// );
+/// // Create HMM with 2 states, 3 observations, 10 time steps
+/// let hmm = HiddenMarkovModel::new(2, 3, 10);
 ///
 /// // Create particle filter
 /// let mut pf = ParticleFilter::new(100, vec!["state".to_string()]);

@@ -113,7 +113,8 @@ impl GcConfig {
 /// use std::collections::HashMap;
 ///
 /// // Create base optimizer
-/// let adam = AdamOptimizer::new(0.001);
+/// let config = OptimizerConfig { learning_rate: 0.001, ..Default::default() };
+/// let adam = AdamOptimizer::new(config);
 ///
 /// // Wrap with gradient centralization
 /// let mut gc_adam = GradientCentralization::new(

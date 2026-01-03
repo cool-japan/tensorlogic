@@ -10,7 +10,7 @@
 //!
 //! ```no_run
 //! use tensorlogic_ir::{EinsumGraph, EinsumNode};
-//! use tensorlogic_ir::graph::export::{export_to_onnx_text, export_to_torchscript_text};
+//! use tensorlogic_ir::{export_to_onnx_text, export_to_torchscript_text};
 //!
 //! let mut graph = EinsumGraph::new();
 //! let a = graph.add_tensor("A");
@@ -88,7 +88,7 @@ impl Default for TorchScriptExportOptions {
 ///
 /// ```no_run
 /// use tensorlogic_ir::{EinsumGraph, EinsumNode};
-/// use tensorlogic_ir::graph::export::export_to_onnx_text;
+/// use tensorlogic_ir::export_to_onnx_text;
 ///
 /// let mut graph = EinsumGraph::new();
 /// let x = graph.add_tensor("X");
@@ -277,7 +277,7 @@ fn export_node_to_onnx(
 ///
 /// ```no_run
 /// use tensorlogic_ir::{EinsumGraph, EinsumNode};
-/// use tensorlogic_ir::graph::export::export_to_torchscript_text;
+/// use tensorlogic_ir::export_to_torchscript_text;
 ///
 /// let mut graph = EinsumGraph::new();
 /// let x = graph.add_tensor("X");

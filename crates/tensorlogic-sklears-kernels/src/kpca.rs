@@ -39,7 +39,7 @@
 //! let kpca = KernelPCA::fit(&data, &kernel, config).unwrap();
 //!
 //! // Transform new data
-//! let transformed = kpca.transform(&data).unwrap();
+//! let transformed = kpca.transform(&data, &kernel).unwrap();
 //! ```
 
 use crate::error::{KernelError, Result};

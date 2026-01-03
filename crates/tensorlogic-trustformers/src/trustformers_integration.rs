@@ -515,10 +515,10 @@ impl TrustformersWeightLoader {
     /// ## Example
     ///
     /// ```no_run
-    /// use tensorlogic_trustformers::trustformers_integration::TrustformersConverter;
+    /// use tensorlogic_trustformers::trustformers_integration::TrustformersWeightLoader;
     ///
-    /// let converter = TrustformersConverter::new();
-    /// let checkpoint = converter.load_checkpoint("model.json")?;
+    /// let loader = TrustformersWeightLoader::new();
+    /// let checkpoint = loader.load_checkpoint("model.json")?;
     ///
     /// // Access weights
     /// if let Some(weights) = checkpoint.weights.get("encoder_0_attn_q_weight") {
