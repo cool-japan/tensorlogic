@@ -18,11 +18,6 @@
 
 #[cfg(feature = "torsh")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use scirs2_core::ndarray::ArrayD;
-    use tensorlogic_scirs_backend::torsh_interop::*;
-    use torsh_core::device::DeviceType;
-    use torsh_tensor::Tensor;
-
     println!("🎯 Constrained Neural Network Optimization\n");
 
     // ============================================================
@@ -50,20 +45,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Sample 1: predicts cat but not animal (violates hierarchy!)
     // Sample 2: predicts dog correctly
     // Sample 3: predicts animal correctly
-    let raw_predictions = vec![
+    let raw_predictions: Vec<f32> = vec![
         0.8, 0.7, 0.3, // Sample 0: cat=0.8, dog=0.7, animal=0.3 (VIOLATIONS!)
         0.9, 0.1, 0.2, // Sample 1: cat=0.9, dog=0.1, animal=0.2 (VIOLATION!)
         0.2, 0.8, 0.9, // Sample 2: cat=0.2, dog=0.8, animal=0.9 (OK)
         0.1, 0.2, 0.9, // Sample 3: cat=0.1, dog=0.2, animal=0.9 (OK)
     ];
 
-    let predictions_tensor =
-        Tensor::from_data(raw_predictions.clone(), vec![num_samples, num_classes], DeviceType::Cpu)?;
-
     println!("  Raw predictions (samples × [cat, dog, animal]):");
     for i in 0..num_samples {
         let start = i * num_classes;
-        let end = start + num_classes;
         println!(
             "    Sample {}: [{:.2}, {:.2}, {:.2}]",
             i,
@@ -78,9 +69,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Part 3: Check Constraint Violations
     // ============================================================
     println!("⚠️  Part 3: Constraint Violation Detection");
-
-    // Convert to TensorLogic for constraint checking
-    let predictions_tl = torsh_f32_to_tl(&predictions_tensor)?;
 
     let mut violations = Vec::new();
 
@@ -150,9 +138,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Fix mutual exclusivity: keep highest, suppress other
         if cat > 0.5 && dog > 0.5 {
             if cat > dog {
-                corrected[dog_idx] = corrected[dog_idx] * 0.3; // Suppress dog
+                corrected[dog_idx] *= 0.3; // Suppress dog
             } else {
-                corrected[cat_idx] = corrected[cat_idx] * 0.3; // Suppress cat
+                corrected[cat_idx] *= 0.3; // Suppress cat
             }
         }
 
@@ -185,11 +173,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Part 5: Verify Corrected Predictions
     // ============================================================
     println!("✅ Part 5: Verification of Corrected Predictions");
-
-    let corrected_tensor =
-        Tensor::from_data(corrected.clone(), vec![num_samples, num_classes], DeviceType::Cpu)?;
-
-    let corrected_tl = torsh_f32_to_tl(&corrected_tensor)?;
 
     // Re-check constraints
     let mut new_violations = 0;

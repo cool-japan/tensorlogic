@@ -5,8 +5,9 @@
 
 #![cfg(feature = "torsh")]
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use scirs2_core::ndarray::ArrayD;
+use std::hint::black_box;
 use tensorlogic_scirs_backend::torsh_interop::*;
 use torsh_core::device::DeviceType;
 
@@ -106,8 +107,6 @@ fn bench_torsh_f32_to_tl(c: &mut Criterion) {
 
 /// Benchmark roundtrip conversion (TensorLogic → ToRSh → TensorLogic)
 fn bench_roundtrip(c: &mut Criterion) {
-    use torsh_tensor::Tensor;
-
     let mut group = c.benchmark_group("roundtrip_conversion");
 
     for size in [10, 100, 1000, 10000].iter() {
