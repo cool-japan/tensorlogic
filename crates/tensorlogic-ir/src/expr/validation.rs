@@ -140,6 +140,58 @@ impl TLExpr {
                 Ok(())
             }
 
+            // Alpha.3 enhancements
+            TLExpr::Lambda { body, .. } => body.validate_arity_recursive(seen),
+            TLExpr::Apply { function, argument } => {
+                let mut new_seen = seen.clone();
+                function.collect_and_check_arity(&mut new_seen)?;
+                argument.collect_and_check_arity(&mut new_seen)?;
+                Ok(())
+            }
+            TLExpr::SetMembership { element, set }
+            | TLExpr::SetUnion {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetIntersection {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetDifference {
+                left: element,
+                right: set,
+            } => {
+                let mut new_seen = seen.clone();
+                element.collect_and_check_arity(&mut new_seen)?;
+                set.collect_and_check_arity(&mut new_seen)?;
+                Ok(())
+            }
+            TLExpr::SetCardinality { set } => set.validate_arity_recursive(seen),
+            TLExpr::EmptySet => Ok(()),
+            TLExpr::SetComprehension { condition, .. } => condition.validate_arity_recursive(seen),
+            TLExpr::CountingExists { body, .. }
+            | TLExpr::CountingForAll { body, .. }
+            | TLExpr::ExactCount { body, .. }
+            | TLExpr::Majority { body, .. } => body.validate_arity_recursive(seen),
+            TLExpr::LeastFixpoint { body, .. } | TLExpr::GreatestFixpoint { body, .. } => {
+                body.validate_arity_recursive(seen)
+            }
+            TLExpr::Nominal { .. } => Ok(()),
+            TLExpr::At { formula, .. } => formula.validate_arity_recursive(seen),
+            TLExpr::Somewhere { formula } | TLExpr::Everywhere { formula } => {
+                formula.validate_arity_recursive(seen)
+            }
+            TLExpr::AllDifferent { .. } => Ok(()),
+            TLExpr::GlobalCardinality { values, .. } => {
+                let mut new_seen = seen.clone();
+                for val in values {
+                    val.collect_and_check_arity(&mut new_seen)?;
+                }
+                Ok(())
+            }
+            TLExpr::Abducible { .. } => Ok(()),
+            TLExpr::Explain { formula } => formula.validate_arity_recursive(seen),
+
             TLExpr::Constant(_) => Ok(()),
         }
     }
@@ -266,6 +318,55 @@ impl TLExpr {
                 releaser.collect_and_check_arity(seen)?;
                 Ok(())
             }
+
+            // Alpha.3 enhancements
+            TLExpr::Lambda { body, .. } => body.collect_and_check_arity(seen),
+            TLExpr::Apply { function, argument } => {
+                function.collect_and_check_arity(seen)?;
+                argument.collect_and_check_arity(seen)?;
+                Ok(())
+            }
+            TLExpr::SetMembership { element, set }
+            | TLExpr::SetUnion {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetIntersection {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetDifference {
+                left: element,
+                right: set,
+            } => {
+                element.collect_and_check_arity(seen)?;
+                set.collect_and_check_arity(seen)?;
+                Ok(())
+            }
+            TLExpr::SetCardinality { set } => set.collect_and_check_arity(seen),
+            TLExpr::EmptySet => Ok(()),
+            TLExpr::SetComprehension { condition, .. } => condition.collect_and_check_arity(seen),
+            TLExpr::CountingExists { body, .. }
+            | TLExpr::CountingForAll { body, .. }
+            | TLExpr::ExactCount { body, .. }
+            | TLExpr::Majority { body, .. } => body.collect_and_check_arity(seen),
+            TLExpr::LeastFixpoint { body, .. } | TLExpr::GreatestFixpoint { body, .. } => {
+                body.collect_and_check_arity(seen)
+            }
+            TLExpr::Nominal { .. } => Ok(()),
+            TLExpr::At { formula, .. } => formula.collect_and_check_arity(seen),
+            TLExpr::Somewhere { formula } | TLExpr::Everywhere { formula } => {
+                formula.collect_and_check_arity(seen)
+            }
+            TLExpr::AllDifferent { .. } => Ok(()),
+            TLExpr::GlobalCardinality { values, .. } => {
+                for val in values {
+                    val.collect_and_check_arity(seen)?;
+                }
+                Ok(())
+            }
+            TLExpr::Abducible { .. } => Ok(()),
+            TLExpr::Explain { formula } => formula.collect_and_check_arity(seen),
 
             TLExpr::Constant(_) => Ok(()),
         }

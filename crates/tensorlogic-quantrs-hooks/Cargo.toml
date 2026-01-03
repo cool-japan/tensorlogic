@@ -1,12 +1,11 @@
 [package]
 name = "tensorlogic-quantrs-hooks"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "Probabilistic graphical model and message-passing interoperability for QuantRS2"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-rust-version.workspace = true
 
 [dependencies]
 anyhow.workspace = true
@@ -17,6 +16,21 @@ tensorlogic-ir.workspace = true
 tensorlogic-compiler.workspace = true
 tensorlogic-infer.workspace = true
 scirs2-core = { workspace = true, features = ["random"] }
+rayon = "1.11"
 
 [dev-dependencies]
 approx = "0.5"
+criterion.workspace = true
+proptest.workspace = true
+
+[[bench]]
+name = "inference_algorithms"
+harness = false
+
+[[bench]]
+name = "factor_operations"
+harness = false
+
+[[bench]]
+name = "message_passing"
+harness = false

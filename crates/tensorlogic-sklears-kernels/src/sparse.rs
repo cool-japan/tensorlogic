@@ -1,6 +1,43 @@
 //! Sparse kernel matrix support for large-scale problems.
 //!
-//! Provides efficient storage and operations for sparse kernel matrices.
+//! Provides efficient storage and operations for sparse kernel matrices using
+//! Compressed Sparse Row (CSR) format for memory-efficient representation.
+//!
+//! # Features
+//!
+//! - **Efficient Storage**: CSR format for sparse matrices with configurable thresholds
+//! - **Matrix Operations**: SpMV, transpose, addition, scaling, Frobenius norm
+//! - **Parallel Construction**: Multi-threaded matrix building with rayon
+//! - **Iterator Support**: Efficient iteration over non-zero entries
+//! - **Flexible Builders**: Configurable threshold and max entries per row
+//!
+//! # Example
+//!
+//! ```rust
+//! use tensorlogic_sklears_kernels::{SparseKernelMatrix, SparseKernelMatrixBuilder};
+//! use tensorlogic_sklears_kernels::tensor_kernels::LinearKernel;
+//!
+//! // Build a sparse kernel matrix with parallel computation
+//! let builder = SparseKernelMatrixBuilder::new()
+//!     .with_threshold(0.1).unwrap()
+//!     .with_max_entries_per_row(100).unwrap();
+//!
+//! let kernel = LinearKernel::new();
+//! let data = vec![vec![1.0, 0.0], vec![0.0, 1.0]];
+//! let matrix = builder.build_parallel(&data, &kernel).unwrap();
+//!
+//! // Sparse matrix-vector multiplication
+//! let mut matrix = SparseKernelMatrix::new(3);
+//! matrix.set(0, 0, 2.0);
+//! matrix.set(1, 1, 3.0);
+//! let x = vec![1.0, 2.0, 0.0];
+//! let y = matrix.spmv(&x).unwrap();
+//!
+//! // Iterate over non-zero entries
+//! for (row, col, value) in matrix.iter_nonzeros() {
+//!     println!("({}, {}) = {}", row, col, value);
+//! }
+//! ```
 
 use std::collections::HashMap;
 
@@ -297,10 +334,236 @@ impl Default for SparseKernelMatrixBuilder {
     }
 }
 
+/// Advanced sparse matrix operations
+impl SparseKernelMatrix {
+    /// Sparse matrix-vector multiplication: y = A * x
+    pub fn spmv(&mut self, x: &[f64]) -> Result<Vec<f64>> {
+        if x.len() != self.size {
+            return Err(KernelError::InvalidParameter {
+                parameter: "x".to_string(),
+                value: x.len().to_string(),
+                reason: format!("vector length must match matrix size {}", self.size),
+            });
+        }
+
+        self.finalize();
+
+        let mut y = vec![0.0; self.size];
+
+        for (row, y_elem) in y.iter_mut().enumerate() {
+            let start = self.row_ptr[row];
+            let end = self.row_ptr[row + 1];
+
+            let mut sum = 0.0;
+            for i in start..end {
+                let col = self.col_idx[i];
+                let value = self.values[i];
+                sum += value * x[col];
+            }
+            *y_elem = sum;
+        }
+
+        Ok(y)
+    }
+
+    /// Sparse matrix transpose
+    pub fn transpose(&self) -> Result<Self> {
+        let mut transposed = Self::new(self.size);
+
+        for row in 0..self.size {
+            let start = self.row_ptr[row];
+            let end = self.row_ptr[row + 1];
+
+            for i in start..end {
+                let col = self.col_idx[i];
+                let value = self.values[i];
+                transposed.set(col, row, value);
+            }
+        }
+
+        transposed.finalize();
+        Ok(transposed)
+    }
+
+    /// Add two sparse matrices element-wise
+    pub fn add(&mut self, other: &Self) -> Result<Self> {
+        if self.size != other.size {
+            return Err(KernelError::InvalidParameter {
+                parameter: "other".to_string(),
+                value: other.size.to_string(),
+                reason: format!("matrix sizes must match: {} vs {}", self.size, other.size),
+            });
+        }
+
+        self.finalize();
+
+        // Clone and finalize other to ensure all values are in CSR format
+        let mut other_finalized = other.clone();
+        other_finalized.finalize();
+
+        let mut result = Self::new(self.size);
+
+        // Add values from self
+        for row in 0..self.size {
+            let start = self.row_ptr[row];
+            let end = self.row_ptr[row + 1];
+
+            for i in start..end {
+                let col = self.col_idx[i];
+                let value = self.values[i];
+                result.set(row, col, value);
+            }
+        }
+
+        // Add values from other
+        for row in 0..other_finalized.size {
+            let start = other_finalized.row_ptr[row];
+            let end = other_finalized.row_ptr[row + 1];
+
+            for i in start..end {
+                let col = other_finalized.col_idx[i];
+                let value = other_finalized.values[i];
+                let existing = result.get(row, col).unwrap_or(0.0);
+                result.set(row, col, existing + value);
+            }
+        }
+
+        result.finalize();
+        Ok(result)
+    }
+
+    /// Frobenius norm of the sparse matrix
+    pub fn frobenius_norm(&self) -> f64 {
+        let mut sum_squares = 0.0;
+
+        for row in 0..self.size {
+            let start = self.row_ptr[row];
+            let end = self.row_ptr[row + 1];
+
+            for i in start..end {
+                let value = self.values[i];
+                sum_squares += value * value;
+            }
+        }
+
+        sum_squares.sqrt()
+    }
+
+    /// Iterator over non-zero entries (row, col, value)
+    pub fn iter_nonzeros(&mut self) -> SparseMatrixIterator<'_> {
+        self.finalize();
+        SparseMatrixIterator {
+            matrix: self,
+            current_row: 0,
+            current_idx: 0,
+        }
+    }
+
+    /// Scale the matrix by a scalar
+    pub fn scale(&mut self, scalar: f64) {
+        for value in &mut self.values {
+            *value *= scalar;
+        }
+
+        for value in self.temp_map.values_mut() {
+            *value *= scalar;
+        }
+    }
+}
+
+/// Iterator for sparse matrix non-zero entries
+pub struct SparseMatrixIterator<'a> {
+    matrix: &'a SparseKernelMatrix,
+    current_row: usize,
+    current_idx: usize,
+}
+
+impl<'a> Iterator for SparseMatrixIterator<'a> {
+    type Item = (usize, usize, f64);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.current_row < self.matrix.size {
+            let row_end = self.matrix.row_ptr[self.current_row + 1];
+
+            if self.current_idx < row_end {
+                let col = self.matrix.col_idx[self.current_idx];
+                let value = self.matrix.values[self.current_idx];
+                self.current_idx += 1;
+                return Some((self.current_row, col, value));
+            }
+
+            self.current_row += 1;
+            self.current_idx = self
+                .matrix
+                .row_ptr
+                .get(self.current_row)
+                .copied()
+                .unwrap_or(0);
+        }
+
+        None
+    }
+}
+
+/// Parallel sparse kernel matrix builder
+impl SparseKernelMatrixBuilder {
+    /// Build sparse kernel matrix with parallel computation
+    pub fn build_parallel(
+        &self,
+        data: &[Vec<f64>],
+        kernel: &dyn Kernel,
+    ) -> Result<SparseKernelMatrix> {
+        use rayon::prelude::*;
+
+        let n = data.len();
+        let mut matrix = SparseKernelMatrix::new(n);
+
+        // Compute rows in parallel
+        let row_data: Vec<Vec<(usize, f64)>> = (0..n)
+            .into_par_iter()
+            .map(|i| {
+                let mut row_entries = Vec::new();
+
+                for j in 0..n {
+                    match kernel.compute(&data[i], &data[j]) {
+                        Ok(value) => {
+                            if value.abs() >= self.threshold {
+                                row_entries.push((j, value));
+                            }
+                        }
+                        Err(_) => continue,
+                    }
+                }
+
+                // If max_entries_per_row is set, keep only top-k entries
+                if let Some(max_entries) = self.max_entries_per_row {
+                    if row_entries.len() > max_entries {
+                        row_entries
+                            .sort_by(|(_, a), (_, b)| b.abs().partial_cmp(&a.abs()).unwrap());
+                        row_entries.truncate(max_entries);
+                    }
+                }
+
+                row_entries
+            })
+            .collect();
+
+        // Sequentially insert into matrix
+        for (i, row_entries) in row_data.into_iter().enumerate() {
+            for (j, value) in row_entries {
+                matrix.set(i, j, value);
+            }
+        }
+
+        matrix.finalize();
+        Ok(matrix)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tensor_kernel::LinearKernel;
+    use crate::tensor_kernels::LinearKernel;
 
     #[test]
     fn test_sparse_matrix_creation() {
@@ -450,5 +713,144 @@ mod tests {
 
         // Should be treated as zero and filtered out
         assert_eq!(matrix.nnz(), 0);
+    }
+
+    #[test]
+    fn test_sparse_matrix_spmv() {
+        let mut matrix = SparseKernelMatrix::new(3);
+        matrix.set(0, 0, 2.0);
+        matrix.set(0, 2, 1.0);
+        matrix.set(1, 1, 3.0);
+        matrix.set(2, 0, 1.0);
+        matrix.set(2, 2, 2.0);
+
+        let x = vec![1.0, 2.0, 3.0];
+        let y = matrix.spmv(&x).unwrap();
+
+        assert_eq!(y.len(), 3);
+        assert!((y[0] - 5.0).abs() < 1e-10); // 2*1 + 1*3
+        assert!((y[1] - 6.0).abs() < 1e-10); // 3*2
+        assert!((y[2] - 7.0).abs() < 1e-10); // 1*1 + 2*3
+    }
+
+    #[test]
+    fn test_sparse_matrix_spmv_invalid_size() {
+        let mut matrix = SparseKernelMatrix::new(3);
+        matrix.set(0, 0, 1.0);
+
+        let x = vec![1.0, 2.0]; // Wrong size
+        let result = matrix.spmv(&x);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_sparse_matrix_transpose() {
+        let mut matrix = SparseKernelMatrix::new(3);
+        matrix.set(0, 1, 0.8);
+        matrix.set(1, 2, 0.6);
+        matrix.set(2, 0, 0.4);
+        matrix.finalize();
+
+        let transposed = matrix.transpose().unwrap();
+
+        assert_eq!(transposed.get(1, 0), Some(0.8));
+        assert_eq!(transposed.get(2, 1), Some(0.6));
+        assert_eq!(transposed.get(0, 2), Some(0.4));
+    }
+
+    #[test]
+    fn test_sparse_matrix_add() {
+        let mut matrix1 = SparseKernelMatrix::new(3);
+        matrix1.set(0, 0, 1.0);
+        matrix1.set(0, 1, 2.0);
+        matrix1.set(1, 1, 3.0);
+
+        let mut matrix2 = SparseKernelMatrix::new(3);
+        matrix2.set(0, 1, 1.0);
+        matrix2.set(1, 2, 4.0);
+        matrix2.set(2, 2, 5.0);
+
+        let result = matrix1.add(&matrix2).unwrap();
+
+        assert_eq!(result.get(0, 0), Some(1.0));
+        assert_eq!(result.get(0, 1), Some(3.0)); // 2.0 + 1.0
+        assert_eq!(result.get(1, 1), Some(3.0));
+        assert_eq!(result.get(1, 2), Some(4.0));
+        assert_eq!(result.get(2, 2), Some(5.0));
+    }
+
+    #[test]
+    fn test_sparse_matrix_add_invalid_size() {
+        let mut matrix1 = SparseKernelMatrix::new(3);
+        matrix1.set(0, 0, 1.0);
+
+        let matrix2 = SparseKernelMatrix::new(2);
+        let result = matrix1.add(&matrix2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_sparse_matrix_frobenius_norm() {
+        let mut matrix = SparseKernelMatrix::new(3);
+        matrix.set(0, 0, 3.0);
+        matrix.set(1, 1, 4.0);
+        matrix.finalize();
+
+        let norm = matrix.frobenius_norm();
+        assert!((norm - 5.0).abs() < 1e-10); // sqrt(3^2 + 4^2) = 5
+    }
+
+    #[test]
+    fn test_sparse_matrix_iterator() {
+        let mut matrix = SparseKernelMatrix::new(3);
+        matrix.set(0, 1, 0.8);
+        matrix.set(1, 2, 0.6);
+        matrix.set(2, 0, 0.4);
+
+        let entries: Vec<_> = matrix.iter_nonzeros().collect();
+
+        assert_eq!(entries.len(), 3);
+        assert!(entries.contains(&(0, 1, 0.8)));
+        assert!(entries.contains(&(1, 2, 0.6)));
+        assert!(entries.contains(&(2, 0, 0.4)));
+    }
+
+    #[test]
+    fn test_sparse_matrix_scale() {
+        let mut matrix = SparseKernelMatrix::new(3);
+        matrix.set(0, 0, 2.0);
+        matrix.set(1, 1, 4.0);
+        matrix.finalize();
+
+        matrix.scale(0.5);
+
+        assert_eq!(matrix.get(0, 0), Some(1.0));
+        assert_eq!(matrix.get(1, 1), Some(2.0));
+    }
+
+    #[test]
+    fn test_sparse_matrix_builder_parallel() {
+        let builder = SparseKernelMatrixBuilder::new();
+        let kernel = LinearKernel::new();
+        let data = vec![vec![1.0, 0.0], vec![0.0, 1.0], vec![0.5, 0.5]];
+
+        let matrix = builder.build_parallel(&data, &kernel).unwrap();
+        assert!(matrix.nnz() > 0);
+
+        // Compare with sequential build
+        let matrix_seq = builder.build(&data, &kernel).unwrap();
+        assert_eq!(matrix.nnz(), matrix_seq.nnz());
+    }
+
+    #[test]
+    fn test_sparse_matrix_parallel_with_threshold() {
+        let builder = SparseKernelMatrixBuilder::new()
+            .with_threshold(0.5)
+            .unwrap();
+        let kernel = LinearKernel::new();
+        let data = vec![vec![1.0, 0.0], vec![0.0, 1.0], vec![0.5, 0.5]];
+
+        let matrix = builder.build_parallel(&data, &kernel).unwrap();
+        assert!(matrix.nnz() > 0);
     }
 }

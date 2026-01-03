@@ -15,6 +15,10 @@ pub fn print_info(message: &str) {
     println!("{} {}", "ℹ".blue().bold(), message);
 }
 
+pub fn print_warning(message: &str) {
+    println!("{} {}", "⚠".yellow().bold(), message);
+}
+
 pub fn print_header(title: &str) {
     println!("\n{}", title.cyan().bold());
     println!("{}", "=".repeat(title.len()).cyan());
@@ -31,7 +35,7 @@ pub fn format_graph_stats(graph: &EinsumGraph) -> String {
 }
 
 pub fn print_compilation_success(graph: &EinsumGraph) {
-    print_success(&format!("Compilation successful"));
+    print_success("Compilation successful");
     println!("  {}", format_graph_stats(graph));
 }
 

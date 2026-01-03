@@ -300,3 +300,235 @@ impl SchemaAnalyzer {
         }
     }
 }
+
+/// Export a SymbolTable to Turtle format.
+///
+/// This function converts a TensorLogic SymbolTable back to RDF Turtle format,
+/// useful for serialization, debugging, and interoperability with other RDF tools.
+///
+/// # Arguments
+///
+/// * `table` - The SymbolTable to export
+/// * `base_iri` - Base IRI for generated resources (e.g., `"http://example.org/"`)
+///
+/// # Returns
+///
+/// A String containing valid Turtle RDF data.
+///
+/// # Example
+///
+/// ```
+/// use tensorlogic_adapters::{SymbolTable, DomainInfo, PredicateInfo};
+/// use tensorlogic_oxirs_bridge::schema::converter::symbol_table_to_turtle;
+///
+/// let mut table = SymbolTable::new();
+/// table.add_domain(DomainInfo::new("Person", 100).with_description("A human being")).unwrap();
+/// table.add_predicate(PredicateInfo::new("knows", vec!["Person".to_string(), "Person".to_string()])).unwrap();
+///
+/// let turtle = symbol_table_to_turtle(&table, "http://example.org/");
+/// assert!(turtle.contains("ex:Person"));
+/// assert!(turtle.contains("ex:knows"));
+/// ```
+pub fn symbol_table_to_turtle(table: &SymbolTable, base_iri: &str) -> String {
+    let mut output = String::new();
+
+    // Write prefixes
+    output.push_str("@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n");
+    output.push_str("@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n");
+    output.push_str("@prefix owl: <http://www.w3.org/2002/07/owl#> .\n");
+    output.push_str("@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n");
+    output.push_str(&format!("@prefix ex: <{}> .\n\n", base_iri));
+
+    // Skip standard types
+    let standard_types = ["Literal", "Resource", "Entity", "Value"];
+
+    // Export domains as classes
+    for (name, domain) in &table.domains {
+        if standard_types.contains(&name.as_str()) {
+            continue;
+        }
+
+        output.push_str(&format!("ex:{} a rdfs:Class", name));
+
+        if let Some(desc) = &domain.description {
+            output.push_str(&format!(
+                " ;\n    rdfs:label \"{}\"",
+                escape_turtle_string(desc)
+            ));
+        }
+
+        // Add cardinality as custom annotation
+        output.push_str(&format!(
+            " ;\n    rdfs:comment \"Cardinality: {}\"",
+            domain.cardinality
+        ));
+
+        output.push_str(" .\n\n");
+    }
+
+    // Export predicates as properties
+    for (name, predicate) in &table.predicates {
+        output.push_str(&format!("ex:{} a rdf:Property", name));
+
+        // Add domain (first argument type)
+        if !predicate.arg_domains.is_empty() {
+            let domain_name = &predicate.arg_domains[0];
+            if !standard_types.contains(&domain_name.as_str()) {
+                output.push_str(&format!(" ;\n    rdfs:domain ex:{}", domain_name));
+            }
+        }
+
+        // Add range (second argument type for binary predicates)
+        if predicate.arg_domains.len() > 1 {
+            let range_name = &predicate.arg_domains[1];
+            if !standard_types.contains(&range_name.as_str()) {
+                output.push_str(&format!(" ;\n    rdfs:range ex:{}", range_name));
+            }
+        }
+
+        if let Some(desc) = &predicate.description {
+            output.push_str(&format!(
+                " ;\n    rdfs:label \"{}\"",
+                escape_turtle_string(desc)
+            ));
+        }
+
+        output.push_str(" .\n\n");
+    }
+
+    output
+}
+
+/// Export a SymbolTable to JSON format.
+///
+/// This provides a JSON serialization of the SymbolTable for use with
+/// web services, configuration files, or JavaScript interoperability.
+///
+/// # Example
+///
+/// ```
+/// use tensorlogic_adapters::{SymbolTable, DomainInfo, PredicateInfo};
+/// use tensorlogic_oxirs_bridge::schema::converter::symbol_table_to_json;
+///
+/// let mut table = SymbolTable::new();
+/// table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+///
+/// let json = symbol_table_to_json(&table).unwrap();
+/// assert!(json.contains("\"Person\""));
+/// ```
+pub fn symbol_table_to_json(table: &SymbolTable) -> Result<String> {
+    serde_json::to_string_pretty(table)
+        .map_err(|e| anyhow::anyhow!("JSON serialization error: {}", e))
+}
+
+/// Import a SymbolTable from JSON format.
+///
+/// # Example
+///
+/// ```
+/// use tensorlogic_adapters::{SymbolTable, DomainInfo};
+/// use tensorlogic_oxirs_bridge::schema::converter::{symbol_table_to_json, symbol_table_from_json};
+///
+/// let mut table = SymbolTable::new();
+/// table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+///
+/// let json = symbol_table_to_json(&table).unwrap();
+/// let imported = symbol_table_from_json(&json).unwrap();
+///
+/// assert!(imported.domains.contains_key("Person"));
+/// ```
+pub fn symbol_table_from_json(json: &str) -> Result<SymbolTable> {
+    serde_json::from_str(json).map_err(|e| anyhow::anyhow!("JSON deserialization error: {}", e))
+}
+
+/// Escape a string for use in Turtle literals.
+fn escape_turtle_string(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
+        .replace('\t', "\\t")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tensorlogic_adapters::{DomainInfo, PredicateInfo};
+
+    #[test]
+    fn test_symbol_table_to_turtle_basic() {
+        let mut table = SymbolTable::new();
+        table
+            .add_domain(DomainInfo::new("Person", 100).with_description("A human being"))
+            .unwrap();
+        table
+            .add_domain(DomainInfo::new("Organization", 50))
+            .unwrap();
+        table
+            .add_predicate(PredicateInfo::new(
+                "worksFor",
+                vec!["Person".to_string(), "Organization".to_string()],
+            ))
+            .unwrap();
+
+        let turtle = symbol_table_to_turtle(&table, "http://example.org/");
+
+        assert!(turtle.contains("@prefix rdf:"));
+        assert!(turtle.contains("@prefix rdfs:"));
+        assert!(turtle.contains("ex:Person a rdfs:Class"));
+        assert!(turtle.contains("ex:Organization a rdfs:Class"));
+        assert!(turtle.contains("ex:worksFor a rdf:Property"));
+        assert!(turtle.contains("rdfs:domain ex:Person"));
+        assert!(turtle.contains("rdfs:range ex:Organization"));
+        assert!(turtle.contains("A human being"));
+    }
+
+    #[test]
+    fn test_symbol_table_to_turtle_skips_standard_types() {
+        let mut table = SymbolTable::new();
+        table.add_domain(DomainInfo::new("Literal", 10000)).unwrap();
+        table.add_domain(DomainInfo::new("Entity", 1000)).unwrap();
+        table.add_domain(DomainInfo::new("Person", 100)).unwrap();
+
+        let turtle = symbol_table_to_turtle(&table, "http://example.org/");
+
+        // Standard types should be skipped
+        assert!(!turtle.contains("ex:Literal"));
+        assert!(!turtle.contains("ex:Entity"));
+        // Custom type should be present
+        assert!(turtle.contains("ex:Person"));
+    }
+
+    #[test]
+    fn test_symbol_table_json_roundtrip() {
+        let mut table = SymbolTable::new();
+        table
+            .add_domain(DomainInfo::new("Person", 100).with_description("A person"))
+            .unwrap();
+        table
+            .add_predicate(
+                PredicateInfo::new("knows", vec!["Person".to_string(), "Person".to_string()])
+                    .with_description("Knows relationship"),
+            )
+            .unwrap();
+
+        let json = symbol_table_to_json(&table).unwrap();
+        let imported = symbol_table_from_json(&json).unwrap();
+
+        assert_eq!(table.domains.len(), imported.domains.len());
+        assert_eq!(table.predicates.len(), imported.predicates.len());
+        assert!(imported.domains.contains_key("Person"));
+        assert!(imported.predicates.contains_key("knows"));
+    }
+
+    #[test]
+    fn test_escape_turtle_string() {
+        assert_eq!(escape_turtle_string("simple"), "simple");
+        assert_eq!(
+            escape_turtle_string("with \"quotes\""),
+            "with \\\"quotes\\\""
+        );
+        assert_eq!(escape_turtle_string("line1\nline2"), "line1\\nline2");
+        assert_eq!(escape_turtle_string("with\\backslash"), "with\\\\backslash");
+    }
+}

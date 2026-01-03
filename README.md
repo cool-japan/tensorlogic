@@ -3,9 +3,9 @@
 **Logic-as-Tensor Planning Layer for Neural-Symbolic AI**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-1.90%2B-orange.svg)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-2111%2F2111-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-4364%2F4364-brightgreen.svg)](#testing)
 
 TensorLogic compiles logical rules (predicates, quantifiers, implications) into **tensor equations (einsum graphs)** with a minimal DSL + IR, enabling neural/symbolic/probabilistic models within a unified tensor computation framework.
 
@@ -16,17 +16,18 @@ TensorLogic compiles logical rules (predicates, quantifiers, implications) into 
 - 🐍 **Python Bindings**: Production-ready PyO3 bindings with NumPy integration
 - 🔧 **Multiple Backends**: CPU, SIMD-accelerated CPU, GPU (future)
 - 📊 **Comprehensive Benchmarks**: 24 benchmark groups across 5 suites
-- 🧪 **Extensively Tested**: 2,111 tests with 100% pass rate
+- 🧪 **Extensively Tested**: 4,363 tests with 100% pass rate
 - 📚 **Rich Documentation**: Tutorials, examples, API docs
-- 🔗 **Ecosystem Integration**: OxiRS (RDF*/SHACL), SkleaRS, QuantrS2, TrustformeRS
+- 🔗 **Ecosystem Integration**: OxiRS (RDF*/SHACL), SkleaRS, QuantrS2, TrustformeRS, ToRSh
+- 🤖 **Neurosymbolic AI**: Bidirectional tensor conversion with ToRSh (pure Rust PyTorch alternative)
 
 ## 🎉 Production Ready
 
-**Version**: 0.1.0-alpha.1 | **Status**: Production Ready
+**Version**: 0.1.0-alpha.2 | **Status**: Production Ready
 
 TensorLogic has reached production-ready status with comprehensive testing, benchmarking, and documentation:
 
-- ✅ **2,111/2,111 tests passing** (100% pass rate) - Comprehensive coverage across all crates
+- ✅ **4,364/4,364 tests passing** (100% pass rate) - Comprehensive coverage across all crates
 - ✅ **Zero compiler warnings** - Clean build with latest dependencies
 - ✅ **Complete benchmark suite** - 24 groups covering SIMD, memory, gradients, throughput
 - ✅ **Production packaging** - Ready for PyPI with cross-platform wheels
@@ -74,8 +75,12 @@ x, y = tl.var("x"), tl.var("y")
 knows = tl.pred("knows", [x, y])
 knows_someone = tl.exists("y", "Person", knows)
 
-# Compile to tensor graph
-graph = tl.compile(knows_someone)
+# Create compiler context and register domain (required for quantifiers)
+ctx = tl.compiler_context()
+ctx.add_domain("Person", 100)
+
+# Compile to tensor graph with context
+graph = tl.compile_with_context(knows_someone, ctx)
 
 # Execute with data
 knows_matrix = np.random.rand(100, 100)
@@ -166,6 +171,10 @@ TensorLogic follows a modular architecture with clear separation of concerns:
 │  │  OxiRS       │  │  SkleaRS     │  │ TrustformeRS │ │
 │  │  (RDF*/SHACL)│  │  (kernels)   │  │ (attention)  │ │
 │  └──────────────┘  └──────────────┘  └──────────────┘ │
+│  ┌──────────────┐  ┌──────────────┐                   │
+│  │  QuantrS2    │  │   ToRSh      │                   │
+│  │  (PGM/BP)    │  │ (PyTorch Alt)│                   │
+│  └──────────────┘  └──────────────┘                   │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -198,6 +207,7 @@ The project is organized as a Cargo workspace with 11 specialized crates:
 | **tensorlogic-quantrs-hooks** | PGM/message-passing interop for QuantrS2 | ✅ Core Features |
 | **tensorlogic-trustformers** | Transformer-as-rules (attention/FFN as einsum) | ✅ Complete |
 | **tensorlogic-py** | PyO3 bindings with `abi3-py39` support | ✅ Production Ready |
+| **torsh_interop** | ToRSh tensor interoperability (neurosymbolic AI) | ✅ Complete (feature-gated) |
 
 ## 🔬 Logic-to-Tensor Mapping
 
@@ -269,6 +279,69 @@ Typical speedups with SIMD acceleration:
 
 *Results on Intel Core i7 with AVX2. Your results may vary.*
 
+## 🤖 Neurosymbolic AI with ToRSh
+
+TensorLogic integrates seamlessly with **ToRSh** (pure Rust PyTorch alternative) for neurosymbolic AI applications:
+
+```rust
+use tensorlogic_scirs_backend::torsh_interop::*;
+use torsh_tensor::Tensor;
+use torsh_core::device::DeviceType;
+
+// Logic execution results → Neural network input
+let logic_results = compile_and_execute_rules()?;
+let torsh_tensor = tl_to_torsh_f32(&logic_results, DeviceType::Cpu)?;
+
+// Neural network processing
+let nn_output = neural_network.forward(torsh_tensor)?;
+
+// Neural output → Logic constraints
+let logic_constraints = torsh_to_tl(&nn_output)?;
+verify_constraints(&logic_constraints)?;
+```
+
+**Features**:
+- ✅ Bidirectional conversion (TensorLogic ↔ ToRSh)
+- ✅ Type support (f32/f64 with automatic conversion)
+- ✅ Lossless roundtrip for f64 precision
+- ✅ Feature-gated: `--features torsh` (optional)
+- ✅ Pure Rust (no C++ PyTorch dependencies)
+
+**Use Cases**:
+- **Differentiable logic programming**: Gradient descent on logic rules
+- **Hybrid systems**: Combine symbolic reasoning with neural learning
+- **Explainable AI**: Logic constraints on neural network outputs
+- **Knowledge-guided learning**: Inject symbolic knowledge into neural models
+
+**Basic Example**:
+```bash
+cargo run --example torsh_integration --features torsh
+```
+
+### Advanced Neurosymbolic Examples
+
+**Knowledge Graph Reasoning** ([knowledge_graph_reasoning.rs](crates/tensorlogic-scirs-backend/examples/knowledge_graph_reasoning.rs)):
+```bash
+cargo run --example knowledge_graph_reasoning --features torsh
+```
+Demonstrates hybrid logic-neural reasoning for knowledge completion:
+- Symbolic rules: transitivity, symmetry (friendOf relations)
+- Neural embeddings: entity similarity via learned representations
+- Hybrid scoring: α·logic + (1-α)·neural with configurable weights
+- Constraint validation: bidirectional conversion for verification
+
+**Constrained Neural Optimization** ([constrained_neural_optimization.rs](crates/tensorlogic-scirs-backend/examples/constrained_neural_optimization.rs)):
+```bash
+cargo run --example constrained_neural_optimization --features torsh
+```
+Shows how to enforce logical constraints on neural network outputs:
+- Logical constraints: mutual exclusivity, hierarchical rules
+- Violation detection: automatic constraint checking
+- Guided correction: constraint-aware prediction adjustments
+- Training integration: constraint loss for gradient descent
+
+See also: [torsh_integration.rs](crates/tensorlogic-scirs-backend/examples/torsh_integration.rs) for basic ToRSh interop usage.
+
 ## 🧪 Testing
 
 TensorLogic has extensive test coverage:
@@ -286,10 +359,10 @@ pytest tests/ -v
 ```
 
 **Test Statistics**:
-- **2,111 tests** across all crates (lib + integration + doc)
-- **100% pass rate**
-- **Zero compiler warnings** in builds
-- **110,805 total source lines of code**
+- **4,364 tests** across all crates (lib + integration + doc)
+- **100% pass rate** (12 tests intentionally skipped)
+- **Zero compiler warnings, zero clippy warnings, zero rustdoc warnings**
+- **313,107 lines of code** (278,630 Rust, 34,790 comments, 50,564 blank)
 - Coverage includes:
   - Unit tests (logic operations, type checking, optimization)
   - Integration tests (end-to-end workflows)
@@ -495,8 +568,8 @@ Licensed under Apache 2.0 License. See [LICENSE](LICENSE) for details.
 
 - [ ] GPU backend support
 - [ ] Additional fuzzy logic variants
-- [ ] PyTorch tensor interoperability
-- [ ] Provenance API in Python bindings
+- [x] **ToRSh tensor interoperability** - ✅ COMPLETE (pure Rust alternative to PyTorch)
+- [x] **Provenance API in Python bindings** - ✅ COMPLETE (get_provenance)
 
 ### Medium-term
 

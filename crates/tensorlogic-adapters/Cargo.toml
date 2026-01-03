@@ -1,12 +1,11 @@
 [package]
 name = "tensorlogic-adapters"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "Symbol tables, axis metadata, and domain masks for TensorLogic"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-rust-version.workspace = true
 
 [dependencies]
 tensorlogic-ir.workspace = true
@@ -18,12 +17,60 @@ thiserror.workspace = true
 anyhow.workspace = true
 bincode.workspace = true
 
+# Optional database backends
+rusqlite = { version = "0.36", features = ["bundled"], optional = true }
+tokio-postgres = { version = "0.7", optional = true }
+tokio = { version = "1.48", features = ["full"], optional = true }
+async-trait = { version = "0.1", optional = true }
+
+[features]
+default = []
+sqlite = ["dep:rusqlite"]
+postgres = ["dep:tokio-postgres", "dep:tokio", "dep:async-trait"]
+all-databases = ["sqlite", "postgres"]
+
 [dev-dependencies]
 proptest.workspace = true
 criterion.workspace = true
 
 [[bench]]
 name = "symbol_table_benchmarks"
+harness = false
+
+[[bench]]
+name = "incremental_validation_benchmarks"
+harness = false
+
+[[bench]]
+name = "query_planner_benchmarks"
+harness = false
+
+[[bench]]
+name = "schema_evolution_benchmarks"
+harness = false
+
+[[bench]]
+name = "database_benchmarks"
+harness = false
+
+[[bench]]
+name = "refinement_benchmarks"
+harness = false
+
+[[bench]]
+name = "synchronization_benchmarks"
+harness = false
+
+[[bench]]
+name = "query_cache_benchmarks"
+harness = false
+
+[[bench]]
+name = "merge_strategies_benchmarks"
+harness = false
+
+[[bench]]
+name = "utilities_benchmarks"
 harness = false
 
 [[bin]]

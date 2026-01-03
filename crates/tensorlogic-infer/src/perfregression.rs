@@ -181,6 +181,102 @@ impl BenchmarkStats {
     pub fn format_median(&self) -> String {
         format_duration_ns(self.median_ns as u64)
     }
+
+    /// Calculate percentile (0.0 to 100.0)
+    pub fn percentile(&self, p: f64) -> Option<f64> {
+        self.distribution.as_ref().and_then(|dist| {
+            if dist.is_empty() || !(0.0..=100.0).contains(&p) {
+                return None;
+            }
+
+            let mut sorted = dist.clone();
+            sorted.sort_unstable();
+
+            let index = (p / 100.0 * (sorted.len() - 1) as f64).round() as usize;
+            Some(sorted[index] as f64)
+        })
+    }
+
+    /// Get P50 (median) from distribution
+    pub fn p50(&self) -> Option<f64> {
+        self.percentile(50.0)
+    }
+
+    /// Get P95 (95th percentile)
+    pub fn p95(&self) -> Option<f64> {
+        self.percentile(95.0)
+    }
+
+    /// Get P99 (99th percentile)
+    pub fn p99(&self) -> Option<f64> {
+        self.percentile(99.0)
+    }
+
+    /// Calculate 95% confidence interval for the mean
+    pub fn confidence_interval_95(&self) -> (f64, f64) {
+        // Using t-distribution approximation for 95% CI
+        // t ≈ 1.96 for large samples (normal approximation)
+        let margin = 1.96 * (self.std_dev_ns / (self.samples as f64).sqrt());
+        (self.mean_ns - margin, self.mean_ns + margin)
+    }
+
+    /// Detect outliers using IQR method
+    pub fn detect_outliers(&self) -> Option<Vec<u64>> {
+        self.distribution.as_ref().map(|dist| {
+            let mut sorted = dist.clone();
+            sorted.sort_unstable();
+
+            let q1_idx = sorted.len() / 4;
+            let q3_idx = 3 * sorted.len() / 4;
+            let q1 = sorted[q1_idx] as f64;
+            let q3 = sorted[q3_idx] as f64;
+            let iqr = q3 - q1;
+
+            let lower_bound = q1 - 1.5 * iqr;
+            let upper_bound = q3 + 1.5 * iqr;
+
+            dist.iter()
+                .filter(|&&x| {
+                    let val = x as f64;
+                    val < lower_bound || val > upper_bound
+                })
+                .copied()
+                .collect()
+        })
+    }
+
+    /// Create a new BenchmarkStats with outliers removed
+    pub fn without_outliers(&self) -> Option<Self> {
+        self.distribution.as_ref().map(|dist| {
+            let mut sorted = dist.clone();
+            sorted.sort_unstable();
+
+            let q1_idx = sorted.len() / 4;
+            let q3_idx = 3 * sorted.len() / 4;
+            let q1 = sorted[q1_idx] as f64;
+            let q3 = sorted[q3_idx] as f64;
+            let iqr = q3 - q1;
+
+            let lower_bound = q1 - 1.5 * iqr;
+            let upper_bound = q3 + 1.5 * iqr;
+
+            let filtered: Vec<u64> = dist
+                .iter()
+                .filter(|&&x| {
+                    let val = x as f64;
+                    val >= lower_bound && val <= upper_bound
+                })
+                .copied()
+                .collect();
+
+            if filtered.is_empty() {
+                // If all data is outliers, return original
+                return self.clone();
+            }
+
+            BenchmarkStats::from_samples(self.name.clone(), filtered)
+        })
+    }
 }
 
 /// Comparison between current and baseline benchmarks
@@ -192,6 +288,12 @@ pub struct BenchmarkComparison {
     pub change_percent: f64,
     pub is_regression: bool,
     pub is_improvement: bool,
+    /// Statistical significance (p-value from Mann-Whitney U test, if distributions available)
+    pub p_value: Option<f64>,
+    /// Effect size (Cohen's d)
+    pub effect_size: f64,
+    /// Whether the change is statistically significant (p < 0.05)
+    pub is_significant: bool,
 }
 
 impl BenchmarkComparison {
@@ -204,6 +306,22 @@ impl BenchmarkComparison {
     ) -> Self {
         let change_percent = ((current.mean_ns - baseline.mean_ns) / baseline.mean_ns) * 100.0;
 
+        // Calculate effect size (Cohen's d)
+        let pooled_std = ((current.std_dev_ns.powi(2) + baseline.std_dev_ns.powi(2)) / 2.0).sqrt();
+        let effect_size = if pooled_std > 0.0 {
+            (current.mean_ns - baseline.mean_ns) / pooled_std
+        } else {
+            0.0
+        };
+
+        // Perform Mann-Whitney U test if distributions are available
+        let p_value = match (&current.distribution, &baseline.distribution) {
+            (Some(curr_dist), Some(base_dist)) => mann_whitney_u_test(curr_dist, base_dist),
+            _ => None,
+        };
+
+        let is_significant = p_value.map(|p| p < 0.05).unwrap_or(false);
+
         BenchmarkComparison {
             name: current.name.clone(),
             is_regression: change_percent > regression_threshold,
@@ -211,6 +329,23 @@ impl BenchmarkComparison {
             current,
             baseline,
             change_percent,
+            p_value,
+            effect_size,
+            is_significant,
+        }
+    }
+
+    /// Get effect size interpretation
+    pub fn effect_size_interpretation(&self) -> &str {
+        let abs_d = self.effect_size.abs();
+        if abs_d < 0.2 {
+            "negligible"
+        } else if abs_d < 0.5 {
+            "small"
+        } else if abs_d < 0.8 {
+            "medium"
+        } else {
+            "large"
         }
     }
 
@@ -547,6 +682,109 @@ fn format_duration_ns(ns: u64) -> String {
     }
 }
 
+/// Mann-Whitney U test for non-parametric comparison of two distributions
+///
+/// Returns the p-value for the two-sided test.
+/// Lower p-value indicates stronger evidence that the distributions are different.
+/// p < 0.05 is typically considered statistically significant.
+fn mann_whitney_u_test(sample1: &[u64], sample2: &[u64]) -> Option<f64> {
+    let n1 = sample1.len();
+    let n2 = sample2.len();
+
+    if n1 == 0 || n2 == 0 {
+        return None;
+    }
+
+    // Combine and rank all values
+    let mut combined: Vec<(u64, usize)> = Vec::new();
+    for &val in sample1 {
+        combined.push((val, 1)); // 1 for sample1
+    }
+    for &val in sample2 {
+        combined.push((val, 2)); // 2 for sample2
+    }
+
+    // Sort by value
+    combined.sort_unstable_by_key(|(val, _)| *val);
+
+    // Assign ranks (average rank for ties)
+    let mut ranks = vec![0.0; combined.len()];
+    let mut i = 0;
+    while i < combined.len() {
+        let mut j = i;
+        let current_value = combined[i].0;
+
+        // Find all tied values
+        while j < combined.len() && combined[j].0 == current_value {
+            j += 1;
+        }
+
+        // Average rank for tied values
+        let avg_rank = ((i + 1) + j) as f64 / 2.0;
+        for rank in ranks.iter_mut().take(j).skip(i) {
+            *rank = avg_rank;
+        }
+
+        i = j;
+    }
+
+    // Calculate U statistic for sample1
+    let r1: f64 = combined
+        .iter()
+        .zip(ranks.iter())
+        .filter(|((_, sample), _)| *sample == 1)
+        .map(|(_, &rank)| rank)
+        .sum();
+
+    let u1 = r1 - (n1 * (n1 + 1)) as f64 / 2.0;
+    let u2 = (n1 * n2) as f64 - u1;
+
+    // Use smaller U
+    let u = u1.min(u2);
+
+    // Calculate z-score for large samples (normal approximation)
+    // Valid when both n1 and n2 > 20
+    if n1 > 20 && n2 > 20 {
+        let mean_u = (n1 * n2) as f64 / 2.0;
+        let std_u = ((n1 * n2 * (n1 + n2 + 1)) as f64 / 12.0).sqrt();
+        let z = (u - mean_u) / std_u;
+
+        // Two-tailed p-value using normal distribution approximation
+        // P(|Z| > |z|) = 2 * P(Z > |z|) = 2 * (1 - Φ(|z|))
+        let abs_z = z.abs();
+        let p = 2.0 * (1.0 - standard_normal_cdf(abs_z));
+        Some(p)
+    } else {
+        // For small samples, we'd need exact tables or permutation tests
+        // For now, return None (could be extended with exact tests)
+        None
+    }
+}
+
+/// Cumulative distribution function for standard normal distribution
+/// Approximation using error function
+fn standard_normal_cdf(x: f64) -> f64 {
+    0.5 * (1.0 + erf(x / std::f64::consts::SQRT_2))
+}
+
+/// Error function approximation (Abramowitz and Stegun formula 7.1.26)
+fn erf(x: f64) -> f64 {
+    let sign = if x >= 0.0 { 1.0 } else { -1.0 };
+    let x = x.abs();
+
+    let a1 = 0.254829592;
+    let a2 = -0.284496736;
+    let a3 = 1.421413741;
+    let a4 = -1.453152027;
+    let a5 = 1.061405429;
+    let p = 0.3275911;
+
+    let t = 1.0 / (1.0 + p * x);
+    let y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (-x * x).exp();
+
+    sign * y
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -685,5 +923,184 @@ mod tests {
 
         perf.clear();
         assert!(perf.results().is_empty());
+    }
+
+    #[test]
+    fn test_percentile_calculation() {
+        let samples = vec![10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+        let mut stats = BenchmarkStats::from_samples("test".to_string(), samples.clone());
+        stats.distribution = Some(samples);
+
+        // Test various percentiles
+        assert_eq!(stats.percentile(0.0), Some(10.0));
+        // P50 should be close to 50-60 range (linear interpolation)
+        assert!(stats.percentile(50.0).unwrap() >= 50.0 && stats.percentile(50.0).unwrap() <= 60.0);
+        assert_eq!(stats.percentile(100.0), Some(100.0));
+
+        // Test P50, P95, P99 exist
+        assert!(stats.p50().is_some());
+        assert!(stats.p95().is_some());
+        assert!(stats.p99().is_some());
+    }
+
+    #[test]
+    fn test_percentile_without_distribution() {
+        let samples = vec![10, 20, 30];
+        let stats = BenchmarkStats::from_samples("test".to_string(), samples);
+        // No distribution saved
+        assert_eq!(stats.p50(), None);
+        assert_eq!(stats.p95(), None);
+    }
+
+    #[test]
+    fn test_confidence_interval() {
+        let samples = vec![100, 105, 110, 95, 102, 108, 97, 103];
+        let stats = BenchmarkStats::from_samples("test".to_string(), samples);
+
+        let (lower, upper) = stats.confidence_interval_95();
+        assert!(lower < stats.mean_ns);
+        assert!(upper > stats.mean_ns);
+        assert!(upper - lower > 0.0); // CI should have non-zero width
+    }
+
+    #[test]
+    fn test_outlier_detection() {
+        // Create data with clear outliers
+        let mut samples = vec![100; 20]; // Most values around 100
+        samples.push(1000); // Clear outlier
+        samples.push(2000); // Another outlier
+
+        let mut stats = BenchmarkStats::from_samples("test".to_string(), samples.clone());
+        stats.distribution = Some(samples);
+
+        let outliers = stats.detect_outliers().unwrap();
+        assert!(!outliers.is_empty());
+        assert!(outliers.contains(&1000));
+        assert!(outliers.contains(&2000));
+    }
+
+    #[test]
+    fn test_without_outliers() {
+        let mut samples = vec![100, 102, 98, 101, 99, 103, 97];
+        samples.push(1000); // Add outlier
+
+        let mut stats = BenchmarkStats::from_samples("test".to_string(), samples.clone());
+        stats.distribution = Some(samples);
+
+        let filtered = stats.without_outliers().unwrap();
+        assert!(filtered.mean_ns < stats.mean_ns); // Mean should be lower without outlier
+        assert!(filtered.std_dev_ns < stats.std_dev_ns); // Std dev should be lower
+    }
+
+    #[test]
+    fn test_effect_size_calculation() {
+        // Use samples with variation for meaningful std dev
+        let baseline =
+            BenchmarkStats::from_samples("test".to_string(), vec![95, 100, 105, 98, 102]);
+        let current =
+            BenchmarkStats::from_samples("test".to_string(), vec![105, 110, 115, 108, 112]);
+
+        let comp = BenchmarkComparison::new(current, baseline, 5.0, 5.0);
+
+        // Effect size should be positive (current is slower)
+        assert!(comp.effect_size > 0.0);
+    }
+
+    #[test]
+    fn test_effect_size_interpretation() {
+        // Use samples with variation for meaningful effect size
+        let baseline = BenchmarkStats::from_samples(
+            "test".to_string(),
+            vec![95, 98, 100, 102, 105, 97, 103, 99, 101, 104],
+        );
+
+        // Very small effect - minimal increase
+        let current_small = BenchmarkStats::from_samples(
+            "test".to_string(),
+            vec![96, 99, 101, 103, 106, 98, 104, 100, 102, 105],
+        );
+        let comp_small = BenchmarkComparison::new(current_small, baseline.clone(), 5.0, 5.0);
+        // Effect could be negligible or small depending on variation
+        assert!(
+            comp_small.effect_size.abs() < 1.0,
+            "Effect size should be less than 1.0 for small differences"
+        );
+
+        // Large effect - significant increase (100 to 200 = doubling)
+        let current_large = BenchmarkStats::from_samples(
+            "test".to_string(),
+            vec![195, 198, 200, 202, 205, 197, 203, 199, 201, 204],
+        );
+        let comp_large = BenchmarkComparison::new(current_large, baseline, 5.0, 5.0);
+        assert_eq!(comp_large.effect_size_interpretation(), "large");
+        assert!(comp_large.effect_size > 1.0);
+    }
+
+    #[test]
+    fn test_mann_whitney_u_test_identical_distributions() {
+        let sample1 = vec![100; 50];
+        let sample2 = vec![100; 50];
+
+        let p = mann_whitney_u_test(&sample1, &sample2);
+        // Identical distributions should have high p-value (close to 1.0)
+        assert!(p.is_some());
+        assert!(p.unwrap() > 0.5);
+    }
+
+    #[test]
+    fn test_mann_whitney_u_test_different_distributions() {
+        let sample1 = vec![100; 50];
+        let sample2 = vec![150; 50];
+
+        let p = mann_whitney_u_test(&sample1, &sample2);
+        // Very different distributions should have low p-value (close to 0.0)
+        assert!(p.is_some());
+        assert!(p.unwrap() < 0.05); // Statistically significant
+    }
+
+    #[test]
+    fn test_mann_whitney_u_test_small_samples() {
+        let sample1 = vec![100, 110, 105];
+        let sample2 = vec![120, 125, 130];
+
+        let p = mann_whitney_u_test(&sample1, &sample2);
+        // Small samples (< 20) should return None
+        assert!(p.is_none());
+    }
+
+    #[test]
+    fn test_statistical_significance() {
+        // Create distributions with large difference
+        let baseline_samples: Vec<u64> = (0..100).map(|_| 100).collect();
+        let current_samples: Vec<u64> = (0..100).map(|_| 150).collect();
+
+        let mut baseline =
+            BenchmarkStats::from_samples("test".to_string(), baseline_samples.clone());
+        baseline.distribution = Some(baseline_samples);
+
+        let mut current = BenchmarkStats::from_samples("test".to_string(), current_samples.clone());
+        current.distribution = Some(current_samples);
+
+        let comp = BenchmarkComparison::new(current, baseline, 5.0, 5.0);
+
+        assert!(comp.is_significant); // Should be statistically significant
+        assert!(comp.p_value.is_some());
+        assert!(comp.p_value.unwrap() < 0.05);
+    }
+
+    #[test]
+    fn test_erf_function() {
+        // Test error function with known values
+        assert!((erf(0.0) - 0.0).abs() < 0.01);
+        assert!((erf(1.0) - 0.8427).abs() < 0.01);
+        assert!((erf(-1.0) - (-0.8427)).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_standard_normal_cdf() {
+        // Test CDF with known values
+        assert!((standard_normal_cdf(0.0) - 0.5).abs() < 0.01);
+        assert!((standard_normal_cdf(1.96) - 0.975).abs() < 0.01);
+        assert!((standard_normal_cdf(-1.96) - 0.025).abs() < 0.01);
     }
 }

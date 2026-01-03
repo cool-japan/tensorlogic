@@ -5,15 +5,23 @@
 //!
 //! # Architecture
 //!
-//! The pipeline applies optimizations in this order:
+//! The pipeline applies 7 optimization passes in this order:
 //! 1. **Negation optimization**: Push negations inward using De Morgan's laws
 //! 2. **Constant folding**: Evaluate constant expressions at compile time
-//! 3. **Algebraic simplification**: Apply mathematical identities
+//! 3. **Algebraic simplification**: Apply mathematical identities (x+0=x, x*1=x, etc.)
+//! 4. **Strength reduction**: Replace expensive operations with cheaper equivalents (x^2→x*x)
+//! 5. **Distributivity**: Factor common subexpressions (a*b + a*c → a*(b+c))
+//! 6. **Quantifier optimization**: Loop-invariant code motion (∃x.(a+p(x)) → a + ∃x.p(x))
+//! 7. **Dead code elimination**: Remove unreachable code and constant branches
 //!
 //! This order is chosen because:
 //! - Negation optimization can expose more opportunities for other passes
-//! - Constant folding creates simpler expressions for algebraic simplification
-//! - Algebraic simplification can create new constants for the next iteration
+//! - Constant folding creates simpler expressions for subsequent passes
+//! - Algebraic simplification can create new constants and identity patterns
+//! - Strength reduction makes operations more efficient
+//! - Distributivity reduces redundant computation
+//! - Quantifier optimization hoists loop-invariant code
+//! - Dead code elimination removes unreachable branches created by earlier passes
 //!
 //! # Examples
 //!
@@ -42,7 +50,11 @@
 use super::{
     algebraic::{simplify_algebraic, AlgebraicSimplificationStats},
     constant_folding::{fold_constants, ConstantFoldingStats},
+    dead_code::{eliminate_dead_code, DeadCodeStats},
+    distributivity::{optimize_distributivity, DistributivityStats},
     negation::{optimize_negations, NegationOptStats},
+    quantifier_opt::{optimize_quantifiers, QuantifierOptStats},
+    strength_reduction::{reduce_strength, StrengthReductionStats},
 };
 use tensorlogic_ir::TLExpr;
 
@@ -55,6 +67,14 @@ pub struct PipelineConfig {
     pub enable_constant_folding: bool,
     /// Enable algebraic simplification pass
     pub enable_algebraic_simplification: bool,
+    /// Enable strength reduction pass
+    pub enable_strength_reduction: bool,
+    /// Enable distributivity optimization pass
+    pub enable_distributivity: bool,
+    /// Enable quantifier optimization pass
+    pub enable_quantifier_opt: bool,
+    /// Enable dead code elimination pass
+    pub enable_dead_code_elimination: bool,
     /// Maximum number of iterations before stopping
     pub max_iterations: usize,
     /// Stop early if an iteration makes no changes
@@ -67,6 +87,10 @@ impl Default for PipelineConfig {
             enable_negation_opt: true,
             enable_constant_folding: true,
             enable_algebraic_simplification: true,
+            enable_strength_reduction: true,
+            enable_distributivity: true,
+            enable_quantifier_opt: true,
+            enable_dead_code_elimination: true,
             max_iterations: 10,
             stop_on_fixed_point: true,
         }
@@ -85,6 +109,10 @@ impl PipelineConfig {
             enable_negation_opt: false,
             enable_constant_folding: false,
             enable_algebraic_simplification: false,
+            enable_strength_reduction: false,
+            enable_distributivity: false,
+            enable_quantifier_opt: false,
+            enable_dead_code_elimination: false,
             max_iterations: 1,
             stop_on_fixed_point: true,
         }
@@ -96,6 +124,10 @@ impl PipelineConfig {
             enable_negation_opt: false,
             enable_constant_folding: true,
             enable_algebraic_simplification: false,
+            enable_strength_reduction: false,
+            enable_distributivity: false,
+            enable_quantifier_opt: false,
+            enable_dead_code_elimination: false,
             max_iterations: 1,
             stop_on_fixed_point: true,
         }
@@ -107,6 +139,10 @@ impl PipelineConfig {
             enable_negation_opt: false,
             enable_constant_folding: false,
             enable_algebraic_simplification: true,
+            enable_strength_reduction: false,
+            enable_distributivity: false,
+            enable_quantifier_opt: false,
+            enable_dead_code_elimination: false,
             max_iterations: 1,
             stop_on_fixed_point: true,
         }
@@ -118,6 +154,10 @@ impl PipelineConfig {
             enable_negation_opt: true,
             enable_constant_folding: true,
             enable_algebraic_simplification: true,
+            enable_strength_reduction: true,
+            enable_distributivity: true,
+            enable_quantifier_opt: true,
+            enable_dead_code_elimination: true,
             max_iterations: 20,
             stop_on_fixed_point: true,
         }
@@ -152,6 +192,30 @@ impl PipelineConfig {
         self.stop_on_fixed_point = stop;
         self
     }
+
+    /// Builder method to enable/disable strength reduction.
+    pub fn with_strength_reduction(mut self, enable: bool) -> Self {
+        self.enable_strength_reduction = enable;
+        self
+    }
+
+    /// Builder method to enable/disable distributivity optimization.
+    pub fn with_distributivity(mut self, enable: bool) -> Self {
+        self.enable_distributivity = enable;
+        self
+    }
+
+    /// Builder method to enable/disable quantifier optimization.
+    pub fn with_quantifier_opt(mut self, enable: bool) -> Self {
+        self.enable_quantifier_opt = enable;
+        self
+    }
+
+    /// Builder method to enable/disable dead code elimination.
+    pub fn with_dead_code_elimination(mut self, enable: bool) -> Self {
+        self.enable_dead_code_elimination = enable;
+        self
+    }
 }
 
 /// Statistics from a single pipeline iteration.
@@ -163,6 +227,14 @@ pub struct IterationStats {
     pub constant_folding: ConstantFoldingStats,
     /// Algebraic simplification statistics
     pub algebraic: AlgebraicSimplificationStats,
+    /// Strength reduction statistics
+    pub strength_reduction: StrengthReductionStats,
+    /// Distributivity optimization statistics
+    pub distributivity: DistributivityStats,
+    /// Quantifier optimization statistics
+    pub quantifier_opt: QuantifierOptStats,
+    /// Dead code elimination statistics
+    pub dead_code: DeadCodeStats,
 }
 
 impl IterationStats {
@@ -176,6 +248,10 @@ impl IterationStats {
             || self.algebraic.identities_eliminated > 0
             || self.algebraic.annihilations_applied > 0
             || self.algebraic.idempotent_simplified > 0
+            || self.strength_reduction.total_optimizations() > 0
+            || self.distributivity.total_optimizations() > 0
+            || self.quantifier_opt.total_optimizations() > 0
+            || self.dead_code.total_optimizations() > 0
     }
 
     /// Get total number of optimizations applied in this iteration.
@@ -188,6 +264,10 @@ impl IterationStats {
             + self.algebraic.identities_eliminated
             + self.algebraic.annihilations_applied
             + self.algebraic.idempotent_simplified
+            + self.strength_reduction.total_optimizations()
+            + self.distributivity.total_optimizations()
+            + self.quantifier_opt.total_optimizations()
+            + self.dead_code.total_optimizations()
     }
 }
 
@@ -202,6 +282,14 @@ pub struct PipelineStats {
     pub constant_folding: ConstantFoldingStats,
     /// Algebraic simplification statistics (accumulated)
     pub algebraic: AlgebraicSimplificationStats,
+    /// Strength reduction statistics (accumulated)
+    pub strength_reduction: StrengthReductionStats,
+    /// Distributivity optimization statistics (accumulated)
+    pub distributivity: DistributivityStats,
+    /// Quantifier optimization statistics (accumulated)
+    pub quantifier_opt: QuantifierOptStats,
+    /// Dead code elimination statistics (accumulated)
+    pub dead_code: DeadCodeStats,
     /// Statistics per iteration
     pub iterations: Vec<IterationStats>,
     /// Whether the pipeline reached a fixed point
@@ -221,6 +309,10 @@ impl PipelineStats {
             + self.algebraic.identities_eliminated
             + self.algebraic.annihilations_applied
             + self.algebraic.idempotent_simplified
+            + self.strength_reduction.total_optimizations()
+            + self.distributivity.total_optimizations()
+            + self.quantifier_opt.total_optimizations()
+            + self.dead_code.total_optimizations()
     }
 
     /// Get the most productive iteration (one with most optimizations).
@@ -281,13 +373,63 @@ impl std::fmt::Display for PipelineStats {
             "  Idempotent simplified: {}",
             self.algebraic.idempotent_simplified
         )?;
+        writeln!(f, "\nStrength Reduction:")?;
+        writeln!(
+            f,
+            "  Power reductions: {}",
+            self.strength_reduction.power_reductions
+        )?;
+        writeln!(
+            f,
+            "  Operations eliminated: {}",
+            self.strength_reduction.operations_eliminated
+        )?;
+        writeln!(
+            f,
+            "  Special function optimizations: {}",
+            self.strength_reduction.special_function_optimizations
+        )?;
+        writeln!(f, "\nDistributivity:")?;
+        writeln!(
+            f,
+            "  Expressions factored: {}",
+            self.distributivity.expressions_factored
+        )?;
+        writeln!(
+            f,
+            "  Expressions expanded: {}",
+            self.distributivity.expressions_expanded
+        )?;
+        writeln!(f, "\nQuantifier Optimization:")?;
+        writeln!(
+            f,
+            "  Invariants hoisted: {}",
+            self.quantifier_opt.invariants_hoisted
+        )?;
+        writeln!(
+            f,
+            "  Quantifiers reordered: {}",
+            self.quantifier_opt.quantifiers_reordered
+        )?;
+        writeln!(f, "\nDead Code Elimination:")?;
+        writeln!(
+            f,
+            "  Branches eliminated: {}",
+            self.dead_code.branches_eliminated
+        )?;
+        writeln!(f, "  Short circuits: {}", self.dead_code.short_circuits)?;
+        writeln!(
+            f,
+            "  Unused quantifiers removed: {}",
+            self.dead_code.unused_quantifiers_removed
+        )?;
         Ok(())
     }
 }
 
 /// Multi-pass optimization pipeline for TLExpr expressions.
 ///
-/// The pipeline applies multiple optimization passes in sequence, iterating
+/// The pipeline applies 7 optimization passes in sequence, iterating
 /// until a fixed point is reached or the maximum number of iterations is hit.
 ///
 /// # Pass Order
@@ -300,6 +442,18 @@ impl std::fmt::Display for PipelineStats {
 ///
 /// 3. **Algebraic simplification**: Applies mathematical identities like
 ///    x + 0 = x, x * 1 = x, etc. This can create new constants for folding.
+///
+/// 4. **Strength reduction**: Replaces expensive operations with cheaper
+///    equivalents (e.g., x^2 → x*x, exp(log(x)) → x).
+///
+/// 5. **Distributivity**: Factors common subexpressions to reduce redundant
+///    computation (e.g., a*b + a*c → a*(b+c)).
+///
+/// 6. **Quantifier optimization**: Hoists loop-invariant expressions out of
+///    quantifiers (e.g., ∃x.(a + p(x)) → a + ∃x.p(x)).
+///
+/// 7. **Dead code elimination**: Removes unreachable code and eliminates
+///    branches with constant conditions (e.g., if true then A else B → A).
 ///
 /// # Fixed Point Detection
 ///
@@ -390,6 +544,50 @@ impl OptimizationPipeline {
                 }
             }
 
+            // Pass 4: Strength reduction
+            if self.config.enable_strength_reduction {
+                let (optimized, sr_stats) = reduce_strength(&current);
+                iter_stats.strength_reduction = sr_stats;
+
+                if optimized != current {
+                    current = optimized;
+                    changed = true;
+                }
+            }
+
+            // Pass 5: Distributivity optimization
+            if self.config.enable_distributivity {
+                let (optimized, dist_stats) = optimize_distributivity(&current);
+                iter_stats.distributivity = dist_stats;
+
+                if optimized != current {
+                    current = optimized;
+                    changed = true;
+                }
+            }
+
+            // Pass 6: Quantifier optimization
+            if self.config.enable_quantifier_opt {
+                let (optimized, quant_stats) = optimize_quantifiers(&current);
+                iter_stats.quantifier_opt = quant_stats;
+
+                if optimized != current {
+                    current = optimized;
+                    changed = true;
+                }
+            }
+
+            // Pass 7: Dead code elimination
+            if self.config.enable_dead_code_elimination {
+                let (optimized, dead_stats) = eliminate_dead_code(&current);
+                iter_stats.dead_code = dead_stats;
+
+                if optimized != current {
+                    current = optimized;
+                    changed = true;
+                }
+            }
+
             // Accumulate statistics
             stats.total_iterations = iteration + 1;
             stats.negation.double_negations_eliminated +=
@@ -405,6 +603,33 @@ impl OptimizationPipeline {
             stats.algebraic.annihilations_applied += iter_stats.algebraic.annihilations_applied;
             stats.algebraic.idempotent_simplified += iter_stats.algebraic.idempotent_simplified;
             stats.algebraic.total_processed += iter_stats.algebraic.total_processed;
+            stats.strength_reduction.power_reductions +=
+                iter_stats.strength_reduction.power_reductions;
+            stats.strength_reduction.operations_eliminated +=
+                iter_stats.strength_reduction.operations_eliminated;
+            stats.strength_reduction.special_function_optimizations +=
+                iter_stats.strength_reduction.special_function_optimizations;
+            stats.strength_reduction.total_processed +=
+                iter_stats.strength_reduction.total_processed;
+            stats.distributivity.expressions_factored +=
+                iter_stats.distributivity.expressions_factored;
+            stats.distributivity.expressions_expanded +=
+                iter_stats.distributivity.expressions_expanded;
+            stats.distributivity.common_terms_extracted +=
+                iter_stats.distributivity.common_terms_extracted;
+            stats.distributivity.total_processed += iter_stats.distributivity.total_processed;
+            stats.quantifier_opt.invariants_hoisted += iter_stats.quantifier_opt.invariants_hoisted;
+            stats.quantifier_opt.quantifiers_reordered +=
+                iter_stats.quantifier_opt.quantifiers_reordered;
+            stats.quantifier_opt.quantifiers_fused += iter_stats.quantifier_opt.quantifiers_fused;
+            stats.quantifier_opt.total_processed += iter_stats.quantifier_opt.total_processed;
+            stats.dead_code.branches_eliminated += iter_stats.dead_code.branches_eliminated;
+            stats.dead_code.short_circuits += iter_stats.dead_code.short_circuits;
+            stats.dead_code.unused_quantifiers_removed +=
+                iter_stats.dead_code.unused_quantifiers_removed;
+            stats.dead_code.identity_simplifications +=
+                iter_stats.dead_code.identity_simplifications;
+            stats.dead_code.total_processed += iter_stats.dead_code.total_processed;
             stats.iterations.push(iter_stats);
 
             // Check for fixed point
@@ -644,5 +869,86 @@ mod tests {
         // Should eliminate division by 1.0
         assert!(stats.algebraic.identities_eliminated > 0);
         assert!(optimized != expr);
+    }
+
+    #[test]
+    fn test_dead_code_elimination_integration() {
+        // Expression with dead branches: if true then A else B → A
+        let a = TLExpr::pred("a", vec![Term::var("i")]);
+        let b = TLExpr::pred("b", vec![Term::var("i")]);
+        let expr = TLExpr::IfThenElse {
+            condition: Box::new(TLExpr::Constant(1.0)), // Always true
+            then_branch: Box::new(a.clone()),
+            else_branch: Box::new(b),
+        };
+
+        let pipeline = OptimizationPipeline::new();
+        let (optimized, stats) = pipeline.optimize(&expr);
+
+        // Should eliminate the dead else branch
+        assert!(stats.dead_code.branches_eliminated > 0);
+        // Should be simplified to just 'a'
+        assert!(matches!(optimized, TLExpr::Pred { .. }));
+    }
+
+    #[test]
+    fn test_all_passes_together() {
+        // Complex expression benefiting from all passes
+        // if true then (NOT(NOT(x^2 + 0)) AND (a*b + a*c)) else FALSE
+        let x = TLExpr::pred("x", vec![Term::var("i")]);
+        let a = TLExpr::pred("a", vec![Term::var("i")]);
+        let b = TLExpr::pred("b", vec![Term::var("i")]);
+        let c = TLExpr::pred("c", vec![Term::var("i")]);
+
+        let expr = TLExpr::IfThenElse {
+            condition: Box::new(TLExpr::Constant(1.0)),
+            then_branch: Box::new(TLExpr::and(
+                TLExpr::negate(TLExpr::negate(TLExpr::add(
+                    TLExpr::pow(x, TLExpr::Constant(2.0)),
+                    TLExpr::Constant(0.0),
+                ))),
+                TLExpr::add(
+                    TLExpr::mul(a.clone(), b.clone()),
+                    TLExpr::mul(a.clone(), c.clone()),
+                ),
+            )),
+            else_branch: Box::new(TLExpr::Constant(0.0)),
+        };
+
+        let pipeline = OptimizationPipeline::new();
+        let (_, stats) = pipeline.optimize(&expr);
+
+        // Should apply multiple passes:
+        // - Dead code elimination (remove else branch)
+        // - Negation optimization (double negation)
+        // - Algebraic simplification (x + 0 → x)
+        // - Strength reduction (x^2 → x*x)
+        // - Distributivity (a*b + a*c → a*(b+c))
+        assert!(
+            stats.dead_code.branches_eliminated > 0,
+            "Dead code elimination should apply"
+        );
+        assert!(
+            stats.negation.double_negations_eliminated > 0,
+            "Negation optimization should apply"
+        );
+        assert!(
+            stats.algebraic.identities_eliminated > 0,
+            "Algebraic simplification should apply"
+        );
+        assert!(
+            stats.strength_reduction.power_reductions > 0,
+            "Strength reduction should apply"
+        );
+        assert!(
+            stats.distributivity.expressions_factored > 0,
+            "Distributivity should apply"
+        );
+
+        // Total should be significant
+        assert!(
+            stats.total_optimizations() >= 5,
+            "Should apply at least 5 optimizations"
+        );
     }
 }

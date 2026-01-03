@@ -1,5 +1,7 @@
 //! # Tensorlogic-Trustformers
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! Transform transformer architectures into TensorLogic IR using einsum operations.
 //!
 //! This crate provides implementations of transformer components (self-attention,
@@ -111,17 +113,23 @@ pub mod decoder;
 pub mod encoder;
 pub mod error;
 pub mod ffn;
+pub mod flash_attention;
+pub mod gqa;
 pub mod kv_cache;
 pub mod layers;
+pub mod lora;
+pub mod moe;
 pub mod normalization;
 pub mod patterns;
 pub mod position;
 pub mod presets;
 pub mod rule_attention;
+pub mod sliding_window;
 pub mod sparse_attention;
 pub mod stacks;
 pub mod trustformers_integration;
 pub mod utils;
+pub mod vision;
 
 // Re-export main types for convenient access
 pub use attention::{MultiHeadAttention, SelfAttention};
@@ -131,8 +139,15 @@ pub use decoder::{Decoder, DecoderConfig};
 pub use encoder::{Encoder, EncoderConfig};
 pub use error::{Result, TrustformerError};
 pub use ffn::{FeedForward, GatedFeedForward};
+pub use flash_attention::{
+    FlashAttention, FlashAttentionConfig, FlashAttentionPreset, FlashAttentionStats,
+    FlashAttentionV2Config,
+};
+pub use gqa::{GQAConfig, GQAPreset, GQAStats, GroupedQueryAttention};
 pub use kv_cache::{CacheStats, KVCache, KVCacheConfig};
 pub use layers::{DecoderLayer, DecoderLayerConfig, EncoderLayer, EncoderLayerConfig};
+pub use lora::{LoRAAttention, LoRAConfig, LoRALinear, LoRAPreset, LoRAStats};
+pub use moe::{MoeConfig, MoeLayer, MoePreset, MoeStats, RouterType};
 pub use normalization::{LayerNorm, LayerNormConfig, RMSNorm};
 pub use patterns::{
     AttentionMask, BlockSparseMask, CausalMask, GlobalLocalMask, LocalMask, RuleBasedMask,
@@ -146,6 +161,9 @@ pub use presets::ModelPreset;
 pub use rule_attention::{
     RuleAttentionConfig, RuleAttentionType, RuleBasedAttention, StructuredAttention,
 };
+pub use sliding_window::{
+    SlidingWindowAttention, SlidingWindowConfig, SlidingWindowPreset, SlidingWindowStats,
+};
 pub use sparse_attention::{
     LocalAttention, SparseAttention, SparseAttentionConfig, SparsePatternType,
 };
@@ -155,6 +173,9 @@ pub use trustformers_integration::{
     TrustformersWeightLoader,
 };
 pub use utils::{decoder_stack_stats, encoder_stack_stats, ModelStats};
+pub use vision::{
+    PatchEmbedding, PatchEmbeddingConfig, ViTPreset, VisionTransformer, VisionTransformerConfig,
+};
 
 // Legacy compatibility (keep for backward compatibility)
 #[deprecated(since = "0.1.0", note = "Use AttentionConfig instead")]

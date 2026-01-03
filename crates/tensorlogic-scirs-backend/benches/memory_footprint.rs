@@ -6,17 +6,23 @@
 //! **Note**: This benchmark requires the `integration-tests` feature to avoid
 //! circular dev-dependencies with tensorlogic-compiler.
 
-#![cfg(feature = "integration-tests")]
-
+#[cfg(feature = "integration-tests")]
 use std::hint::black_box;
 
+#[cfg(feature = "integration-tests")]
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+#[cfg(feature = "integration-tests")]
 use scirs2_core::ndarray::ArrayD;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_compiler::compile_to_einsum;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_infer::TlAutodiff;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_ir::{TLExpr, Term};
+#[cfg(feature = "integration-tests")]
 use tensorlogic_scirs_backend::Scirs2Exec;
 
+#[cfg(feature = "integration-tests")]
 fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
     ArrayD::from_shape_vec(
         shape.to_vec(),
@@ -28,6 +34,7 @@ fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
 }
 
 /// Benchmark memory usage for simple expressions
+#[cfg(feature = "integration-tests")]
 fn bench_memory_simple_expressions(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_simple_expressions");
 
@@ -79,6 +86,7 @@ fn bench_memory_simple_expressions(c: &mut Criterion) {
 }
 
 /// Benchmark memory usage for matrix operations
+#[cfg(feature = "integration-tests")]
 fn bench_memory_matrix_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_matrix_operations");
 
@@ -112,6 +120,7 @@ fn bench_memory_matrix_operations(c: &mut Criterion) {
 }
 
 /// Benchmark memory usage for complex expressions
+#[cfg(feature = "integration-tests")]
 fn bench_memory_complex_expressions(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_complex_expressions");
 
@@ -146,10 +155,19 @@ fn bench_memory_complex_expressions(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 criterion_group!(
     benches,
     bench_memory_simple_expressions,
     bench_memory_matrix_operations,
     bench_memory_complex_expressions
 );
+#[cfg(feature = "integration-tests")]
 criterion_main!(benches);
+
+// Fallback main when integration-tests feature is not enabled
+#[cfg(not(feature = "integration-tests"))]
+fn main() {
+    eprintln!("This benchmark requires the 'integration-tests' feature to be enabled.");
+    eprintln!("Run with: cargo bench --features integration-tests");
+}

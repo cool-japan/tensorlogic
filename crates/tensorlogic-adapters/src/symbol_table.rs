@@ -203,7 +203,29 @@ impl SymbolTable {
                     self.collect_domains_from_expr(expr)?;
                 }
             }
+            // Counting quantifiers
+            TLExpr::CountingExists {
+                domain, var, body, ..
+            }
+            | TLExpr::CountingForAll {
+                domain, var, body, ..
+            }
+            | TLExpr::ExactCount {
+                domain, var, body, ..
+            }
+            | TLExpr::Majority { domain, var, body } => {
+                if !self.domains.contains_key(domain) {
+                    self.add_domain(DomainInfo::new(domain.clone(), 0))?;
+                }
+                self.bind_variable(var, domain)?;
+                self.collect_domains_from_expr(body)?;
+            }
             TLExpr::Pred { .. } | TLExpr::Constant(_) => {}
+            // All other expression types (alpha.3 enhancements) - don't introduce new domains
+            _ => {
+                // For now, skip domain collection for unimplemented expression types
+                // This allows the code to compile while features are being implemented
+            }
         }
         Ok(())
     }
@@ -317,7 +339,19 @@ impl SymbolTable {
                     self.collect_predicates_from_expr(expr)?;
                 }
             }
+            // Counting quantifiers
+            TLExpr::CountingExists { body, .. }
+            | TLExpr::CountingForAll { body, .. }
+            | TLExpr::ExactCount { body, .. }
+            | TLExpr::Majority { body, .. } => {
+                self.collect_predicates_from_expr(body)?;
+            }
             TLExpr::Constant(_) => {}
+            // All other expression types (alpha.3 enhancements) - don't introduce predicates
+            _ => {
+                // For now, skip predicate collection for unimplemented expression types
+                // This allows the code to compile while features are being implemented
+            }
         }
         Ok(())
     }

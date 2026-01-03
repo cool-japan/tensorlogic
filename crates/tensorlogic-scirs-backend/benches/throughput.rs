@@ -6,17 +6,23 @@
 //! **Note**: This benchmark requires the `integration-tests` feature to avoid
 //! circular dev-dependencies with tensorlogic-compiler.
 
-#![cfg(feature = "integration-tests")]
-
+#[cfg(feature = "integration-tests")]
 use std::hint::black_box;
 
+#[cfg(feature = "integration-tests")]
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+#[cfg(feature = "integration-tests")]
 use scirs2_core::ndarray::ArrayD;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_compiler::compile_to_einsum;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_infer::TlAutodiff;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_ir::{TLExpr, Term};
+#[cfg(feature = "integration-tests")]
 use tensorlogic_scirs_backend::Scirs2Exec;
 
+#[cfg(feature = "integration-tests")]
 fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
     ArrayD::from_shape_vec(
         shape.to_vec(),
@@ -28,6 +34,7 @@ fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
 }
 
 /// Benchmark throughput for element-wise operations
+#[cfg(feature = "integration-tests")]
 fn bench_throughput_elemwise(c: &mut Criterion) {
     let mut group = c.benchmark_group("throughput_elemwise");
 
@@ -69,6 +76,7 @@ fn bench_throughput_elemwise(c: &mut Criterion) {
 }
 
 /// Benchmark throughput for matrix operations
+#[cfg(feature = "integration-tests")]
 fn bench_throughput_matrix(c: &mut Criterion) {
     let mut group = c.benchmark_group("throughput_matrix");
 
@@ -96,6 +104,7 @@ fn bench_throughput_matrix(c: &mut Criterion) {
 }
 
 /// Benchmark throughput for reduction operations
+#[cfg(feature = "integration-tests")]
 fn bench_throughput_reductions(c: &mut Criterion) {
     let mut group = c.benchmark_group("throughput_reductions");
 
@@ -119,6 +128,7 @@ fn bench_throughput_reductions(c: &mut Criterion) {
 }
 
 /// Benchmark throughput for complex graphs
+#[cfg(feature = "integration-tests")]
 fn bench_throughput_complex(c: &mut Criterion) {
     let mut group = c.benchmark_group("throughput_complex");
 
@@ -170,6 +180,7 @@ fn bench_throughput_complex(c: &mut Criterion) {
 }
 
 /// Benchmark throughput for batch operations
+#[cfg(feature = "integration-tests")]
 fn bench_throughput_batch(c: &mut Criterion) {
     let mut group = c.benchmark_group("throughput_batch");
 
@@ -202,6 +213,7 @@ fn bench_throughput_batch(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 criterion_group!(
     benches,
     bench_throughput_elemwise,
@@ -210,4 +222,12 @@ criterion_group!(
     bench_throughput_complex,
     bench_throughput_batch
 );
+#[cfg(feature = "integration-tests")]
 criterion_main!(benches);
+
+// Fallback main when integration-tests feature is not enabled
+#[cfg(not(feature = "integration-tests"))]
+fn main() {
+    eprintln!("This benchmark requires the 'integration-tests' feature to be enabled.");
+    eprintln!("Run with: cargo bench --features integration-tests");
+}

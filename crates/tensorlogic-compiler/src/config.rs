@@ -4,8 +4,10 @@
 //! logical operations to tensor operations. Different strategies optimize
 //! for different objectives (accuracy, efficiency, differentiability).
 
+use serde::{Deserialize, Serialize};
+
 /// Strategy for compiling AND operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AndStrategy {
     /// Hadamard product (element-wise multiplication): `a * b`
     /// - Differentiable, efficient
@@ -37,7 +39,7 @@ pub enum AndStrategy {
 }
 
 /// Strategy for compiling OR operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum OrStrategy {
     /// Maximum: `max(a, b)`
     /// - Hard semantics
@@ -64,7 +66,7 @@ pub enum OrStrategy {
 }
 
 /// Strategy for compiling NOT operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum NotStrategy {
     /// Complement: `1 - a`
     /// - Standard negation
@@ -81,7 +83,7 @@ pub enum NotStrategy {
 }
 
 /// Strategy for compiling existential quantifiers (∃).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExistsStrategy {
     /// Sum reduction: `sum(P, axis)`
     /// - Soft semantics (counts satisfying instances)
@@ -105,7 +107,7 @@ pub enum ExistsStrategy {
 }
 
 /// Strategy for compiling universal quantifiers (∀).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ForallStrategy {
     /// Dual of exists via double negation: `NOT(EXISTS(NOT(P)))`
     /// - Inherits properties from NOT and EXISTS strategies
@@ -130,7 +132,7 @@ pub enum ForallStrategy {
 }
 
 /// Strategy for compiling implication (→).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImplicationStrategy {
     /// ReLU-based: `ReLU(b - a)`
     /// - Differentiable
@@ -159,7 +161,7 @@ pub enum ImplicationStrategy {
 }
 
 /// Strategy for compiling modal logic operators (Box □, Diamond ◇).
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ModalStrategy {
     /// All worlds must satisfy (min reduction over worlds)
     /// - Box: min_w P(w)
@@ -183,7 +185,7 @@ pub enum ModalStrategy {
 impl Eq for ModalStrategy {}
 
 /// Strategy for compiling temporal logic operators (Next X, Eventually F, Always G).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TemporalStrategy {
     /// Max over time (for Eventually, min for Always)
     Max,
@@ -196,7 +198,7 @@ pub enum TemporalStrategy {
 }
 
 /// Complete compilation configuration.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CompilationConfig {
     /// Strategy for AND operations
     pub and_strategy: AndStrategy,
@@ -520,5 +522,59 @@ mod tests {
         assert_eq!(config.and_strategy, AndStrategy::Lukasiewicz);
         assert_eq!(config.or_strategy, OrStrategy::Lukasiewicz);
         assert_eq!(config.exists_strategy, ExistsStrategy::LogSumExp);
+    }
+
+    #[test]
+    fn test_serialization_deserialization() {
+        let original = CompilationConfig::custom()
+            .and_strategy(AndStrategy::Lukasiewicz)
+            .or_strategy(OrStrategy::ProbabilisticSum)
+            .not_strategy(NotStrategy::Sigmoid { temperature: 5 })
+            .exists_strategy(ExistsStrategy::LogSumExp)
+            .forall_strategy(ForallStrategy::Product)
+            .implication_strategy(ImplicationStrategy::Reichenbach)
+            .modal_world_size(20)
+            .temporal_time_steps(50)
+            .build();
+
+        // Serialize to JSON
+        let json = serde_json::to_string(&original).expect("Failed to serialize");
+
+        // Deserialize back
+        let deserialized: CompilationConfig =
+            serde_json::from_str(&json).expect("Failed to deserialize");
+
+        // Verify equality
+        assert_eq!(original, deserialized);
+        assert_eq!(deserialized.and_strategy, AndStrategy::Lukasiewicz);
+        assert_eq!(deserialized.or_strategy, OrStrategy::ProbabilisticSum);
+        assert_eq!(
+            deserialized.not_strategy,
+            NotStrategy::Sigmoid { temperature: 5 }
+        );
+        assert_eq!(deserialized.modal_world_size, Some(20));
+        assert_eq!(deserialized.temporal_time_steps, Some(50));
+    }
+
+    #[test]
+    fn test_serialization_all_presets() {
+        let configs = vec![
+            (
+                "soft_differentiable",
+                CompilationConfig::soft_differentiable(),
+            ),
+            ("hard_boolean", CompilationConfig::hard_boolean()),
+            ("fuzzy_godel", CompilationConfig::fuzzy_godel()),
+            ("fuzzy_lukasiewicz", CompilationConfig::fuzzy_lukasiewicz()),
+            ("probabilistic", CompilationConfig::probabilistic()),
+        ];
+
+        for (name, config) in configs {
+            let json = serde_json::to_string(&config)
+                .unwrap_or_else(|_| panic!("Failed to serialize {}", name));
+            let deserialized: CompilationConfig = serde_json::from_str(&json)
+                .unwrap_or_else(|_| panic!("Failed to deserialize {}", name));
+            assert_eq!(config, deserialized, "Mismatch for preset: {}", name);
+        }
     }
 }

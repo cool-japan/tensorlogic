@@ -1,5 +1,7 @@
 //! OxiRS Bridge: RDF*/SHACL/GraphQL → TensorLogic Integration
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! This crate provides comprehensive bidirectional integration between RDF knowledge graphs
 //! and TensorLogic's tensor-based logical reasoning system. It enables semantic web data
 //! to be compiled into tensor operations while preserving provenance and validation semantics.
@@ -58,12 +60,18 @@
 //! - **RDFS Inference**: Automatic entailment and materialization
 //! - **Formats**: Turtle, N-Triples, JSON-LD
 //!
-//! ## SHACL Validation
-//!
+//! ### SHACL Validation
 //! - **Constraint Types**: 15+ SHACL constraint types (minCount, pattern, datatype, etc.)
 //! - **Logical Operators**: sh:and, sh:or, sh:not, sh:xone
 //! - **Validation Reports**: Full SHACL-compliant reports with severity levels
 //! - **Export**: Turtle and JSON export formats
+//!
+//! ### SPARQL 1.1 Query Support
+//! - **Query Types**: SELECT, ASK, DESCRIBE, CONSTRUCT
+//! - **Graph Patterns**: OPTIONAL (left-outer join), UNION (disjunction)
+//! - **Filters**: Comparison operators, BOUND, isIRI, isLiteral, regex
+//! - **Solution Modifiers**: DISTINCT, LIMIT, OFFSET, ORDER BY
+//! - **Compilation**: Full compilation to TensorLogic expressions
 //!
 //! ## Performance Features
 //!
@@ -220,7 +228,7 @@
 //! - [`shacl`] - SHACL constraint compilation and validation
 //! - [`rdfstar`] - RDF* provenance tracking
 //! - [`graphql`] - GraphQL schema integration
-//! - [`sparql`] - SPARQL query compilation
+//! - [`sparql`] - SPARQL 1.1 query compilation (SELECT/ASK/DESCRIBE/CONSTRUCT + OPTIONAL/UNION)
 //!
 //! # See Also
 //!
@@ -249,7 +257,7 @@ mod tests;
 
 pub use compilation::compile_rules;
 pub use error::{BridgeError, ParseLocation};
-pub use graphql::GraphQLConverter;
+pub use graphql::{DirectiveValue, GraphQLConverter, GraphQLDirective};
 pub use provenance::ProvenanceTracker;
 pub use rdfstar::{
     MetadataBuilder, ProvenanceStats, QuotedTriple, RdfStarProvenanceStore, StatementMetadata,
@@ -260,11 +268,16 @@ pub use schema::{
     inference::{InferenceStats, RdfsInferenceEngine},
     jsonld::JsonLdContext,
     metadata::{EntityMetadata, LangString, MetadataStats, MetadataStore},
+    nquads::{NQuadsProcessor, Quad},
     owl::{OwlClassInfo, OwlPropertyCharacteristics, OwlPropertyInfo, OwlRestriction},
+    streaming::{StreamAnalyzer, StreamStats, StreamingRdfLoader},
     ClassInfo, PropertyInfo, SchemaAnalyzer,
 };
 pub use shacl::{
     validation::{ShaclValidator, ValidationReport, ValidationResult, ValidationSeverity},
     ShaclConverter,
 };
-pub use sparql::{FilterCondition, PatternElement, SparqlCompiler, SparqlQuery, TriplePattern};
+pub use sparql::{
+    AggregateFunction, FilterCondition, PatternElement, SelectElement, SparqlCompiler, SparqlQuery,
+    TriplePattern,
+};

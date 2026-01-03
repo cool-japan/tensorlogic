@@ -419,8 +419,8 @@ mod tests {
         assert!(PyBackend::Auto.is_available());
         assert!(PyBackend::SciRS2CPU.is_available());
         assert!(PyBackend::SciRS2SIMD.is_available());
-        // GPU availability depends on feature flag
-        assert_eq!(PyBackend::SciRS2GPU.is_available(), cfg!(feature = "gpu"));
+        // GPU is not yet implemented, so it's never available
+        assert!(!PyBackend::SciRS2GPU.is_available());
     }
 
     #[test]

@@ -103,7 +103,7 @@ impl MemoryEstimator {
     }
 
     /// Estimate memory usage for a graph
-    /// Note: Uses default shape [10] for all tensors since graph only stores names
+    /// Note: Uses default shape `[10]` for all tensors since graph only stores names
     pub fn estimate(&self, graph: &EinsumGraph) -> MemoryEstimate {
         let mut estimate = MemoryEstimate::new();
         let default_shape = vec![10]; // Default shape for estimation

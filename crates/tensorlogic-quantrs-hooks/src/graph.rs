@@ -109,9 +109,15 @@ impl FactorGraph {
         self.variables.get(name)
     }
 
-    /// Get factor.
+    /// Get factor by ID.
     pub fn get_factor(&self, id: &str) -> Option<&Factor> {
         self.factors.get(id)
+    }
+
+    /// Get factor by name.
+    pub fn get_factor_by_name(&self, name: &str) -> Option<&Factor> {
+        // Search for factor with matching name
+        self.factors.values().find(|f| f.name == name)
     }
 
     /// Get factors connected to a variable.

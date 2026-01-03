@@ -2,7 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::TypeAnnotation;
+use crate::parametric_types::{unify, ParametricType, TypeSubstitution};
+use crate::{IrError, TypeAnnotation};
 
 /// Signature for a predicate: defines expected argument types
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -10,6 +11,9 @@ pub struct PredicateSignature {
     pub name: String,
     pub arg_types: Vec<TypeAnnotation>,
     pub arity: usize,
+    /// Optional parametric type signature for generic predicates
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parametric_types: Option<Vec<ParametricType>>,
 }
 
 impl PredicateSignature {
@@ -19,6 +23,18 @@ impl PredicateSignature {
             name: name.into(),
             arg_types,
             arity,
+            parametric_types: None,
+        }
+    }
+
+    /// Create a parametric signature
+    pub fn parametric(name: impl Into<String>, parametric_types: Vec<ParametricType>) -> Self {
+        let arity = parametric_types.len();
+        PredicateSignature {
+            name: name.into(),
+            arg_types: Vec::new(), // Populated from parametric types if needed
+            arity,
+            parametric_types: Some(parametric_types),
         }
     }
 
@@ -28,6 +44,7 @@ impl PredicateSignature {
             name: name.into(),
             arg_types: Vec::new(),
             arity,
+            parametric_types: None,
         }
     }
 
@@ -43,7 +60,7 @@ impl PredicateSignature {
         }
 
         // If signature has no type annotations, accept any types
-        if self.arg_types.is_empty() {
+        if self.arg_types.is_empty() && self.parametric_types.is_none() {
             return true;
         }
 
@@ -58,6 +75,60 @@ impl PredicateSignature {
         }
 
         true
+    }
+
+    /// Unify parametric signature with concrete argument types
+    pub fn unify_parametric(
+        &self,
+        arg_types: &[ParametricType],
+    ) -> Result<TypeSubstitution, IrError> {
+        if arg_types.len() != self.arity {
+            return Err(IrError::ArityMismatch {
+                name: self.name.clone(),
+                expected: self.arity,
+                actual: arg_types.len(),
+            });
+        }
+
+        let Some(ref param_types) = self.parametric_types else {
+            // No parametric types, fall back to simple matching
+            return Ok(TypeSubstitution::new());
+        };
+
+        // Unify each argument type with the parametric signature
+        let mut subst = TypeSubstitution::new();
+        for (expected, actual) in param_types.iter().zip(arg_types.iter()) {
+            let new_subst = unify(expected, actual)?;
+            // Compose substitutions
+            subst = crate::parametric_types::compose_substitutions(&subst, &new_subst);
+        }
+
+        Ok(subst)
+    }
+
+    /// Check if this is a parametric signature
+    pub fn is_parametric(&self) -> bool {
+        self.parametric_types.is_some()
+    }
+
+    /// Get the parametric types if present
+    pub fn get_parametric_types(&self) -> Option<&[ParametricType]> {
+        self.parametric_types.as_deref()
+    }
+
+    /// Instantiate a parametric signature with a substitution
+    pub fn instantiate(&self, subst: &TypeSubstitution) -> PredicateSignature {
+        let parametric_types = self
+            .parametric_types
+            .as_ref()
+            .map(|types| types.iter().map(|ty| ty.substitute(subst)).collect());
+
+        PredicateSignature {
+            name: self.name.clone(),
+            arg_types: self.arg_types.clone(),
+            arity: self.arity,
+            parametric_types,
+        }
     }
 }
 
@@ -166,5 +237,108 @@ mod tests {
         // Untyped signature should accept any types
         let any_type = TypeAnnotation::new("AnyType");
         assert!(sig.matches_types(&[Some(&any_type), None, Some(&any_type)]));
+    }
+
+    #[test]
+    fn test_parametric_signature_creation() {
+        let t_var = ParametricType::variable("T");
+        let sig = PredicateSignature::parametric(
+            "contains",
+            vec![ParametricType::list(t_var.clone()), t_var.clone()],
+        );
+
+        assert_eq!(sig.name, "contains");
+        assert_eq!(sig.arity, 2);
+        assert!(sig.is_parametric());
+        assert_eq!(sig.get_parametric_types().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_parametric_signature_unification() {
+        let t_var = ParametricType::variable("T");
+        let sig = PredicateSignature::parametric(
+            "contains",
+            vec![ParametricType::list(t_var.clone()), t_var.clone()],
+        );
+
+        let int_type = ParametricType::concrete("Int");
+        let list_int = ParametricType::list(int_type.clone());
+
+        // Unify List<T>, T with List<Int>, Int
+        let subst = sig.unify_parametric(&[list_int, int_type.clone()]).unwrap();
+        assert_eq!(subst.get("T").unwrap(), &int_type);
+    }
+
+    #[test]
+    fn test_parametric_signature_instantiation() {
+        let t_var = ParametricType::variable("T");
+        let sig = PredicateSignature::parametric("identity", vec![t_var.clone(), t_var.clone()]);
+
+        let int_type = ParametricType::concrete("Int");
+        let mut subst = TypeSubstitution::new();
+        subst.insert("T".to_string(), int_type.clone());
+
+        let instantiated = sig.instantiate(&subst);
+        assert!(instantiated.is_parametric());
+        let param_types = instantiated.get_parametric_types().unwrap();
+        assert_eq!(param_types[0], int_type);
+        assert_eq!(param_types[1], int_type);
+    }
+
+    #[test]
+    fn test_parametric_signature_arity_mismatch() {
+        let t_var = ParametricType::variable("T");
+        let sig = PredicateSignature::parametric("pred", vec![t_var.clone()]);
+
+        let int_type = ParametricType::concrete("Int");
+        // Provide 2 arguments when signature expects 1
+        let result = sig.unify_parametric(&[int_type.clone(), int_type]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parametric_signature_complex_types() {
+        let t_var = ParametricType::variable("T");
+        let u_var = ParametricType::variable("U");
+
+        // map_over: (T -> U, List<T>) -> List<U>
+        let sig = PredicateSignature::parametric(
+            "map_over",
+            vec![
+                ParametricType::function(t_var.clone(), u_var.clone()),
+                ParametricType::list(t_var.clone()),
+                ParametricType::list(u_var.clone()),
+            ],
+        );
+
+        let int_type = ParametricType::concrete("Int");
+        let string_type = ParametricType::concrete("String");
+
+        // Unify with (Int -> String, List<Int>, List<String>)
+        let subst = sig
+            .unify_parametric(&[
+                ParametricType::function(int_type.clone(), string_type.clone()),
+                ParametricType::list(int_type.clone()),
+                ParametricType::list(string_type.clone()),
+            ])
+            .unwrap();
+
+        assert_eq!(subst.get("T").unwrap(), &int_type);
+        assert_eq!(subst.get("U").unwrap(), &string_type);
+    }
+
+    #[test]
+    fn test_type_annotation_parametric_conversion() {
+        let type_ann = TypeAnnotation::new("Int");
+        let param_type = type_ann.to_parametric();
+        assert_eq!(param_type, ParametricType::concrete("Int"));
+
+        // Convert back
+        let converted_back = TypeAnnotation::from_parametric(&param_type);
+        assert_eq!(converted_back, Some(type_ann));
+
+        // Can't convert parametric types back
+        let list_int = ParametricType::list(ParametricType::concrete("Int"));
+        assert!(TypeAnnotation::from_parametric(&list_int).is_none());
     }
 }

@@ -1,16 +1,16 @@
 [package]
 name = "tensorlogic-trustformers"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "Transformer-as-rules: Self-attention and FFN layers as einsum expressions"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-rust-version.workspace = true
 
 [dependencies]
 anyhow.workspace = true
 serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 thiserror.workspace = true
 tensorlogic-ir.workspace = true
 tensorlogic-infer.workspace = true

@@ -46,7 +46,7 @@ pub enum AggregateOp {
 }
 
 /// T-norm (triangular norm) kinds for fuzzy AND operations.
-/// A t-norm is a binary operation T: [0,1] × [0,1] → [0,1] that is:
+/// A t-norm is a binary operation T: \[0,1\] × \[0,1\] → \[0,1\] that is:
 /// - Commutative: T(a,b) = T(b,a)
 /// - Associative: T(a,T(b,c)) = T(T(a,b),c)
 /// - Monotonic: If a ≤ b then T(a,c) ≤ T(b,c)
@@ -335,6 +335,175 @@ pub enum TLExpr {
     StrongRelease {
         released: Box<TLExpr>,
         releaser: Box<TLExpr>,
+    },
+
+    // ====== ALPHA.3 ENHANCEMENTS ======
+
+    // Higher-order logic
+    /// Lambda abstraction: λvar. body
+    /// Creates a function that binds var in body
+    Lambda {
+        var: String,
+        /// Optional type annotation for the parameter
+        var_type: Option<String>,
+        body: Box<TLExpr>,
+    },
+
+    /// Function application: Apply(f, arg) represents f(arg)
+    Apply {
+        function: Box<TLExpr>,
+        argument: Box<TLExpr>,
+    },
+
+    // Set theory operations
+    /// Set membership: elem ∈ set
+    SetMembership {
+        element: Box<TLExpr>,
+        set: Box<TLExpr>,
+    },
+
+    /// Set union: A ∪ B
+    SetUnion {
+        left: Box<TLExpr>,
+        right: Box<TLExpr>,
+    },
+
+    /// Set intersection: A ∩ B
+    SetIntersection {
+        left: Box<TLExpr>,
+        right: Box<TLExpr>,
+    },
+
+    /// Set difference: A \ B
+    SetDifference {
+        left: Box<TLExpr>,
+        right: Box<TLExpr>,
+    },
+
+    /// Set cardinality: |S|
+    SetCardinality {
+        set: Box<TLExpr>,
+    },
+
+    /// Empty set: ∅
+    EmptySet,
+
+    /// Set comprehension: { var : domain | condition }
+    SetComprehension {
+        var: String,
+        domain: String,
+        condition: Box<TLExpr>,
+    },
+
+    // Counting quantifiers
+    /// Counting existential quantifier: ∃≥k x. P(x)
+    /// "There exist at least k elements satisfying P"
+    CountingExists {
+        var: String,
+        domain: String,
+        body: Box<TLExpr>,
+        /// Minimum count threshold
+        min_count: usize,
+    },
+
+    /// Counting universal quantifier: ∀≥k x. P(x)
+    /// "At least k elements satisfy P"
+    CountingForAll {
+        var: String,
+        domain: String,
+        body: Box<TLExpr>,
+        /// Minimum count threshold
+        min_count: usize,
+    },
+
+    /// Exact count quantifier: ∃=k x. P(x)
+    /// "Exactly k elements satisfy P"
+    ExactCount {
+        var: String,
+        domain: String,
+        body: Box<TLExpr>,
+        /// Exact count required
+        count: usize,
+    },
+
+    /// Majority quantifier: Majority x. P(x)
+    /// "More than half of the elements satisfy P"
+    Majority {
+        var: String,
+        domain: String,
+        body: Box<TLExpr>,
+    },
+
+    // Fixed-point operators
+    /// Least fixed point (mu): μX. F(X)
+    /// Used for inductive definitions
+    LeastFixpoint {
+        /// Variable representing the fixed point
+        var: String,
+        /// Function body that references var
+        body: Box<TLExpr>,
+    },
+
+    /// Greatest fixed point (nu): νX. F(X)
+    /// Used for coinductive definitions
+    GreatestFixpoint {
+        /// Variable representing the fixed point
+        var: String,
+        /// Function body that references var
+        body: Box<TLExpr>,
+    },
+
+    // Hybrid logic
+    /// Nominal (named state/world): @i
+    /// Represents a specific named state in a model
+    Nominal {
+        name: String,
+    },
+
+    /// Satisfaction operator: @i φ
+    /// "Formula φ is true at the nominal state i"
+    At {
+        nominal: String,
+        formula: Box<TLExpr>,
+    },
+
+    /// Universal modality: E φ
+    /// "φ is true in some state reachable from here"
+    Somewhere {
+        formula: Box<TLExpr>,
+    },
+
+    /// Universal modality (dual): A φ
+    /// "φ is true in all reachable states"
+    Everywhere {
+        formula: Box<TLExpr>,
+    },
+
+    // Constraint programming
+    /// All-different constraint: all variables must have different values
+    AllDifferent {
+        variables: Vec<String>,
+    },
+
+    /// Global cardinality constraint
+    /// Each value in values must occur at least min and at most max times in variables
+    GlobalCardinality {
+        variables: Vec<String>,
+        values: Vec<TLExpr>,
+        min_occurrences: Vec<usize>,
+        max_occurrences: Vec<usize>,
+    },
+
+    // Abductive reasoning
+    /// Abducible literal: can be assumed true for explanation
+    Abducible {
+        name: String,
+        cost: f64, // Cost of assuming this literal
+    },
+
+    /// Explanation marker: indicates this part needs explanation
+    Explain {
+        formula: Box<TLExpr>,
     },
 }
 
@@ -716,7 +885,7 @@ impl TLExpr {
     /// Create a weighted rule with confidence/probability.
     ///
     /// # Arguments
-    /// * `weight` - Weight/confidence (typically in [0,1] for probabilities)
+    /// * `weight` - Weight/confidence (typically in \[0,1\] for probabilities)
     /// * `rule` - The rule expression
     pub fn weighted_rule(weight: f64, rule: TLExpr) -> Self {
         TLExpr::WeightedRule {
@@ -763,5 +932,291 @@ impl TLExpr {
             released: Box::new(released),
             releaser: Box::new(releaser),
         }
+    }
+
+    // ====== ALPHA.3 ENHANCEMENT BUILDERS ======
+
+    // Higher-order logic builders
+
+    /// Create a lambda abstraction: λvar. body
+    ///
+    /// # Arguments
+    /// * `var` - The parameter name
+    /// * `var_type` - Optional type annotation for the parameter
+    /// * `body` - The function body
+    pub fn lambda(var: impl Into<String>, var_type: Option<String>, body: TLExpr) -> Self {
+        TLExpr::Lambda {
+            var: var.into(),
+            var_type,
+            body: Box::new(body),
+        }
+    }
+
+    /// Create a lambda abstraction without type annotation.
+    pub fn lambda_untyped(var: impl Into<String>, body: TLExpr) -> Self {
+        Self::lambda(var, None, body)
+    }
+
+    /// Create a function application: f(arg)
+    ///
+    /// # Arguments
+    /// * `function` - The function to apply
+    /// * `argument` - The argument to apply to the function
+    pub fn apply(function: TLExpr, argument: TLExpr) -> Self {
+        TLExpr::Apply {
+            function: Box::new(function),
+            argument: Box::new(argument),
+        }
+    }
+
+    // Set theory builders
+
+    /// Create a set membership test: elem ∈ set
+    pub fn set_membership(element: TLExpr, set: TLExpr) -> Self {
+        TLExpr::SetMembership {
+            element: Box::new(element),
+            set: Box::new(set),
+        }
+    }
+
+    /// Create a set union: A ∪ B
+    pub fn set_union(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::SetUnion {
+            left: Box::new(left),
+            right: Box::new(right),
+        }
+    }
+
+    /// Create a set intersection: A ∩ B
+    pub fn set_intersection(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::SetIntersection {
+            left: Box::new(left),
+            right: Box::new(right),
+        }
+    }
+
+    /// Create a set difference: A \ B
+    pub fn set_difference(left: TLExpr, right: TLExpr) -> Self {
+        TLExpr::SetDifference {
+            left: Box::new(left),
+            right: Box::new(right),
+        }
+    }
+
+    /// Create a set cardinality expression: |S|
+    pub fn set_cardinality(set: TLExpr) -> Self {
+        TLExpr::SetCardinality { set: Box::new(set) }
+    }
+
+    /// Create an empty set: ∅
+    pub fn empty_set() -> Self {
+        TLExpr::EmptySet
+    }
+
+    /// Create a set comprehension: { var : domain | condition }
+    pub fn set_comprehension(
+        var: impl Into<String>,
+        domain: impl Into<String>,
+        condition: TLExpr,
+    ) -> Self {
+        TLExpr::SetComprehension {
+            var: var.into(),
+            domain: domain.into(),
+            condition: Box::new(condition),
+        }
+    }
+
+    // Counting quantifier builders
+
+    /// Create a counting existential quantifier: ∃≥k x. P(x)
+    ///
+    /// "There exist at least k elements satisfying P"
+    pub fn counting_exists(
+        var: impl Into<String>,
+        domain: impl Into<String>,
+        body: TLExpr,
+        min_count: usize,
+    ) -> Self {
+        TLExpr::CountingExists {
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+            min_count,
+        }
+    }
+
+    /// Create a counting universal quantifier: ∀≥k x. P(x)
+    ///
+    /// "At least k elements satisfy P"
+    pub fn counting_forall(
+        var: impl Into<String>,
+        domain: impl Into<String>,
+        body: TLExpr,
+        min_count: usize,
+    ) -> Self {
+        TLExpr::CountingForAll {
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+            min_count,
+        }
+    }
+
+    /// Create an exact count quantifier: ∃=k x. P(x)
+    ///
+    /// "Exactly k elements satisfy P"
+    pub fn exact_count(
+        var: impl Into<String>,
+        domain: impl Into<String>,
+        body: TLExpr,
+        count: usize,
+    ) -> Self {
+        TLExpr::ExactCount {
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+            count,
+        }
+    }
+
+    /// Create a majority quantifier: Majority x. P(x)
+    ///
+    /// "More than half of the elements satisfy P"
+    pub fn majority(var: impl Into<String>, domain: impl Into<String>, body: TLExpr) -> Self {
+        TLExpr::Majority {
+            var: var.into(),
+            domain: domain.into(),
+            body: Box::new(body),
+        }
+    }
+
+    // Fixed-point operator builders
+
+    /// Create a least fixed point: μX. F(X)
+    ///
+    /// Used for inductive definitions (smallest solution)
+    pub fn least_fixpoint(var: impl Into<String>, body: TLExpr) -> Self {
+        TLExpr::LeastFixpoint {
+            var: var.into(),
+            body: Box::new(body),
+        }
+    }
+
+    /// Create a greatest fixed point: νX. F(X)
+    ///
+    /// Used for coinductive definitions (largest solution)
+    pub fn greatest_fixpoint(var: impl Into<String>, body: TLExpr) -> Self {
+        TLExpr::GreatestFixpoint {
+            var: var.into(),
+            body: Box::new(body),
+        }
+    }
+
+    // Hybrid logic builders
+
+    /// Create a nominal (named state): @i
+    pub fn nominal(name: impl Into<String>) -> Self {
+        TLExpr::Nominal { name: name.into() }
+    }
+
+    /// Create a satisfaction operator: @i φ
+    ///
+    /// "Formula φ is true at the nominal state i"
+    pub fn at(nominal: impl Into<String>, formula: TLExpr) -> Self {
+        TLExpr::At {
+            nominal: nominal.into(),
+            formula: Box::new(formula),
+        }
+    }
+
+    /// Create a "somewhere" modality: E φ
+    ///
+    /// "φ is true in some reachable state"
+    pub fn somewhere(formula: TLExpr) -> Self {
+        TLExpr::Somewhere {
+            formula: Box::new(formula),
+        }
+    }
+
+    /// Create an "everywhere" modality: A φ
+    ///
+    /// "φ is true in all reachable states"
+    pub fn everywhere(formula: TLExpr) -> Self {
+        TLExpr::Everywhere {
+            formula: Box::new(formula),
+        }
+    }
+
+    // Constraint programming builders
+
+    /// Create an all-different constraint.
+    ///
+    /// All variables must have different values.
+    pub fn all_different(variables: Vec<String>) -> Self {
+        TLExpr::AllDifferent { variables }
+    }
+
+    /// Create a global cardinality constraint.
+    ///
+    /// Each value must occur within specified bounds in the variables.
+    pub fn global_cardinality(
+        variables: Vec<String>,
+        values: Vec<TLExpr>,
+        min_occurrences: Vec<usize>,
+        max_occurrences: Vec<usize>,
+    ) -> Self {
+        TLExpr::GlobalCardinality {
+            variables,
+            values,
+            min_occurrences,
+            max_occurrences,
+        }
+    }
+
+    // Abductive reasoning builders
+
+    /// Create an abducible literal.
+    ///
+    /// Can be assumed true for explanation with the given cost.
+    pub fn abducible(name: impl Into<String>, cost: f64) -> Self {
+        TLExpr::Abducible {
+            name: name.into(),
+            cost,
+        }
+    }
+
+    /// Mark a formula as needing explanation.
+    pub fn explain(formula: TLExpr) -> Self {
+        TLExpr::Explain {
+            formula: Box::new(formula),
+        }
+    }
+
+    /// Substitute a variable with an expression throughout this formula.
+    ///
+    /// This performs capture-avoiding substitution, respecting variable shadowing
+    /// in quantifiers, lambda abstractions, and let bindings.
+    ///
+    /// # Arguments
+    ///
+    /// * `var` - The variable name to replace
+    /// * `value` - The expression to substitute in place of the variable
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use tensorlogic_ir::{TLExpr, Term};
+    ///
+    /// // P(x) ∧ Q(x)
+    /// let p = TLExpr::pred("P", vec![Term::var("x")]);
+    /// let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    /// let expr = TLExpr::and(p.clone(), q);
+    ///
+    /// // Substitute x with y
+    /// let y = TLExpr::pred("y", vec![]);
+    /// let result = expr.substitute("x", &y);
+    /// ```
+    pub fn substitute(&self, var: &str, value: &TLExpr) -> Self {
+        optimization::substitution::substitute(self, var, value)
     }
 }

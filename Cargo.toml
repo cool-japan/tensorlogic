@@ -12,6 +12,7 @@ members = [
   "crates/tensorlogic-sklears-kernels",
   "crates/tensorlogic-quantrs-hooks",
   "crates/tensorlogic-trustformers",
+  "tools/bench-tracker",
 ]
 # Note: tensorlogic-py is excluded from workspace as it uses PyO3 extension-module
 # and must be built with maturin (not cargo build)
@@ -23,12 +24,11 @@ exclude = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://github.com/cool-japan/tensorlogic"
 repository = "https://github.com/cool-japan/tensorlogic"
-rust-version = "1.90"
 
 [workspace.dependencies]
 # External dependencies
@@ -47,22 +47,55 @@ log = "0.4"
 criterion = "0.7"
 proptest = "1"
 approx = "0.5"
+rayon = "1.11"
+parking_lot = "0.12"
+prost = "0.13"
+prost-types = "0.13"
+
+# CLI-specific dependencies
+toml = "0.9"
+clap = { version = "4.5", features = ["derive", "cargo", "env"] }
+clap_complete = "4.5"
+rustyline = "17.0"
+colored = "3.0"
+tabled = "0.16"
+notify = "8.2"
+indicatif = "0.18"
+dirs = "6.0"
+num_cpus = "1.17"
+flate2 = "1.1"
+
+# Dev dependencies
+assert_cmd = "2.1"
+predicates = "3.1"
+
+# Structured logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 
 # SciRS2 dependencies (from crates.io)
-scirs2-core = "0.1.0-rc.2"
-scirs2-linalg = "0.1.0-rc.2"
-scirs2-autograd = "0.1.0-rc.2"
-scirs2-optimize = "0.1.0-rc.2"
+scirs2-core = "0.1.1"
+scirs2-linalg = "0.1.1"
+scirs2-autograd = "0.1.1"
+scirs2-optimize = "0.1.1"
+
+# ToRSh dependencies (from crates.io) - Pure Rust PyTorch alternative
+torsh-core = "0.1.0-alpha.2"
+torsh-tensor = "0.1.0-alpha.2"
+
+# SkleaRS dependencies (from crates.io)
+sklears-core = "0.1.0-beta.1"
+sklears-kernel-approximation = "0.1.0-beta.1"
 
 # Internal tensorlogic crates
-tensorlogic-ir = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-ir" }
-tensorlogic-adapters = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-adapters" }
-tensorlogic-infer = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-infer" }
-tensorlogic-compiler = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-compiler" }
-tensorlogic-scirs-backend = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-scirs-backend" }
-tensorlogic-train = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-train" }
-tensorlogic-oxirs-bridge = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-oxirs-bridge" }
-tensorlogic-sklears-kernels = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-sklears-kernels" }
-tensorlogic-quantrs-hooks = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-quantrs-hooks" }
-tensorlogic-trustformers = { version = "0.1.0-alpha.1", path = "crates/tensorlogic-trustformers" }
+tensorlogic-ir = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-ir" }
+tensorlogic-adapters = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-adapters" }
+tensorlogic-infer = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-infer" }
+tensorlogic-compiler = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-compiler" }
+tensorlogic-scirs-backend = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-scirs-backend" }
+tensorlogic-train = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-train" }
+tensorlogic-oxirs-bridge = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-oxirs-bridge" }
+tensorlogic-sklears-kernels = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-sklears-kernels" }
+tensorlogic-quantrs-hooks = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-quantrs-hooks" }
+tensorlogic-trustformers = { version = "0.1.0-alpha.2", path = "crates/tensorlogic-trustformers" }
 

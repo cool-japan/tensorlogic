@@ -479,15 +479,215 @@ impl TrustformersWeightLoader {
 
     /// Load weights from a TrustformeRS checkpoint file
     ///
-    /// This is a placeholder for the actual implementation which would:
-    /// 1. Parse the checkpoint format
-    /// 2. Extract weight tensors
-    /// 3. Map them to TensorLogic graph tensor names
-    /// 4. Return weight data in a format suitable for execution
-    pub fn load_checkpoint(&self, _path: &str) -> Result<CheckpointData> {
-        // TODO: Implement actual checkpoint loading
-        // This would use trustformers-core's checkpoint loading utilities
-        Ok(CheckpointData::default())
+    /// Supports multiple checkpoint formats:
+    /// 1. JSON format (*.json) - Simple text-based format
+    /// 2. Binary format (*.bin) - Raw binary weights with metadata header
+    ///
+    /// ## JSON Format
+    ///
+    /// ```json
+    /// {
+    ///   "metadata": {
+    ///     "model_type": "encoder",
+    ///     "n_layers": "6",
+    ///     "d_model": "512"
+    ///   },
+    ///   "weights": {
+    ///     "encoder.layer.0.attention.query.weight": [0.1, 0.2, ...],
+    ///     "encoder.layer.0.attention.key.weight": [...]
+    ///   }
+    /// }
+    /// ```
+    ///
+    /// ## Binary Format
+    ///
+    /// Header (256 bytes):
+    /// - Magic: "TLCKPT" (6 bytes)
+    /// - Version: u32 (4 bytes)
+    /// - Num tensors: u32 (4 bytes)
+    /// - Metadata size: u32 (4 bytes)
+    /// - Reserved: (240 bytes)
+    ///
+    /// Followed by:
+    /// - Metadata JSON (metadata_size bytes)
+    /// - Tensor entries (name_length + name + data_length + data)
+    ///
+    /// ## Example
+    ///
+    /// ```no_run
+    /// use tensorlogic_trustformers::trustformers_integration::TrustformersWeightLoader;
+    ///
+    /// let loader = TrustformersWeightLoader::new();
+    /// let checkpoint = loader.load_checkpoint("model.json")?;
+    ///
+    /// // Access weights
+    /// if let Some(weights) = checkpoint.weights.get("encoder_0_attn_q_weight") {
+    ///     println!("Query weights: {:?}", &weights[..10]);
+    /// }
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn load_checkpoint(&self, path: &str) -> Result<CheckpointData> {
+        use std::path::Path;
+
+        let path_obj = Path::new(path);
+
+        if !path_obj.exists() {
+            return Err(TrustformerError::CheckpointLoadError(format!(
+                "Checkpoint file not found: {}",
+                path
+            )));
+        }
+
+        // Determine format based on extension
+        let extension = path_obj
+            .extension()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| {
+                TrustformerError::CheckpointLoadError(format!(
+                    "Cannot determine checkpoint format for: {}",
+                    path
+                ))
+            })?;
+
+        match extension {
+            "json" => self.load_json_checkpoint(path),
+            "bin" | "ckpt" => self.load_binary_checkpoint(path),
+            _ => Err(TrustformerError::CheckpointLoadError(format!(
+                "Unsupported checkpoint format: .{}",
+                extension
+            ))),
+        }
+    }
+
+    /// Load checkpoint from JSON format
+    fn load_json_checkpoint(&self, path: &str) -> Result<CheckpointData> {
+        use std::fs;
+
+        let content = fs::read_to_string(path).map_err(|e| {
+            TrustformerError::CheckpointLoadError(format!("Failed to read checkpoint: {}", e))
+        })?;
+
+        #[derive(Deserialize)]
+        struct JsonCheckpoint {
+            #[serde(default)]
+            metadata: std::collections::HashMap<String, String>,
+            weights: std::collections::HashMap<String, Vec<f32>>,
+        }
+
+        let json_ckpt: JsonCheckpoint = serde_json::from_str(&content).map_err(|e| {
+            TrustformerError::CheckpointLoadError(format!("Invalid JSON checkpoint: {}", e))
+        })?;
+
+        // Map TrustformeRS names to TensorLogic names
+        let mut mapped_weights = std::collections::HashMap::new();
+        for (trustformers_name, weights) in json_ckpt.weights {
+            let tl_name = self.map_layer_name(&trustformers_name)?;
+            mapped_weights.insert(tl_name, weights);
+        }
+
+        Ok(CheckpointData {
+            weights: mapped_weights,
+            metadata: json_ckpt.metadata,
+        })
+    }
+
+    /// Load checkpoint from binary format
+    fn load_binary_checkpoint(&self, path: &str) -> Result<CheckpointData> {
+        use std::fs;
+        use std::io::{BufReader, Read};
+
+        let file = fs::File::open(path).map_err(|e| {
+            TrustformerError::CheckpointLoadError(format!("Failed to open checkpoint: {}", e))
+        })?;
+
+        let mut reader = BufReader::new(file);
+
+        // Read header (256 bytes)
+        let mut header = [0u8; 256];
+        reader.read_exact(&mut header).map_err(|e| {
+            TrustformerError::CheckpointLoadError(format!("Failed to read header: {}", e))
+        })?;
+
+        // Verify magic
+        let magic = &header[0..6];
+        if magic != b"TLCKPT" {
+            return Err(TrustformerError::CheckpointLoadError(
+                "Invalid checkpoint magic number".to_string(),
+            ));
+        }
+
+        // Read version (u32 at offset 6)
+        let version = u32::from_le_bytes([header[6], header[7], header[8], header[9]]);
+        if version != 1 {
+            return Err(TrustformerError::CheckpointLoadError(format!(
+                "Unsupported checkpoint version: {}",
+                version
+            )));
+        }
+
+        // Read num_tensors (u32 at offset 10)
+        let num_tensors = u32::from_le_bytes([header[10], header[11], header[12], header[13]]);
+
+        // Read metadata_size (u32 at offset 14)
+        let metadata_size = u32::from_le_bytes([header[14], header[15], header[16], header[17]]);
+
+        // Read metadata JSON
+        let mut metadata_bytes = vec![0u8; metadata_size as usize];
+        reader.read_exact(&mut metadata_bytes).map_err(|e| {
+            TrustformerError::CheckpointLoadError(format!("Failed to read metadata: {}", e))
+        })?;
+
+        let metadata: std::collections::HashMap<String, String> =
+            serde_json::from_slice(&metadata_bytes).map_err(|e| {
+                TrustformerError::CheckpointLoadError(format!("Invalid metadata JSON: {}", e))
+            })?;
+
+        // Read tensor entries
+        let mut weights = std::collections::HashMap::new();
+
+        for _ in 0..num_tensors {
+            // Read name length (u32)
+            let mut name_len_bytes = [0u8; 4];
+            reader.read_exact(&mut name_len_bytes).map_err(|e| {
+                TrustformerError::CheckpointLoadError(format!("Failed to read name length: {}", e))
+            })?;
+            let name_len = u32::from_le_bytes(name_len_bytes) as usize;
+
+            // Read name
+            let mut name_bytes = vec![0u8; name_len];
+            reader.read_exact(&mut name_bytes).map_err(|e| {
+                TrustformerError::CheckpointLoadError(format!("Failed to read tensor name: {}", e))
+            })?;
+            let trustformers_name = String::from_utf8(name_bytes).map_err(|e| {
+                TrustformerError::CheckpointLoadError(format!("Invalid tensor name UTF-8: {}", e))
+            })?;
+
+            // Read data length (u32)
+            let mut data_len_bytes = [0u8; 4];
+            reader.read_exact(&mut data_len_bytes).map_err(|e| {
+                TrustformerError::CheckpointLoadError(format!("Failed to read data length: {}", e))
+            })?;
+            let data_len = u32::from_le_bytes(data_len_bytes) as usize;
+
+            // Read weights (f32 array)
+            let mut weight_bytes = vec![0u8; data_len * 4];
+            reader.read_exact(&mut weight_bytes).map_err(|e| {
+                TrustformerError::CheckpointLoadError(format!("Failed to read weights: {}", e))
+            })?;
+
+            // Convert bytes to f32
+            let mut tensor_weights = Vec::with_capacity(data_len);
+            for chunk in weight_bytes.chunks_exact(4) {
+                let value = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+                tensor_weights.push(value);
+            }
+
+            // Map name
+            let tl_name = self.map_layer_name(&trustformers_name)?;
+            weights.insert(tl_name, tensor_weights);
+        }
+
+        Ok(CheckpointData { weights, metadata })
     }
 
     /// Map TrustformeRS layer names to TensorLogic tensor names

@@ -1,5 +1,7 @@
 //! # Tensorlogic-SkleaRS-Kernels
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! Logic-derived similarity kernels for machine learning integration.
 //!
 //! This crate provides kernel functions that measure similarity based on logical
@@ -220,24 +222,38 @@
 //! 4. **Performance**: Efficient matrix operations
 //! 5. **Interpretability**: Clear mapping from logic to similarity
 
+pub mod ard_kernel;
 pub mod cache;
 pub mod composite_kernel;
 pub mod error;
 pub mod feature_extraction;
+pub mod gradient;
 pub mod graph_kernel;
+pub mod kernel_selection;
 pub mod kernel_transform;
 pub mod kernel_utils;
+pub mod kpca;
 pub mod logic_kernel;
 pub mod low_rank;
+pub mod multitask;
+pub mod online;
 pub mod provenance;
+pub mod random_features;
+#[cfg(feature = "sklears")]
+pub mod sklears_integration;
 pub mod sparse;
+pub mod spectral_kernel;
 pub mod string_kernel;
 pub mod symbolic;
-pub mod tensor_kernel;
+pub mod tensor_kernels;
 pub mod tree_kernel;
 pub mod types;
 
 // Re-export main types for convenience
+pub use ard_kernel::{
+    ArdMaternKernel, ArdRationalQuadraticKernel, ArdRbfKernel, ConstantKernel, DotProductKernel,
+    KernelGradient, ScaledKernel, WhiteNoiseKernel,
+};
 pub use cache::{CacheStats, CachedKernel, KernelMatrixCache};
 pub use composite_kernel::{KernelAlignment, ProductKernel, WeightedSumKernel};
 pub use error::{KernelError, Result};
@@ -246,21 +262,43 @@ pub use graph_kernel::{
     Graph, RandomWalkKernel, SubgraphMatchingConfig, SubgraphMatchingKernel, WalkKernelConfig,
     WeisfeilerLehmanConfig, WeisfeilerLehmanKernel,
 };
+pub use kernel_selection::{
+    CrossValidationResult, GammaSearchResult, KFoldConfig, KernelComparison, KernelSelector,
+};
 pub use kernel_transform::NormalizedKernel;
 pub use logic_kernel::{PredicateOverlapKernel, RuleSimilarityKernel};
 pub use low_rank::{NystromApproximation, NystromConfig, SamplingMethod};
+pub use multitask::{
+    HadamardTaskKernel, ICMKernel, ICMKernelWrapper, IndexKernel, LMCKernel, LMCKernelWrapper,
+    MultiTaskConfig, MultiTaskKernelBuilder, TaskInput,
+};
+pub use online::{
+    AdaptiveKernelMatrix, ForgetfulConfig, ForgetfulKernelMatrix, OnlineConfig, OnlineKernelMatrix,
+    OnlineStats, WindowedKernelMatrix,
+};
 pub use provenance::{
     ComputationResult, ProvenanceConfig, ProvenanceId, ProvenanceKernel, ProvenanceRecord,
     ProvenanceStatistics, ProvenanceTracker,
 };
+pub use random_features::{
+    KernelType as RffKernelType, NystroemFeatures, OrthogonalRandomFeatures, RandomFourierFeatures,
+    RffConfig,
+};
+#[cfg(feature = "sklears")]
+pub use sklears_integration::SklearsKernelAdapter;
 pub use sparse::{SparseKernelMatrix, SparseKernelMatrixBuilder};
+pub use spectral_kernel::{
+    ExpSineSquaredKernel, LocallyPeriodicKernel, RbfLinearKernel, SpectralComponent,
+    SpectralMixtureKernel,
+};
 pub use string_kernel::{
     EditDistanceKernel, NGramKernel, NGramKernelConfig, SubsequenceKernel, SubsequenceKernelConfig,
 };
 pub use symbolic::{KernelBuilder, KernelExpr, SymbolicKernel};
-pub use tensor_kernel::{
+pub use tensor_kernels::{
     ChiSquaredKernel, CosineKernel, HistogramIntersectionKernel, LaplacianKernel, LinearKernel,
-    PolynomialKernel, RbfKernel, SigmoidKernel,
+    MaternKernel, PeriodicKernel, PolynomialKernel, RationalQuadraticKernel, RbfKernel,
+    SigmoidKernel,
 };
 pub use tree_kernel::{
     PartialTreeKernel, PartialTreeKernelConfig, SubsetTreeKernel, SubsetTreeKernelConfig,

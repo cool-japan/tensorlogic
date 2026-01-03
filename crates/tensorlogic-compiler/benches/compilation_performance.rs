@@ -5,7 +5,8 @@ use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use tensorlogic_compiler::{
-    compile_to_einsum, compile_to_einsum_with_context, CompilationConfig, CompilerContext,
+    compile_to_einsum, compile_to_einsum_with_config, compile_to_einsum_with_context,
+    CompilationConfig, CompilerContext,
 };
 use tensorlogic_ir::{TLExpr, Term};
 
@@ -204,9 +205,7 @@ fn bench_strategy_comparison_and(c: &mut Criterion) {
     for (name, config) in strategies {
         group.bench_with_input(BenchmarkId::new("compile", name), &config, |b, config| {
             b.iter(|| {
-                let mut ctx = CompilerContext::new();
-                ctx.config = config.clone();
-                let graph = compile_to_einsum_with_context(black_box(&expr), &mut ctx).unwrap();
+                let graph = compile_to_einsum_with_config(black_box(&expr), config).unwrap();
                 black_box(graph);
             });
         });
@@ -242,9 +241,7 @@ fn bench_strategy_comparison_complex(c: &mut Criterion) {
     for (name, config) in strategies {
         group.bench_with_input(BenchmarkId::new("compile", name), &config, |b, config| {
             b.iter(|| {
-                let mut ctx = CompilerContext::new();
-                ctx.config = config.clone();
-                let graph = compile_to_einsum_with_context(black_box(&expr), &mut ctx).unwrap();
+                let graph = compile_to_einsum_with_config(black_box(&expr), config).unwrap();
                 black_box(graph);
             });
         });
@@ -314,6 +311,148 @@ fn bench_double_negation(c: &mut Criterion) {
 }
 
 // ============================================================================
+// Fuzzy Logic Operator Benchmarks
+// ============================================================================
+
+fn bench_tnorms(c: &mut Criterion) {
+    use tensorlogic_ir::TNormKind;
+
+    let mut group = c.benchmark_group("tnorms");
+
+    let left = TLExpr::pred("P", vec![Term::var("x")]);
+    let right = TLExpr::pred("Q", vec![Term::var("x")]);
+
+    let tnorm_kinds = vec![
+        ("minimum", TNormKind::Minimum),
+        ("product", TNormKind::Product),
+        ("lukasiewicz", TNormKind::Lukasiewicz),
+        ("nilpotent_min", TNormKind::NilpotentMinimum),
+        ("hamacher", TNormKind::Hamacher),
+    ];
+
+    for (name, kind) in tnorm_kinds {
+        group.bench_function(name, |b| {
+            let expr = TLExpr::tnorm(kind, left.clone(), right.clone());
+            b.iter(|| {
+                let graph = compile_to_einsum(black_box(&expr)).unwrap();
+                black_box(graph);
+            });
+        });
+    }
+
+    group.finish();
+}
+
+fn bench_tconorms(c: &mut Criterion) {
+    use tensorlogic_ir::TCoNormKind;
+
+    let mut group = c.benchmark_group("tconorms");
+
+    let left = TLExpr::pred("P", vec![Term::var("x")]);
+    let right = TLExpr::pred("Q", vec![Term::var("x")]);
+
+    let tconorm_kinds = vec![
+        ("maximum", TCoNormKind::Maximum),
+        ("probabilistic_sum", TCoNormKind::ProbabilisticSum),
+        ("bounded_sum", TCoNormKind::BoundedSum),
+        ("nilpotent_max", TCoNormKind::NilpotentMaximum),
+        ("hamacher", TCoNormKind::Hamacher),
+    ];
+
+    for (name, kind) in tconorm_kinds {
+        group.bench_function(name, |b| {
+            let expr = TLExpr::tconorm(kind, left.clone(), right.clone());
+            b.iter(|| {
+                let graph = compile_to_einsum(black_box(&expr)).unwrap();
+                black_box(graph);
+            });
+        });
+    }
+
+    group.finish();
+}
+
+fn bench_fuzzy_negations(c: &mut Criterion) {
+    use tensorlogic_ir::FuzzyNegationKind;
+
+    let mut group = c.benchmark_group("fuzzy_negations");
+
+    let expr_input = TLExpr::pred("P", vec![Term::var("x")]);
+
+    let negation_kinds = vec![
+        ("standard", FuzzyNegationKind::Standard),
+        ("sugeno", FuzzyNegationKind::Sugeno { lambda: 50 }),
+        ("yager", FuzzyNegationKind::Yager { w: 20 }),
+    ];
+
+    for (name, kind) in negation_kinds {
+        group.bench_function(name, |b| {
+            let expr = TLExpr::fuzzy_not(kind, expr_input.clone());
+            b.iter(|| {
+                let graph = compile_to_einsum(black_box(&expr)).unwrap();
+                black_box(graph);
+            });
+        });
+    }
+
+    group.finish();
+}
+
+fn bench_fuzzy_implications(c: &mut Criterion) {
+    use tensorlogic_ir::FuzzyImplicationKind;
+
+    let mut group = c.benchmark_group("fuzzy_implications");
+
+    let premise = TLExpr::pred("P", vec![Term::var("x")]);
+    let conclusion = TLExpr::pred("Q", vec![Term::var("x")]);
+
+    let impl_kinds = vec![
+        ("godel", FuzzyImplicationKind::Godel),
+        ("lukasiewicz", FuzzyImplicationKind::Lukasiewicz),
+        ("reichenbach", FuzzyImplicationKind::Reichenbach),
+        ("kleene_dienes", FuzzyImplicationKind::KleeneDienes),
+        ("rescher", FuzzyImplicationKind::Rescher),
+        ("goguen", FuzzyImplicationKind::Goguen),
+    ];
+
+    for (name, kind) in impl_kinds {
+        group.bench_function(name, |b| {
+            let expr = TLExpr::fuzzy_imply(kind, premise.clone(), conclusion.clone());
+            b.iter(|| {
+                let graph = compile_to_einsum(black_box(&expr)).unwrap();
+                black_box(graph);
+            });
+        });
+    }
+
+    group.finish();
+}
+
+fn bench_complex_fuzzy_expression(c: &mut Criterion) {
+    use tensorlogic_ir::{FuzzyNegationKind, TCoNormKind, TNormKind};
+
+    let mut group = c.benchmark_group("complex_fuzzy");
+
+    // Complex expression: (A tnorm B) tconorm NOT(C)
+    let a = TLExpr::pred("A", vec![Term::var("x")]);
+    let b = TLExpr::pred("B", vec![Term::var("x")]);
+    let c = TLExpr::pred("C", vec![Term::var("x")]);
+
+    let a_and_b = TLExpr::tnorm(TNormKind::Product, a, b);
+    let not_c = TLExpr::fuzzy_not(FuzzyNegationKind::Standard, c);
+    let expr = TLExpr::tconorm(TCoNormKind::Maximum, a_and_b, not_c);
+
+    group.bench_function("product_max_not", |b| {
+        b.iter(|| {
+            let graph = compile_to_einsum(black_box(&expr)).unwrap();
+            black_box(graph);
+        });
+    });
+
+    group.finish();
+}
+
+// ============================================================================
 // Benchmark Groups
 // ============================================================================
 
@@ -347,10 +486,20 @@ criterion_group!(
 
 criterion_group!(multi_arity_benches, bench_multi_arity_predicates);
 
+criterion_group!(
+    fuzzy_benches,
+    bench_tnorms,
+    bench_tconorms,
+    bench_fuzzy_negations,
+    bench_fuzzy_implications,
+    bench_complex_fuzzy_expression
+);
+
 criterion_main!(
     simple_benches,
     complex_benches,
     quantifier_benches,
     strategy_benches,
-    multi_arity_benches
+    multi_arity_benches,
+    fuzzy_benches
 );

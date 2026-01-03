@@ -45,6 +45,11 @@ pub trait Loss: Debug {
         predictions: &ArrayView<f64, Ix2>,
         targets: &ArrayView<f64, Ix2>,
     ) -> TrainResult<Array<f64, Ix2>>;
+
+    /// Get the name of the loss function.
+    fn name(&self) -> &str {
+        "unknown"
+    }
 }
 
 /// Cross-entropy loss for classification.
@@ -1114,6 +1119,132 @@ impl Loss for KLDivergenceLoss {
     }
 }
 
+/// Poly Loss - Polynomial Expansion of Cross-Entropy Loss.
+///
+/// Paper: "PolyLoss: A Polynomial Expansion Perspective of Classification Loss Functions" (Leng et al., 2022)
+/// <https://arxiv.org/abs/2204.12511>
+///
+/// PolyLoss adds polynomial terms to cross-entropy to provide better gradient flow
+/// for well-classified examples. It helps with:
+/// - Label noise robustness
+/// - Improved generalization
+/// - Better handling of class imbalance
+///
+/// The loss is defined as:
+/// L_poly = CE + ε₁(1 - p_t) + ε₂(1 - p_t)² + ... + εⱼ(1 - p_t)^j
+///
+/// where p_t is the predicted probability of the target class, and εⱼ are polynomial coefficients.
+/// In practice, Poly-1 (j=1) is most commonly used.
+#[derive(Debug, Clone)]
+pub struct PolyLoss {
+    /// Epsilon for numerical stability
+    pub epsilon: f64,
+    /// Polynomial coefficient (typically between 0.5 and 2.0)
+    pub poly_coeff: f64,
+}
+
+impl Default for PolyLoss {
+    fn default() -> Self {
+        Self {
+            epsilon: 1e-10,
+            poly_coeff: 1.0, // Poly-1 Loss
+        }
+    }
+}
+
+impl PolyLoss {
+    /// Create a new Poly Loss with custom coefficient.
+    pub fn new(poly_coeff: f64) -> Self {
+        Self {
+            epsilon: 1e-10,
+            poly_coeff,
+        }
+    }
+}
+
+impl Loss for PolyLoss {
+    fn compute(
+        &self,
+        predictions: &ArrayView<f64, Ix2>,
+        targets: &ArrayView<f64, Ix2>,
+    ) -> TrainResult<f64> {
+        if predictions.shape() != targets.shape() {
+            return Err(TrainError::LossError(format!(
+                "Shape mismatch: predictions {:?} vs targets {:?}",
+                predictions.shape(),
+                targets.shape()
+            )));
+        }
+
+        let n = predictions.nrows() as f64;
+        let mut total_loss = 0.0;
+
+        for i in 0..predictions.nrows() {
+            for j in 0..predictions.ncols() {
+                let pred = predictions[[i, j]]
+                    .max(self.epsilon)
+                    .min(1.0 - self.epsilon);
+                let target = targets[[i, j]];
+
+                // Cross-entropy term
+                let ce = -target * pred.ln();
+
+                // Poly term: ε * (1 - p_t) where p_t is probability of target class
+                // For multi-class, we use the predicted probability at the target position
+                let poly_term = if target > 0.5 {
+                    // Target is 1, so p_t = pred
+                    self.poly_coeff * (1.0 - pred)
+                } else {
+                    // Target is 0, so p_t = 1 - pred
+                    self.poly_coeff * pred
+                };
+
+                total_loss += ce + poly_term;
+            }
+        }
+
+        Ok(total_loss / n)
+    }
+
+    fn gradient(
+        &self,
+        predictions: &ArrayView<f64, Ix2>,
+        targets: &ArrayView<f64, Ix2>,
+    ) -> TrainResult<Array<f64, Ix2>> {
+        let n = predictions.nrows() as f64;
+        let mut grad = Array::zeros(predictions.raw_dim());
+
+        for i in 0..predictions.nrows() {
+            for j in 0..predictions.ncols() {
+                let pred = predictions[[i, j]]
+                    .max(self.epsilon)
+                    .min(1.0 - self.epsilon);
+                let target = targets[[i, j]];
+
+                // Gradient of cross-entropy: -target / pred
+                let ce_grad = -target / pred;
+
+                // Gradient of poly term
+                let poly_grad = if target > 0.5 {
+                    // d/dp [ε * (1 - p)] = -ε
+                    -self.poly_coeff
+                } else {
+                    // d/dp [ε * p] = ε
+                    self.poly_coeff
+                };
+
+                grad[[i, j]] = (ce_grad + poly_grad) / n;
+            }
+        }
+
+        Ok(grad)
+    }
+
+    fn name(&self) -> &str {
+        "poly_loss"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1322,5 +1453,45 @@ mod tests {
             .compute(&identical_preds.view(), &identical_targets.view())
             .unwrap();
         assert!(identical_loss.abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_poly_loss() {
+        let loss = PolyLoss::default();
+        let predictions = array![[0.9, 0.1], [0.2, 0.8]];
+        let targets = array![[1.0, 0.0], [0.0, 1.0]];
+
+        let loss_val = loss.compute(&predictions.view(), &targets.view()).unwrap();
+        assert!(loss_val > 0.0);
+
+        let grad = loss.gradient(&predictions.view(), &targets.view()).unwrap();
+        assert_eq!(grad.shape(), predictions.shape());
+
+        // Poly loss should be greater than standard cross-entropy for well-classified examples
+        let ce_loss = CrossEntropyLoss::default();
+        let ce_val = ce_loss
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        // With default poly_coeff = 1.0, poly loss includes additional penalty term
+        assert!(loss_val >= ce_val);
+    }
+
+    #[test]
+    fn test_poly_loss_custom_coefficient() {
+        let loss = PolyLoss::new(2.0);
+        let predictions = array![[0.8, 0.2]];
+        let targets = array![[1.0, 0.0]];
+
+        let loss_val = loss.compute(&predictions.view(), &targets.view()).unwrap();
+        assert!(loss_val > 0.0);
+
+        // Higher coefficient should result in larger poly term
+        let loss_low_coeff = PolyLoss::new(0.5);
+        let loss_val_low = loss_low_coeff
+            .compute(&predictions.view(), &targets.view())
+            .unwrap();
+
+        assert!(loss_val > loss_val_low);
     }
 }

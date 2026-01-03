@@ -48,4 +48,7 @@ pub enum ExecutorError {
 
     #[error("Backend capability not supported: {0}")]
     CapabilityNotSupported(String),
+
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
 }

@@ -1,14 +1,25 @@
 //! Tensor computation graphs (EinsumGraph).
 
+pub mod advanced_algorithms;
 pub mod advanced_analysis;
 pub mod canonicalization;
+pub mod constant_folding;
 pub mod cost_model;
 pub mod dot_export;
 mod einsum_spec;
 mod einsum_spec_display;
+pub mod export;
+pub mod fusion;
+pub mod layout;
+pub mod memory;
 mod node;
 pub mod optimization;
 mod optype;
+pub mod parallel;
+pub mod pattern;
+pub mod pgo;
+pub mod schedule;
+pub mod tiling;
 pub mod transform;
 pub mod validation;
 
@@ -19,6 +30,10 @@ pub use canonicalization::{are_graphs_equivalent, canonical_hash, canonicalize_g
 pub use dot_export::{export_to_dot, export_to_dot_with_options, DotExportOptions};
 pub use einsum_spec::EinsumSpec;
 pub use node::EinsumNode;
+pub use optimization::{
+    eliminate_common_subexpressions, eliminate_dead_code, optimize_graph,
+    simplify_identity_operations, OptimizationStats,
+};
 pub use optype::OpType;
 // Public API traits for graph transformation - meant for external use
 #[allow(unused_imports)]

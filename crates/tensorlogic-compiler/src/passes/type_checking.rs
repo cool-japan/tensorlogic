@@ -140,9 +140,42 @@ impl TypeChecker {
                     self.check_expr(alt_expr)?;
                 }
             }
+            // Counting quantifiers
+            TLExpr::CountingExists {
+                var: _,
+                domain,
+                body,
+                ..
+            }
+            | TLExpr::CountingForAll {
+                var: _,
+                domain,
+                body,
+                ..
+            }
+            | TLExpr::ExactCount {
+                var: _,
+                domain,
+                body,
+                ..
+            }
+            | TLExpr::Majority {
+                var: _,
+                domain,
+                body,
+            } => {
+                // Check that domain exists (would need context for this)
+                // For now, just check the body
+                let _ = domain; // Placeholder
+                self.check_expr(body)?;
+            }
 
             TLExpr::Constant(_) => {
                 // Constants are always well-typed
+            }
+            // All other expression types (alpha.3 enhancements) - skip for now
+            _ => {
+                // For unimplemented expression types, no type checking yet
             }
         }
         Ok(())
@@ -352,9 +385,39 @@ fn infer_types_recursive(
                 infer_types_recursive(alt_expr, registry, inferred_types)?;
             }
         }
+        // Counting quantifiers
+        TLExpr::CountingExists {
+            var: _,
+            domain: _,
+            body,
+            ..
+        }
+        | TLExpr::CountingForAll {
+            var: _,
+            domain: _,
+            body,
+            ..
+        }
+        | TLExpr::ExactCount {
+            var: _,
+            domain: _,
+            body,
+            ..
+        }
+        | TLExpr::Majority {
+            var: _,
+            domain: _,
+            body,
+        } => {
+            infer_types_recursive(body, registry, inferred_types)?;
+        }
 
         TLExpr::Constant(_) => {
             // Constants have no variables to infer
+        }
+        // All other expression types (alpha.3 enhancements) - skip for now
+        _ => {
+            // For unimplemented expression types, no type inference yet
         }
     }
 

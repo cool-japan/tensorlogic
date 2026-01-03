@@ -5,7 +5,6 @@ use std::collections::{HashMap, HashSet};
 use crate::{EinsumGraph, EinsumNode, IrError};
 
 /// Dead Code Elimination (DCE) - removes unused tensors and nodes
-#[allow(dead_code)]
 pub fn eliminate_dead_code(graph: &mut EinsumGraph) -> Result<usize, IrError> {
     if graph.outputs.is_empty() {
         return Ok(0);
@@ -78,7 +77,6 @@ fn count_input_tensors(graph: &EinsumGraph, before_node: usize) -> usize {
 }
 
 /// Common Subexpression Elimination (CSE) - detects and deduplicates identical subgraphs
-#[allow(dead_code)]
 pub fn eliminate_common_subexpressions(graph: &mut EinsumGraph) -> Result<usize, IrError> {
     let mut node_hashes: HashMap<String, usize> = HashMap::new();
     let mut replacements: HashMap<usize, usize> = HashMap::new();
@@ -126,7 +124,6 @@ fn compute_node_hash(node: &EinsumNode) -> String {
 }
 
 /// Simplify identity operations (operations that don't transform their input)
-#[allow(dead_code)]
 pub fn simplify_identity_operations(graph: &mut EinsumGraph) -> Result<usize, IrError> {
     let mut simplified_count = 0;
     let mut replacements: HashMap<usize, usize> = HashMap::new();
@@ -179,7 +176,6 @@ fn is_identity_operation(node: &EinsumNode) -> bool {
 }
 
 /// Apply all optimization passes to the graph
-#[allow(dead_code)]
 pub fn optimize_graph(graph: &mut EinsumGraph) -> Result<OptimizationStats, IrError> {
     let mut stats = OptimizationStats::default();
 
@@ -204,14 +200,12 @@ pub fn optimize_graph(graph: &mut EinsumGraph) -> Result<OptimizationStats, IrEr
 }
 
 #[derive(Debug, Default, Clone, Copy)]
-#[allow(dead_code)]
 pub struct OptimizationStats {
     pub dead_code_eliminated: usize,
     pub cse_eliminated: usize,
     pub identities_simplified: usize,
 }
 
-#[allow(dead_code)]
 impl OptimizationStats {
     pub fn total_optimizations(&self) -> usize {
         self.dead_code_eliminated + self.cse_eliminated + self.identities_simplified

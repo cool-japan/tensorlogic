@@ -1,12 +1,11 @@
 [package]
 name = "tensorlogic-scirs-backend"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "SciRS2-powered tensor execution backend for TensorLogic"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-rust-version.workspace = true
 
 [features]
 default = ["cpu"]
@@ -14,7 +13,9 @@ cpu = []
 simd = ["cpu", "scirs2-core/simd", "scirs2-linalg/simd"]
 gpu = []
 parallel = ["scirs2-core/parallel"]
-# Enable integration tests that require tensorlogic-compiler (creates circular dev-dependency)
+# ToRSh tensor interoperability (pure Rust PyTorch alternative)
+torsh = ["dep:torsh-core", "dep:torsh-tensor"]
+# Enable integration tests that require tensorlogic-compiler
 integration-tests = []
 
 [dependencies]
@@ -24,10 +25,14 @@ scirs2-core.workspace = true
 scirs2-linalg = { workspace = true, features = ["tensor_contraction"] }
 anyhow.workspace = true
 thiserror.workspace = true
+serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
+# ToRSh interoperability (pure Rust PyTorch alternative)
+torsh-core = { workspace = true, optional = true }
+torsh-tensor = { workspace = true, optional = true }
 
 [dev-dependencies]
-# tensorlogic-compiler.workspace = true  # Disabled: circular dev-dependency
+tensorlogic-compiler.workspace = true
 criterion.workspace = true
 proptest.workspace = true
 
@@ -53,4 +58,16 @@ harness = false
 
 [[bench]]
 name = "parallel_performance"
+harness = false
+
+[[bench]]
+name = "operation_benchmarks"
+harness = false
+
+[[bench]]
+name = "simd_specific"
+harness = false
+
+[[bench]]
+name = "end_to_end"
 harness = false

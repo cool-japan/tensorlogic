@@ -1,0 +1,23 @@
+[package]
+name = "bench-tracker"
+version = "0.1.0"
+edition = "2021"
+authors = ["COOLJAPAN OU (Team Kitasan)"]
+description = "Benchmark regression tracking tool for TensorLogic"
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "bench-tracker"
+path = "src/main.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+clap = { workspace = true, features = ["derive"] }
+colored.workspace = true
+tabled.workspace = true
+
+[dev-dependencies]
+tempfile = "3.24"

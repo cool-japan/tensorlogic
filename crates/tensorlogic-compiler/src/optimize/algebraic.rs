@@ -433,6 +433,8 @@ fn simplify_algebraic_impl(expr: &TLExpr, stats: &mut AlgebraicSimplificationSta
 
         // Base cases
         TLExpr::Pred { .. } | TLExpr::Constant(_) | TLExpr::Score(_) => expr.clone(),
+        // All other expression types (alpha.3 enhancements) - no algebraic simplification
+        _ => expr.clone(),
     }
 }
 

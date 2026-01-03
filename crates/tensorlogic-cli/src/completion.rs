@@ -6,11 +6,13 @@ use std::io;
 
 use crate::cli::Cli;
 
+#[allow(dead_code)]
 pub fn generate_completion<G: Generator>(gen: G) {
     let mut cmd = Cli::command();
     generate(gen, &mut cmd, "tensorlogic", &mut io::stdout());
 }
 
+#[allow(dead_code)]
 pub fn generate_for_shell(shell: Shell) {
     match shell {
         Shell::Bash => generate_completion(Shell::Bash),

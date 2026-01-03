@@ -42,14 +42,14 @@ impl FeedForward {
     /// Build einsum graph for feed-forward network
     ///
     /// Input tensors:
-    /// - 0: x (input) [batch, seq_len, d_model]
-    /// - 1: W1 (first weight) [d_model, d_ff]
-    /// - 2: b1 (first bias) [d_ff]
-    /// - 3: W2 (second weight) [d_ff, d_model]
-    /// - 4: b2 (second bias) [d_model]
+    /// - 0: x (input) `[batch, seq_len, d_model]`
+    /// - 1: W1 (first weight) `[d_model, d_ff]`
+    /// - 2: b1 (first bias) `[d_ff]`
+    /// - 3: W2 (second weight) `[d_ff, d_model]`
+    /// - 4: b2 (second bias) `[d_model]`
     ///
     /// Output tensors:
-    /// - output: [batch, seq_len, d_model]
+    /// - output: `[batch, seq_len, d_model]`
     pub fn build_ffn_graph(&self, graph: &mut EinsumGraph) -> Result<Vec<usize>> {
         // Step 1: First linear transformation
         // einsum("bsd,df->bsf", x, W1)

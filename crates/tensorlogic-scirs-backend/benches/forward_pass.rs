@@ -6,17 +6,23 @@
 //! **Note**: This benchmark requires the `integration-tests` feature to avoid
 //! circular dev-dependencies with tensorlogic-compiler.
 
-#![cfg(feature = "integration-tests")]
-
+#[cfg(feature = "integration-tests")]
 use std::hint::black_box;
 
+#[cfg(feature = "integration-tests")]
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+#[cfg(feature = "integration-tests")]
 use scirs2_core::ndarray::ArrayD;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_compiler::compile_to_einsum;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_infer::{TlAutodiff, TlExecutor};
+#[cfg(feature = "integration-tests")]
 use tensorlogic_ir::{TLExpr, Term};
+#[cfg(feature = "integration-tests")]
 use tensorlogic_scirs_backend::Scirs2Exec;
 
+#[cfg(feature = "integration-tests")]
 fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
     ArrayD::from_shape_vec(
         shape.to_vec(),
@@ -27,6 +33,7 @@ fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
     .unwrap()
 }
 
+#[cfg(feature = "integration-tests")]
 fn bench_simple_predicate(c: &mut Criterion) {
     let mut group = c.benchmark_group("simple_predicate");
 
@@ -50,6 +57,7 @@ fn bench_simple_predicate(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 fn bench_and_operation(c: &mut Criterion) {
     let mut group = c.benchmark_group("and_operation");
 
@@ -76,6 +84,7 @@ fn bench_and_operation(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 fn bench_exists_quantifier(c: &mut Criterion) {
     let mut group = c.benchmark_group("exists_quantifier");
 
@@ -99,6 +108,7 @@ fn bench_exists_quantifier(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 fn bench_complex_expression(c: &mut Criterion) {
     let mut group = c.benchmark_group("complex_expression");
 
@@ -131,6 +141,7 @@ fn bench_complex_expression(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 fn bench_einsum_matmul(c: &mut Criterion) {
     let mut group = c.benchmark_group("einsum_matmul");
 
@@ -154,6 +165,7 @@ fn bench_einsum_matmul(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 fn bench_memory_pooling(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_pooling");
 
@@ -191,6 +203,7 @@ fn bench_memory_pooling(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 criterion_group!(
     benches,
     bench_simple_predicate,
@@ -200,4 +213,12 @@ criterion_group!(
     bench_einsum_matmul,
     bench_memory_pooling,
 );
+#[cfg(feature = "integration-tests")]
 criterion_main!(benches);
+
+// Fallback main when integration-tests feature is not enabled
+#[cfg(not(feature = "integration-tests"))]
+fn main() {
+    eprintln!("This benchmark requires the 'integration-tests' feature to be enabled.");
+    eprintln!("Run with: cargo bench --features integration-tests");
+}

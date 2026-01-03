@@ -1,5 +1,7 @@
 //! TL <-> QuantrS2 hooks (PGM/message passing as reductions).
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! This crate provides integration between TensorLogic and probabilistic graphical models (PGMs).
 //! It maps belief propagation and other message passing algorithms onto einsum reduction patterns.
 //!
@@ -17,34 +19,51 @@
 //! Predicates Factors    Einsum Ops    Probabilities
 //! ```
 
+mod cache;
+pub mod dbn;
+mod elimination_ordering;
 mod error;
 mod expectation_propagation;
 mod factor;
 mod graph;
 mod inference;
+pub mod influence;
 mod junction_tree;
 mod linear_chain_crf;
+pub mod memory;
 mod message_passing;
 mod models;
+mod parallel_message_passing;
 pub mod parameter_learning;
 pub mod quantrs_hooks;
 mod sampling;
 mod variable_elimination;
 mod variational;
 
+pub use cache::{CacheStats, CachedFactor, FactorCache};
+pub use dbn::{CoupledDBN, CouplingFactor, DBNBuilder, DynamicBayesianNetwork, TemporalVar};
+pub use elimination_ordering::{EliminationOrdering, EliminationStrategy};
 pub use error::{PgmError, Result};
 pub use expectation_propagation::{ExpectationPropagation, GaussianEP, GaussianSite, Site};
 pub use factor::{Factor, FactorOp};
 pub use graph::{FactorGraph, FactorNode, VariableNode};
 pub use inference::{ConditionalQuery, InferenceEngine, MarginalizationQuery};
+pub use influence::{
+    InfluenceDiagram, InfluenceDiagramBuilder, InfluenceNode, MultiAttributeUtility, NodeType,
+};
 pub use junction_tree::{Clique, JunctionTree, JunctionTreeEdge, Separator};
 pub use linear_chain_crf::{
     EmissionFeature, FeatureFunction, IdentityFeature, LinearChainCRF, TransitionFeature,
+};
+pub use memory::{
+    BlockSparseFactor, CompressedFactor, FactorPool, LazyFactor, MemoryEstimate, PoolStats,
+    SparseFactor, StreamingFactorGraph,
 };
 pub use message_passing::{
     ConvergenceStats, MaxProductAlgorithm, MessagePassingAlgorithm, SumProductAlgorithm,
 };
 pub use models::{BayesianNetwork, ConditionalRandomField, HiddenMarkovModel, MarkovRandomField};
+pub use parallel_message_passing::{ParallelMaxProduct, ParallelSumProduct};
 pub use parameter_learning::{
     BaumWelchLearner, BayesianEstimator, MaximumLikelihoodEstimator, SimpleHMM,
 };
@@ -53,7 +72,10 @@ pub use quantrs_hooks::{
     QuantRSDistribution, QuantRSInferenceQuery, QuantRSModelExport, QuantRSParameterLearning,
     QuantRSSamplingHook,
 };
-pub use sampling::{Assignment, GibbsSampler};
+pub use sampling::{
+    Assignment, GibbsSampler, ImportanceSampler, LikelihoodWeighting, Particle, ParticleFilter,
+    ProposalDistribution, WeightedSample,
+};
 pub use variable_elimination::VariableElimination;
 pub use variational::{BetheApproximation, MeanFieldInference, TreeReweightedBP};
 

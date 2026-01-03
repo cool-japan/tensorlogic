@@ -1,12 +1,11 @@
 [package]
 name = "tensorlogic-sklears-kernels"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "Logic-derived similarity kernels for SkleaRS integration"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-rust-version.workspace = true
 
 [dependencies]
 anyhow.workspace = true
@@ -15,6 +14,16 @@ serde_json.workspace = true
 tensorlogic-ir.workspace = true
 tensorlogic-compiler.workspace = true
 tensorlogic-infer.workspace = true
+scirs2-core.workspace = true
+rayon.workspace = true
+
+# SkleaRS integration (optional feature)
+sklears-core = { workspace = true, optional = true }
+sklears-kernel-approximation = { workspace = true, optional = true }
+
+[features]
+default = []
+sklears = ["sklears-core", "sklears-kernel-approximation"]
 
 [dev-dependencies]
 criterion.workspace = true
@@ -53,3 +62,13 @@ name = "provenance_tracking"
 
 [[example]]
 name = "symbolic_kernels"
+
+[[example]]
+name = "online_kernel_updates"
+
+[[example]]
+name = "multitask_learning"
+
+[[example]]
+name = "sklears_integration_demo"
+required-features = ["sklears"]

@@ -252,7 +252,7 @@ impl Default for KernelMatrixCache {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tensor_kernel::LinearKernel;
+    use crate::tensor_kernels::LinearKernel;
 
     #[test]
     fn test_cached_kernel() {

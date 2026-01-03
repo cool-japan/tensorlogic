@@ -413,6 +413,42 @@ fn count_nodes(expr: &TLExpr) -> usize {
             else_branch,
         } => 1 + count_nodes(condition) + count_nodes(then_branch) + count_nodes(else_branch),
         TLExpr::Let { value, body, .. } => 1 + count_nodes(value) + count_nodes(body),
+
+        // Alpha.3 enhancements
+        TLExpr::Lambda { body, .. } => 1 + count_nodes(body),
+        TLExpr::Apply { function, argument } => 1 + count_nodes(function) + count_nodes(argument),
+        TLExpr::SetMembership { element, set }
+        | TLExpr::SetUnion {
+            left: element,
+            right: set,
+        }
+        | TLExpr::SetIntersection {
+            left: element,
+            right: set,
+        }
+        | TLExpr::SetDifference {
+            left: element,
+            right: set,
+        } => 1 + count_nodes(element) + count_nodes(set),
+        TLExpr::SetCardinality { set } => 1 + count_nodes(set),
+        TLExpr::EmptySet => 1,
+        TLExpr::SetComprehension { condition, .. } => 1 + count_nodes(condition),
+        TLExpr::CountingExists { body, .. }
+        | TLExpr::CountingForAll { body, .. }
+        | TLExpr::ExactCount { body, .. }
+        | TLExpr::Majority { body, .. } => 1 + count_nodes(body),
+        TLExpr::LeastFixpoint { body, .. } | TLExpr::GreatestFixpoint { body, .. } => {
+            1 + count_nodes(body)
+        }
+        TLExpr::Nominal { .. } => 1,
+        TLExpr::At { formula, .. } => 1 + count_nodes(formula),
+        TLExpr::Somewhere { formula } | TLExpr::Everywhere { formula } => 1 + count_nodes(formula),
+        TLExpr::AllDifferent { .. } => 1,
+        TLExpr::GlobalCardinality { values, .. } => {
+            1 + values.iter().map(count_nodes).sum::<usize>()
+        }
+        TLExpr::Abducible { .. } => 1,
+        TLExpr::Explain { formula } => 1 + count_nodes(formula),
     }
 }
 

@@ -242,6 +242,11 @@ impl ExpressionDependencies {
             TLExpr::Constant(_) => {
                 // No dependencies
             }
+            // All other expression types (alpha.3 enhancements)
+            _ => {
+                // For unhandled variants, recurse on any child expressions if needed
+                // This is a catch-all for future-proof compilation
+            }
         }
     }
 

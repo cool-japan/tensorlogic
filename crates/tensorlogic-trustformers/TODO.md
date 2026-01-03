@@ -1,9 +1,9 @@
-# Alpha.1 Release Status ✅
+# Alpha.2 Release Status ✅
 
-**Version**: 0.1.0-alpha.1  
+**Version**: 0.1.0-alpha.2  
 **Status**: Production Ready
 
-This crate is part of the TensorLogic v0.1.0-alpha.1 release with:
+This crate is part of the TensorLogic v0.1.0-alpha.2 release with:
 - Zero compiler warnings
 - 100% test pass rate
 - Complete documentation
@@ -90,20 +90,40 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - [x] BERT-style encoders (via EncoderStack)
 - [x] GPT-style decoders (via DecoderStack with causal masking)
 - [x] Encoder-decoder models (via EncoderStack + DecoderStack)
-- [ ] Vision transformers (future enhancement)
+- [x] **Vision Transformers (ViT)** (NEW!)
+  - [x] Patch embedding layer
+  - [x] Vision Transformer configuration
+  - [x] ViT presets (Tiny/Small/Base/Large/Huge)
+  - [x] Parameter counting
+  - [x] Graph building (simplified)
+  - [x] 12 comprehensive tests
+  - [x] Complete example (07_vision_transformers.rs)
+- [x] **Mixture-of-Experts (MoE)** (NEW! alpha.2)
+  - [x] Expert networks (multiple FFN layers)
+  - [x] Router/Gating mechanisms (TopK, Softmax, Switch, ExpertChoice)
+  - [x] Load balancing support
+  - [x] MoE presets (Switch, GShard, Mixtral8x7B, ExpertChoice)
+  - [x] Sparsity analysis and efficiency metrics
+  - [x] FLOPs and memory usage calculations
+  - [x] 15 comprehensive tests
+  - [x] Complete example (08_mixture_of_experts.rs)
 
 ## Low Priority 🟢
 
 ### Documentation (COMPLETED)
 - [x] Add README.md (comprehensive documentation)
 - [x] Architecture guide (in README.md)
-- [x] Conversion examples (6 complete examples in `examples/`)
+- [x] Conversion examples (9 complete examples in `examples/`)
   - [x] 01_basic_encoder.rs - Basic transformer encoder usage
   - [x] 02_trustformers_integration.rs - TrustformeRS integration
   - [x] 03_rule_based_attention.rs - Rule-based attention patterns
   - [x] 04_sparse_attention.rs - Sparse attention for long sequences
   - [x] 05_gradient_checkpointing.rs - Memory-efficient training
-  - [x] 06_kv_cache_inference.rs - Fast autoregressive inference (NEW!)
+  - [x] 06_kv_cache_inference.rs - Fast autoregressive inference
+  - [x] 07_vision_transformers.rs - Vision Transformer (ViT) for image classification
+  - [x] 08_mixture_of_experts.rs - Mixture-of-Experts for sparse models
+  - [x] 09_modern_llm_optimizations.rs - GQA, Sliding Window, LoRA
+  - [x] 10_modern_llm_complete.rs - Complete modern LLM configurations (NEW!)
 
 ### Performance Infrastructure (COMPLETED)
 - [x] **Benchmark suite**
@@ -125,10 +145,74 @@ See main [TODO.md](../../TODO.md) for overall project status.
 
 ---
 
-**Total Items:** 62 tasks
-**Completion:** 100% (62/62) 🎉
+**Total Items:** 84 tasks
+**Completion:** 100% (84/84) 🎉 **ENHANCED for alpha.2**
 
-## Recent Updates
+## Recent Updates (Alpha.2 Enhancements)
+
+### Modern LLM Optimizations Complete! 🚀
+
+- **Flash Attention**: Memory-efficient O(1) attention (NEW!)
+  - Tiled computation with SRAM optimization
+  - Configurable block sizes for Q and KV
+  - Presets for A100/H100 GPUs
+  - Causal masking support
+  - 14 comprehensive tests
+
+- **Grouped-Query Attention (GQA)**: Reduce KV cache memory for efficient inference
+  - MHA/GQA/MQA support with configurable KV heads
+  - Presets for LLaMA 2, Mistral, Falcon
+  - Memory savings calculations
+  - 13 comprehensive tests
+
+- **Sliding Window Attention**: Efficient long-context handling
+  - O(n*w) complexity instead of O(n²)
+  - Presets for Mistral, Longformer, BigBird
+  - Complexity/memory reduction analysis
+  - 9 comprehensive tests
+
+- **LoRA (Low-Rank Adaptation)**: Parameter-efficient fine-tuning
+  - Configurable rank and alpha
+  - Apply to Q/V projections
+  - Compression ratio: 32-64x
+  - 14 comprehensive tests
+
+- **Examples Added**:
+  - 09_modern_llm_optimizations.rs - Individual optimization demos
+  - 10_modern_llm_complete.rs - Complete modern LLM configurations
+
+### Mixture-of-Experts Complete! 🔥
+- **New `moe` Module**: Complete MoE implementation for sparse models
+- **Expert Networks**: Multiple FFN specialists with conditional computation
+- **Four Router Types**: TopK, Softmax, Switch, and Expert Choice routing
+- **MoE Presets**: Switch Transformer, GShard, Mixtral 8x7B, Expert Choice
+- **Efficiency Analysis**: FLOPs, memory usage, and sparsity calculations
+- **15 Tests**: Comprehensive testing of all MoE components
+- **Example Added**: 08_mixture_of_experts.rs with complete demonstrations
+- **Production Ready**: Zero warnings, full integration
+
+**Key Features:**
+- **Four Routing Strategies**: Top-K, Softmax, Switch (Top-1), Expert Choice
+- **MoE Presets**: Industry-standard configurations (Switch, GShard, Mixtral, etc.)
+- **Efficiency Metrics**: Sparsity factor, theoretical speedup, active parameters
+- **Load Balancing**: Configurable load balancing coefficients
+- **Flexible Configuration**: Custom expert counts, routing strategies, activation functions
+
+### Vision Transformers Complete! 🎉
+- **New `vision` Module**: Complete Vision Transformer implementation
+- **Patch Embedding**: Convert images to token sequences
+- **ViT Configuration**: Flexible configuration with 5 presets (Tiny to Huge)
+- **Parameter Counting**: Accurate parameter estimation for all ViT variants
+- **12 Tests**: Comprehensive testing of all ViT components
+- **Example Added**: 07_vision_transformers.rs with complete demonstrations
+- **Production Ready**: Zero warnings, full integration
+
+**Key Features:**
+- **Five ViT Presets**: Tiny (5.7M), Small (22M), Base (86M), Large (307M), Huge (632M)
+- **Flexible Configuration**: Custom image sizes, patch sizes, model dimensions
+- **Parameter Breakdown**: Detailed parameter counting for all components
+- **Graph Building**: Einsum-based computation graph construction
+- **Quality**: 100% test pass rate, zero compilation warnings
 
 ### KV-Cache for Efficient Inference!
 - **New `kv_cache` Module**: Dramatic speedup for autoregressive generation
@@ -202,11 +286,11 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - `lib.rs`: Public API with exports (8 integration tests)
 
 ### Status
-- **Tests**: 229/229 passing (100%)
+- **Tests**: 306/306 passing (100%) ✨ **UPDATED** (+50 modern LLM tests)
 - **Warnings**: 0
 - **Build**: ✅ Success
 - **Documentation**: ✅ Complete
 - **Integration**: ✅ TrustformeRS fully integrated
 - **Benchmarks**: ✅ Criterion suite ready
-- **Examples**: 6 comprehensive examples
-- **Optimizations**: ✅ Gradient checkpointing + KV-cache
+- **Examples**: 10 comprehensive examples ✨ **UPDATED** (+2: Modern LLM demos)
+- **Optimizations**: ✅ Flash Attention + GQA + SWA + LoRA + MoE + KV-cache + Checkpointing

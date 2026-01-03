@@ -1,7 +1,8 @@
 //! Unit tests for the compiler.
 
 use crate::{
-    compile_to_einsum, compile_to_einsum_with_context, passes::validate_arity, CompilerContext,
+    compile_to_einsum, compile_to_einsum_with_config, compile_to_einsum_with_context,
+    passes::validate_arity, CompilationConfig, CompilerContext,
 };
 use tensorlogic_ir::{TLExpr, Term};
 
@@ -270,4 +271,169 @@ fn test_or_with_different_variables() {
 
     let graph = result.unwrap();
     assert!(!graph.nodes.is_empty());
+}
+
+// ============================================================================
+// Tests for compile_to_einsum_with_config
+// ============================================================================
+
+#[test]
+fn test_compile_with_soft_differentiable_config() {
+    let config = CompilationConfig::soft_differentiable();
+    let p = TLExpr::pred("P", vec![Term::var("x")]);
+    let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    let and_expr = TLExpr::and(p, q);
+
+    let graph = compile_to_einsum_with_config(&and_expr, &config).unwrap();
+
+    assert!(!graph.tensors.is_empty());
+    assert!(!graph.nodes.is_empty());
+}
+
+#[test]
+fn test_compile_with_hard_boolean_config() {
+    let config = CompilationConfig::hard_boolean();
+    let p = TLExpr::pred("P", vec![Term::var("x")]);
+    let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    let and_expr = TLExpr::and(p, q);
+
+    let graph = compile_to_einsum_with_config(&and_expr, &config).unwrap();
+
+    assert!(!graph.tensors.is_empty());
+    assert!(!graph.nodes.is_empty());
+}
+
+#[test]
+fn test_compile_with_fuzzy_godel_config() {
+    let config = CompilationConfig::fuzzy_godel();
+    let p = TLExpr::pred("P", vec![Term::var("x")]);
+    let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    let and_expr = TLExpr::and(p, q);
+
+    let graph = compile_to_einsum_with_config(&and_expr, &config).unwrap();
+
+    assert!(!graph.tensors.is_empty());
+    assert!(!graph.nodes.is_empty());
+}
+
+#[test]
+fn test_compile_with_fuzzy_lukasiewicz_config() {
+    let config = CompilationConfig::fuzzy_lukasiewicz();
+    let p = TLExpr::pred("P", vec![Term::var("x")]);
+    let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    let and_expr = TLExpr::and(p, q);
+
+    let graph = compile_to_einsum_with_config(&and_expr, &config).unwrap();
+
+    assert!(!graph.tensors.is_empty());
+    assert!(!graph.nodes.is_empty());
+}
+
+#[test]
+fn test_compile_with_probabilistic_config() {
+    let config = CompilationConfig::probabilistic();
+    let p = TLExpr::pred("P", vec![Term::var("x")]);
+    let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    let and_expr = TLExpr::and(p, q);
+
+    let graph = compile_to_einsum_with_config(&and_expr, &config).unwrap();
+
+    assert!(!graph.tensors.is_empty());
+    assert!(!graph.nodes.is_empty());
+}
+
+#[test]
+fn test_compile_or_with_different_configs() {
+    let p = TLExpr::pred("P", vec![Term::var("x")]);
+    let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    let or_expr = TLExpr::or(p, q);
+
+    // Test with different configs
+    let configs = vec![
+        (
+            "soft_differentiable",
+            CompilationConfig::soft_differentiable(),
+        ),
+        ("hard_boolean", CompilationConfig::hard_boolean()),
+        ("fuzzy_godel", CompilationConfig::fuzzy_godel()),
+    ];
+
+    for (name, config) in configs {
+        let result = compile_to_einsum_with_config(&or_expr, &config);
+        assert!(result.is_ok(), "OR compilation failed with {} config", name);
+        let graph = result.unwrap();
+        assert!(
+            !graph.nodes.is_empty(),
+            "{} config produced empty graph",
+            name
+        );
+    }
+}
+
+#[test]
+fn test_compile_not_with_different_configs() {
+    let p = TLExpr::pred("P", vec![Term::var("x")]);
+    let not_expr = TLExpr::negate(p);
+
+    // Test with different configs
+    let configs = vec![
+        (
+            "soft_differentiable",
+            CompilationConfig::soft_differentiable(),
+        ),
+        ("hard_boolean", CompilationConfig::hard_boolean()),
+    ];
+
+    for (name, config) in configs {
+        let result = compile_to_einsum_with_config(&not_expr, &config);
+        assert!(
+            result.is_ok(),
+            "NOT compilation failed with {} config",
+            name
+        );
+        let graph = result.unwrap();
+        assert!(
+            !graph.nodes.is_empty(),
+            "{} config produced empty graph",
+            name
+        );
+    }
+}
+
+#[test]
+fn test_compile_complex_expression_with_config() {
+    // Test (P(x) AND Q(x)) OR NOT R(x)
+    let p = TLExpr::pred("P", vec![Term::var("x")]);
+    let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    let r = TLExpr::pred("R", vec![Term::var("x")]);
+
+    let and_expr = TLExpr::and(p, q);
+    let not_r = TLExpr::negate(r);
+    let complex_expr = TLExpr::or(and_expr, not_r);
+
+    let config = CompilationConfig::fuzzy_lukasiewicz();
+    let graph = compile_to_einsum_with_config(&complex_expr, &config).unwrap();
+
+    assert!(!graph.tensors.is_empty());
+    assert!(!graph.nodes.is_empty());
+}
+
+#[test]
+fn test_custom_config_builder() {
+    use crate::config::{AndStrategy, OrStrategy};
+
+    // Build a custom config
+    let config = CompilationConfig::custom()
+        .and_strategy(AndStrategy::Min)
+        .or_strategy(OrStrategy::Max)
+        .build();
+
+    let p = TLExpr::pred("P", vec![Term::var("x")]);
+    let q = TLExpr::pred("Q", vec![Term::var("x")]);
+    let and_expr = TLExpr::and(p.clone(), q.clone());
+    let or_expr = TLExpr::or(p, q);
+
+    // Both should compile successfully with custom config
+    assert!(compile_to_einsum_with_config(&and_expr, &config).is_ok());
+    assert!(compile_to_einsum_with_config(&or_expr, &config).is_ok());
 }

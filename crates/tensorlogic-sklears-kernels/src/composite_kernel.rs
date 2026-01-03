@@ -354,9 +354,10 @@ impl KernelAlignment {
 }
 
 #[cfg(test)]
+#[allow(clippy::needless_range_loop)]
 mod tests {
     use super::*;
-    use crate::tensor_kernel::{CosineKernel, LinearKernel, RbfKernel};
+    use crate::tensor_kernels::{CosineKernel, LinearKernel, RbfKernel};
     use crate::types::RbfKernelConfig;
 
     #[test]

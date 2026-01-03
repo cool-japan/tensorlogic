@@ -1,7 +1,7 @@
 # tensorlogic-train
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic-train-orange)](https://crates.io/crates/tensorlogic-train)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-train)
-[![Tests](https://img.shields.io/badge/tests-172%2F172-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-434%2F434-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
 
 Training scaffolds for Tensorlogic: loss composition, optimizers, schedulers, and callbacks.
@@ -717,8 +717,8 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
 ---
 
 **Status**: ✅ Production Ready (Phase 6.3+ - 100% complete)
-**Last Updated**: 2025-11-07
-**Version**: 0.1.0-alpha.1
+****Last Updated**: 2025-12-16
+**Version**: 0.1.0-alpha.2
 **Test Coverage**: 172/172 tests passing (100%)
 **Code Quality**: Zero warnings, clippy clean
 **Features**: 14 losses, 13 optimizers, 11 schedulers, 13+ callbacks, regularization, augmentation, logging, curriculum, transfer, ensembling

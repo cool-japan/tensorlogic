@@ -210,14 +210,13 @@ pub fn validate_expression(expr: &TLExpr) -> ValidationResult {
 /// use tensorlogic_ir::{PredicateSignature, TLExpr, Term, TypeAnnotation};
 ///
 /// let signatures = vec![
-///     PredicateSignature {
-///         name: "knows".to_string(),
-///         arity: 2,
-///         arg_types: vec![
+///     PredicateSignature::new(
+///         "knows",
+///         vec![
 ///             TypeAnnotation { type_name: "Person".to_string() },
 ///             TypeAnnotation { type_name: "Person".to_string() },
 ///         ],
-///     }
+///     )
 /// ];
 ///
 /// // Fully quantified expression
@@ -356,6 +355,7 @@ mod tests {
                     type_name: "Person".to_string(),
                 },
             ],
+            parametric_types: None,
         }];
 
         // Fully quantified expression

@@ -223,6 +223,7 @@ impl NystromApproximation {
     ///
     /// For production use, this should use a proper linear algebra library.
     /// This is a simplified implementation for demonstration.
+    #[allow(clippy::needless_range_loop)]
     fn pseudo_inverse(matrix: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
         let n = matrix.len();
         if n == 0 {

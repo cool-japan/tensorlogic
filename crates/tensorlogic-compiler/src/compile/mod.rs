@@ -1,10 +1,16 @@
 //! Core compilation functions for TLExpr → EinsumGraph.
 
+mod abduction;
 mod arithmetic;
 mod comparison;
 mod conditional;
+mod constraints;
+mod counting_quantifiers;
 pub mod custom_ops;
-// mod fuzzy; // TODO: Rewrite following correct patterns (see SESSION10_SUMMARY.md)
+mod fixpoint;
+mod fuzzy;
+mod higher_order;
+mod hybrid;
 mod implication;
 mod let_binding;
 mod logic_ops;
@@ -12,13 +18,15 @@ mod modal_temporal;
 mod predicate;
 mod probabilistic;
 mod quantifiers;
+mod set_operations;
 mod strategy_mapping;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use tensorlogic_ir::{EinsumGraph, TLExpr};
 
 use crate::context::{CompileState, CompilerContext};
 
+pub(crate) use abduction::{compile_abducible, compile_explain};
 pub(crate) use arithmetic::{
     compile_abs, compile_add, compile_ceil, compile_cos, compile_div, compile_exp, compile_floor,
     compile_log, compile_max_binary, compile_min_binary, compile_mod, compile_mul, compile_pow,
@@ -26,20 +34,34 @@ pub(crate) use arithmetic::{
 };
 pub(crate) use comparison::{compile_eq, compile_gt, compile_gte, compile_lt, compile_lte};
 pub(crate) use conditional::{compile_constant, compile_if_then_else};
+pub(crate) use constraints::{compile_all_different, compile_global_cardinality};
+pub(crate) use counting_quantifiers::{
+    compile_counting_exists, compile_counting_forall, compile_exact_count, compile_majority,
+};
 pub use custom_ops::{
     CustomOpData, CustomOpHandler, CustomOpMetadata, CustomOpRegistry, ExtendedCompilerContext,
 };
-// pub(crate) use fuzzy::{compile_fuzzy_implication, compile_fuzzy_not, compile_tconorm, compile_tnorm}; // TODO: Enable when fuzzy.rs is rewritten
+pub(crate) use fixpoint::{compile_greatest_fixpoint, compile_least_fixpoint};
+pub(crate) use fuzzy::{
+    compile_fuzzy_implication, compile_fuzzy_not, compile_tconorm, compile_tnorm,
+};
+pub(crate) use higher_order::{compile_apply, compile_lambda};
+pub(crate) use hybrid::{compile_at, compile_everywhere, compile_nominal, compile_somewhere};
 pub(crate) use implication::compile_imply;
 pub(crate) use let_binding::compile_let;
 pub(crate) use logic_ops::{compile_and, compile_not, compile_or};
 pub(crate) use modal_temporal::{
-    compile_always, compile_box, compile_diamond, compile_eventually, compile_next, compile_until,
+    compile_always, compile_box, compile_diamond, compile_eventually, compile_next,
+    compile_release, compile_strong_release, compile_until, compile_weak_until,
 };
 pub(crate) use predicate::compile_predicate;
 pub(crate) use probabilistic::{compile_probabilistic_choice, compile_weighted_rule};
 pub(crate) use quantifiers::{
     compile_aggregate, compile_exists, compile_forall, compile_soft_exists, compile_soft_forall,
+};
+pub(crate) use set_operations::{
+    compile_empty_set, compile_set_cardinality, compile_set_comprehension, compile_set_difference,
+    compile_set_intersection, compile_set_membership, compile_set_union,
 };
 
 /// Infer domain from expression context (if available).
@@ -49,7 +71,12 @@ pub(crate) fn infer_domain(expr: &TLExpr, _var: &str) -> Option<String> {
         | TLExpr::ForAll { domain, .. }
         | TLExpr::Aggregate { domain, .. }
         | TLExpr::SoftExists { domain, .. }
-        | TLExpr::SoftForAll { domain, .. } => Some(domain.clone()),
+        | TLExpr::SoftForAll { domain, .. }
+        | TLExpr::SetComprehension { domain, .. }
+        | TLExpr::CountingExists { domain, .. }
+        | TLExpr::CountingForAll { domain, .. }
+        | TLExpr::ExactCount { domain, .. }
+        | TLExpr::Majority { domain, .. } => Some(domain.clone()),
         // Modal/temporal logic operators - not yet implemented
         TLExpr::Box(_)
         | TLExpr::Diamond(_)
@@ -131,14 +158,15 @@ pub(crate) fn compile_expr(
         // Let binding
         TLExpr::Let { var, value, body } => compile_let(var, value, body, ctx, graph),
 
-        // Fuzzy logic operators - TODO: Enable when fuzzy.rs is rewritten
-        TLExpr::TNorm { .. }
-        | TLExpr::TCoNorm { .. }
-        | TLExpr::FuzzyNot { .. }
-        | TLExpr::FuzzyImplication { .. } => {
-            bail!("Fuzzy logic operators are not yet implemented. This feature is under development. \
-                   See SESSION10_SUMMARY.md for implementation status.")
-        }
+        // Fuzzy logic operators
+        TLExpr::TNorm { kind, left, right } => compile_tnorm(*kind, left, right, ctx, graph),
+        TLExpr::TCoNorm { kind, left, right } => compile_tconorm(*kind, left, right, ctx, graph),
+        TLExpr::FuzzyNot { kind, expr } => compile_fuzzy_not(*kind, expr, ctx, graph),
+        TLExpr::FuzzyImplication {
+            kind,
+            premise,
+            conclusion,
+        } => compile_fuzzy_implication(*kind, premise, conclusion, ctx, graph),
         TLExpr::SoftExists {
             var,
             domain,
@@ -165,13 +193,84 @@ pub(crate) fn compile_expr(
         TLExpr::Eventually(inner) => compile_eventually(inner, ctx, graph),
         TLExpr::Always(inner) => compile_always(inner, ctx, graph),
         TLExpr::Until { before, after } => compile_until(before, after, ctx, graph),
-
-        // Advanced temporal operators - not yet fully implemented
-        TLExpr::Release { .. } | TLExpr::WeakUntil { .. } | TLExpr::StrongRelease { .. } => {
-            bail!(
-                "Advanced temporal operators (Release, WeakUntil, StrongRelease) are not yet implemented. \
-                   Use the basic temporal operators (Next, Eventually, Always, Until) instead."
-            )
+        TLExpr::Release { released, releaser } => compile_release(releaser, released, ctx, graph),
+        TLExpr::WeakUntil { before, after } => compile_weak_until(before, after, ctx, graph),
+        TLExpr::StrongRelease { released, releaser } => {
+            compile_strong_release(releaser, released, ctx, graph)
         }
+
+        // Counting quantifiers
+        TLExpr::CountingExists {
+            var,
+            domain,
+            body,
+            min_count,
+        } => compile_counting_exists(var, domain, body, *min_count, ctx, graph),
+        TLExpr::CountingForAll {
+            var,
+            domain,
+            body,
+            min_count,
+        } => compile_counting_forall(var, domain, body, *min_count, ctx, graph),
+        TLExpr::ExactCount {
+            var,
+            domain,
+            body,
+            count,
+        } => compile_exact_count(var, domain, body, *count, ctx, graph),
+        TLExpr::Majority { var, domain, body } => compile_majority(var, domain, body, ctx, graph),
+
+        // Higher-order logic
+        TLExpr::Lambda {
+            var,
+            var_type,
+            body,
+        } => compile_lambda(var, var_type, body, ctx, graph),
+        TLExpr::Apply { function, argument } => compile_apply(function, argument, ctx, graph),
+
+        // Set theory operations
+        TLExpr::SetMembership { element, set } => compile_set_membership(element, set, ctx, graph),
+        TLExpr::SetUnion { left, right } => compile_set_union(left, right, ctx, graph),
+        TLExpr::SetIntersection { left, right } => {
+            compile_set_intersection(left, right, ctx, graph)
+        }
+        TLExpr::SetDifference { left, right } => compile_set_difference(left, right, ctx, graph),
+        TLExpr::SetCardinality { set } => compile_set_cardinality(set, ctx, graph),
+        TLExpr::EmptySet => compile_empty_set(ctx, graph),
+        TLExpr::SetComprehension {
+            var,
+            domain,
+            condition,
+        } => compile_set_comprehension(var, domain, condition, ctx, graph),
+
+        // Fixed-point operators
+        TLExpr::LeastFixpoint { var, body } => compile_least_fixpoint(var, body, ctx, graph),
+        TLExpr::GreatestFixpoint { var, body } => compile_greatest_fixpoint(var, body, ctx, graph),
+
+        // Hybrid logic
+        TLExpr::Nominal { name } => compile_nominal(name, ctx, graph),
+        TLExpr::At { nominal, formula } => compile_at(nominal, formula, ctx, graph),
+        TLExpr::Somewhere { formula } => compile_somewhere(formula, ctx, graph),
+        TLExpr::Everywhere { formula } => compile_everywhere(formula, ctx, graph),
+
+        // Constraint programming
+        TLExpr::AllDifferent { variables } => compile_all_different(variables, ctx, graph),
+        TLExpr::GlobalCardinality {
+            variables,
+            values,
+            min_occurrences,
+            max_occurrences,
+        } => compile_global_cardinality(
+            variables,
+            values,
+            min_occurrences,
+            max_occurrences,
+            ctx,
+            graph,
+        ),
+
+        // Abductive reasoning
+        TLExpr::Abducible { name, cost } => compile_abducible(name, *cost, ctx, graph),
+        TLExpr::Explain { formula } => compile_explain(formula, ctx, graph),
     }
 }

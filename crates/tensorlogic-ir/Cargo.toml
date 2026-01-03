@@ -1,12 +1,11 @@
 [package]
 name = "tensorlogic-ir"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "Intermediate representation (IR) and AST types for TensorLogic"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-rust-version.workspace = true
 
 [dependencies]
 serde.workspace = true

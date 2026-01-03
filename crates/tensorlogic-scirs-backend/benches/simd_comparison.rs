@@ -6,17 +6,23 @@
 //! **Note**: This benchmark requires the `integration-tests` feature to avoid
 //! circular dev-dependencies with tensorlogic-compiler.
 
-#![cfg(feature = "integration-tests")]
-
+#[cfg(feature = "integration-tests")]
 use std::hint::black_box;
 
+#[cfg(feature = "integration-tests")]
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+#[cfg(feature = "integration-tests")]
 use scirs2_core::ndarray::ArrayD;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_compiler::compile_to_einsum;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_infer::TlAutodiff;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_ir::{TLExpr, Term};
+#[cfg(feature = "integration-tests")]
 use tensorlogic_scirs_backend::Scirs2Exec;
 
+#[cfg(feature = "integration-tests")]
 fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
     ArrayD::from_shape_vec(
         shape.to_vec(),
@@ -28,6 +34,7 @@ fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
 }
 
 /// Benchmark element-wise operations
+#[cfg(feature = "integration-tests")]
 fn bench_elemwise_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("elemwise_operations");
 
@@ -67,6 +74,7 @@ fn bench_elemwise_operations(c: &mut Criterion) {
 }
 
 /// Benchmark reduction operations
+#[cfg(feature = "integration-tests")]
 fn bench_reduction_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("reduction_operations");
 
@@ -88,6 +96,7 @@ fn bench_reduction_operations(c: &mut Criterion) {
 }
 
 /// Benchmark matrix operations
+#[cfg(feature = "integration-tests")]
 fn bench_matrix_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("matrix_operations");
 
@@ -112,6 +121,7 @@ fn bench_matrix_operations(c: &mut Criterion) {
 }
 
 /// Benchmark logical operations (fuzzy AND)
+#[cfg(feature = "integration-tests")]
 fn bench_logical_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("logical_operations");
 
@@ -140,6 +150,7 @@ fn bench_logical_operations(c: &mut Criterion) {
 }
 
 /// Benchmark complex operations
+#[cfg(feature = "integration-tests")]
 fn bench_complex_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("complex_operations");
 
@@ -170,6 +181,7 @@ fn bench_complex_operations(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 criterion_group!(
     benches,
     bench_elemwise_operations,
@@ -178,4 +190,12 @@ criterion_group!(
     bench_logical_operations,
     bench_complex_operations
 );
+#[cfg(feature = "integration-tests")]
 criterion_main!(benches);
+
+// Fallback main when integration-tests feature is not enabled
+#[cfg(not(feature = "integration-tests"))]
+fn main() {
+    eprintln!("This benchmark requires the 'integration-tests' feature to be enabled.");
+    eprintln!("Run with: cargo bench --features integration-tests");
+}

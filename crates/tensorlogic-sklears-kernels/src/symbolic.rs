@@ -322,7 +322,7 @@ impl KernelBuilder {
             Some(expr) => expr.simplify().build(),
             None => {
                 // Empty builder - return a zero kernel
-                KernelExpr::base(Arc::new(crate::tensor_kernel::LinearKernel::new()))
+                KernelExpr::base(Arc::new(crate::tensor_kernels::LinearKernel::new()))
                     .scale(0.0)
                     .unwrap()
                     .build()
@@ -340,7 +340,7 @@ impl Default for KernelBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tensor_kernel::{LinearKernel, RbfKernel};
+    use crate::tensor_kernels::{LinearKernel, RbfKernel};
     use crate::types::RbfKernelConfig;
 
     #[test]

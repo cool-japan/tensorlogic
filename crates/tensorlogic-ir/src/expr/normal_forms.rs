@@ -167,6 +167,74 @@ pub fn to_nnf(expr: &TLExpr) -> TLExpr {
         TLExpr::StrongRelease { released, releaser } => {
             TLExpr::strong_release(to_nnf(released), to_nnf(releaser))
         }
+
+        // Alpha.3 enhancements: pass through (treat as atomic for NNF purposes)
+        TLExpr::Lambda {
+            var,
+            var_type,
+            body,
+        } => TLExpr::lambda(var.clone(), var_type.clone(), to_nnf(body)),
+        TLExpr::Apply { function, argument } => TLExpr::apply(to_nnf(function), to_nnf(argument)),
+        TLExpr::SetMembership { element, set } => {
+            TLExpr::set_membership(to_nnf(element), to_nnf(set))
+        }
+        TLExpr::SetUnion { left, right } => TLExpr::set_union(to_nnf(left), to_nnf(right)),
+        TLExpr::SetIntersection { left, right } => {
+            TLExpr::set_intersection(to_nnf(left), to_nnf(right))
+        }
+        TLExpr::SetDifference { left, right } => {
+            TLExpr::set_difference(to_nnf(left), to_nnf(right))
+        }
+        TLExpr::SetCardinality { set } => TLExpr::set_cardinality(to_nnf(set)),
+        TLExpr::EmptySet => expr.clone(),
+        TLExpr::SetComprehension {
+            var,
+            domain,
+            condition,
+        } => TLExpr::set_comprehension(var.clone(), domain.clone(), to_nnf(condition)),
+        TLExpr::CountingExists {
+            var,
+            domain,
+            body,
+            min_count,
+        } => TLExpr::counting_exists(var.clone(), domain.clone(), to_nnf(body), *min_count),
+        TLExpr::CountingForAll {
+            var,
+            domain,
+            body,
+            min_count,
+        } => TLExpr::counting_forall(var.clone(), domain.clone(), to_nnf(body), *min_count),
+        TLExpr::ExactCount {
+            var,
+            domain,
+            body,
+            count,
+        } => TLExpr::exact_count(var.clone(), domain.clone(), to_nnf(body), *count),
+        TLExpr::Majority { var, domain, body } => {
+            TLExpr::majority(var.clone(), domain.clone(), to_nnf(body))
+        }
+        TLExpr::LeastFixpoint { var, body } => TLExpr::least_fixpoint(var.clone(), to_nnf(body)),
+        TLExpr::GreatestFixpoint { var, body } => {
+            TLExpr::greatest_fixpoint(var.clone(), to_nnf(body))
+        }
+        TLExpr::Nominal { .. } => expr.clone(),
+        TLExpr::At { nominal, formula } => TLExpr::at(nominal.clone(), to_nnf(formula)),
+        TLExpr::Somewhere { formula } => TLExpr::somewhere(to_nnf(formula)),
+        TLExpr::Everywhere { formula } => TLExpr::everywhere(to_nnf(formula)),
+        TLExpr::AllDifferent { .. } => expr.clone(),
+        TLExpr::GlobalCardinality {
+            variables,
+            values,
+            min_occurrences,
+            max_occurrences,
+        } => TLExpr::global_cardinality(
+            variables.clone(),
+            values.iter().map(to_nnf).collect(),
+            min_occurrences.clone(),
+            max_occurrences.clone(),
+        ),
+        TLExpr::Abducible { .. } => expr.clone(),
+        TLExpr::Explain { formula } => TLExpr::explain(to_nnf(formula)),
     }
 }
 

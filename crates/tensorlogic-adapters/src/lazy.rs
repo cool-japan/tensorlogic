@@ -24,11 +24,12 @@ use std::sync::{Arc, RwLock};
 use crate::{DomainInfo, PredicateInfo, SymbolTable};
 
 /// Strategy for loading schema elements.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum LoadStrategy {
     /// Load all elements eagerly (no lazy loading).
     Eager,
     /// Load elements on first access.
+    #[default]
     OnDemand,
     /// Preload frequently accessed elements.
     Predictive {
@@ -40,12 +41,6 @@ pub enum LoadStrategy {
         /// Batch size for loading.
         batch_size: usize,
     },
-}
-
-impl Default for LoadStrategy {
-    fn default() -> Self {
-        Self::OnDemand
-    }
 }
 
 /// A loader trait for fetching schema elements on demand.

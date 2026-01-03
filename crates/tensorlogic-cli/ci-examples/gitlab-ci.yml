@@ -1,0 +1,205 @@
+# GitLab CI/CD Pipeline for TensorLogic
+# Save as: .gitlab-ci.yml
+
+variables:
+  TENSORLOGIC_VERSION: "0.1.0-alpha.2"
+  CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
+
+stages:
+  - setup
+  - validate
+  - compile
+  - visualize
+  - test
+  - deploy
+
+cache:
+  paths:
+    - .cargo/
+    - target/
+
+# Install TensorLogic CLI
+.install_tensorlogic: &install_tensorlogic
+  before_script:
+    - apt-get update && apt-get install -y curl build-essential
+    - curl https://sh.rustup.rs -sSf | sh -s -- -y
+    - source $HOME/.cargo/env
+    - cargo install tensorlogic-cli --version ${TENSORLOGIC_VERSION}
+
+# Validate all logic rules
+validate:
+  stage: validate
+  image: rust:latest
+  <<: *install_tensorlogic
+  script:
+    - echo "Validating TensorLogic rules..."
+    - tensorlogic batch rules/*.tl --validate
+    - echo "✓ All rules validated successfully"
+  rules:
+    - changes:
+        - rules/**/*.tl
+  artifacts:
+    reports:
+      junit: validation-report.xml
+
+# Generate statistics for each rule
+statistics:
+  stage: validate
+  image: rust:latest
+  <<: *install_tensorlogic
+  script:
+    - mkdir -p reports
+    - |
+      for rule in rules/*.tl; do
+        name=$(basename "$rule" .tl)
+        echo "Analyzing $name..."
+        tensorlogic "$rule" \
+          --output-format stats \
+          --analyze > "reports/${name}_stats.txt"
+      done
+  artifacts:
+    paths:
+      - reports/
+    expire_in: 30 days
+
+# Compile rules to JSON format
+compile:
+  stage: compile
+  image: rust:latest
+  <<: *install_tensorlogic
+  needs: [validate]
+  script:
+    - mkdir -p compiled
+    - |
+      for rule in rules/*.tl; do
+        name=$(basename "$rule" .tl)
+        echo "Compiling $name to JSON..."
+        tensorlogic "$rule" \
+          --output-format json \
+          --output "compiled/${name}.json" \
+          --validate
+      done
+  artifacts:
+    paths:
+      - compiled/
+    expire_in: 7 days
+
+# Generate DOT visualizations
+visualize:
+  stage: visualize
+  image: rust:latest
+  <<: *install_tensorlogic
+  needs: [validate]
+  before_script:
+    - apt-get update && apt-get install -y graphviz curl build-essential
+    - curl https://sh.rustup.rs -sSf | sh -s -- -y
+    - source $HOME/.cargo/env
+    - cargo install tensorlogic-cli --version ${TENSORLOGIC_VERSION}
+  script:
+    - mkdir -p visualizations
+    - |
+      for rule in rules/*.tl; do
+        name=$(basename "$rule" .tl)
+        echo "Visualizing $name..."
+        tensorlogic "$rule" \
+          --output-format dot \
+          --output "visualizations/${name}.dot"
+        dot -Tpng "visualizations/${name}.dot" \
+          -o "visualizations/${name}.png"
+        dot -Tsvg "visualizations/${name}.dot" \
+          -o "visualizations/${name}.svg"
+      done
+  artifacts:
+    paths:
+      - visualizations/
+    expire_in: 30 days
+
+# Test with different compilation strategies
+.test_strategy:
+  stage: test
+  image: rust:latest
+  <<: *install_tensorlogic
+  script:
+    - |
+      for rule in rules/*.tl; do
+        echo "Testing $(basename $rule) with ${STRATEGY}"
+        tensorlogic "$rule" \
+          --strategy ${STRATEGY} \
+          --validate \
+          --quiet
+      done
+
+test:soft_differentiable:
+  extends: .test_strategy
+  variables:
+    STRATEGY: "soft_differentiable"
+
+test:hard_boolean:
+  extends: .test_strategy
+  variables:
+    STRATEGY: "hard_boolean"
+
+test:fuzzy_godel:
+  extends: .test_strategy
+  variables:
+    STRATEGY: "fuzzy_godel"
+
+test:fuzzy_product:
+  extends: .test_strategy
+  variables:
+    STRATEGY: "fuzzy_product"
+
+# Quality checks
+quality:
+  stage: test
+  image: rust:latest
+  <<: *install_tensorlogic
+  needs: [validate]
+  script:
+    - echo "Running quality checks..."
+    # Check for large graphs
+    - |
+      for rule in rules/*.tl; do
+        stats=$(tensorlogic "$rule" --output-format stats --quiet)
+        tensors=$(echo "$stats" | grep "Tensors:" | awk '{print $2}')
+        if [ "$tensors" -gt 100 ]; then
+          echo "⚠️  Large graph in $(basename $rule): $tensors tensors"
+        fi
+      done
+    # Format conversion checks
+    - |
+      for rule in rules/*.tl; do
+        tensorlogic convert "$rule" --from expr --to json --quiet > /dev/null
+        tensorlogic convert "$rule" --from expr --to yaml --quiet > /dev/null
+      done
+    - echo "✓ Quality checks passed"
+
+# Deploy to production (only on main branch)
+deploy:production:
+  stage: deploy
+  image: rust:latest
+  needs: [validate, compile]
+  only:
+    - main
+  script:
+    - echo "Deploying compiled rules to production..."
+    # Example: Deploy to artifact registry
+    # - curl --upload-file compiled/*.json https://artifacts.example.com/rules/
+    - echo "✓ Deployment complete"
+  environment:
+    name: production
+    url: https://production.example.com
+
+# Deploy to staging (on develop branch)
+deploy:staging:
+  stage: deploy
+  image: rust:latest
+  needs: [validate, compile]
+  only:
+    - develop
+  script:
+    - echo "Deploying to staging environment..."
+    - echo "✓ Staging deployment complete"
+  environment:
+    name: staging
+    url: https://staging.example.com

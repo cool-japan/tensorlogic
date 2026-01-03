@@ -358,6 +358,8 @@ fn fold_constants_impl(expr: &TLExpr, stats: &mut ConstantFoldingStats) -> TLExp
 
         // Base cases
         TLExpr::Pred { .. } | TLExpr::Constant(_) | TLExpr::Score(_) => expr.clone(),
+        // All other expression types (alpha.3 enhancements) - no constant folding
+        _ => expr.clone(),
     }
 }
 

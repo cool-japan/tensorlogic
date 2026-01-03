@@ -4,7 +4,7 @@
 
 [package]
 name = "tensorlogic-py"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://github.com/cool-japan/tensorlogic"
@@ -27,7 +27,7 @@ anyhow = "1"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
-bincode = "1"
+oxicode = { version = "0.1.1", features = ["serde"] }
 tensorlogic-ir = { path = "../tensorlogic-ir" }
 tensorlogic-compiler = { path = "../tensorlogic-compiler" }
 tensorlogic-infer = { path = "../tensorlogic-infer" }

@@ -1,25 +1,38 @@
 [package]
 name = "tensorlogic-compiler"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "Compiler for transforming logic expressions into tensor computation graphs"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-rust-version.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+serde.workspace = true
 tensorlogic-adapters.workspace = true
 tensorlogic-ir.workspace = true
+rayon = { workspace = true, optional = true }
+parking_lot = { workspace = true, optional = true }
+prost = { workspace = true, optional = true }
+prost-types = { workspace = true, optional = true }
 
 [features]
 default = []
+# Enable parallel compilation using rayon
+parallel = ["rayon", "parking_lot"]
+# Enable ONNX export functionality
+onnx = ["prost", "prost-types"]
+# Enable PyTorch code generation
+pytorch = []
+# Enable TensorFlow GraphDef export functionality
+tensorflow = ["prost", "prost-types"]
 # Enable integration tests that require tensorlogic-scirs-backend (creates circular dev-dependency)
 integration-tests = []
 
 [dev-dependencies]
 criterion.workspace = true
+serde_json.workspace = true
 scirs2-core.workspace = true
 tensorlogic-infer.workspace = true
 # tensorlogic-scirs-backend.workspace = true  # Disabled: circular dev-dependency

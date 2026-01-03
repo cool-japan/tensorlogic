@@ -7,19 +7,27 @@
 use pyo3::prelude::*;
 
 mod adapters;
+mod async_executor;
 mod backend;
 mod compiler;
 mod dsl;
 mod executor;
 mod jupyter;
 mod numpy_conversion;
+mod performance;
 mod persistence;
 mod provenance;
+mod streaming;
 mod training;
 mod types;
+mod utils;
 
 use adapters::{py_compiler_context, py_domain_info, py_predicate_info, py_symbol_table};
 use adapters::{PyCompilerContext, PyDomainInfo, PyPredicateInfo, PySymbolTable};
+use async_executor::{
+    py_cancellation_token, py_execute_async, py_execute_parallel, PyAsyncResult, PyBatchExecutor,
+    PyCancellationToken,
+};
 use backend::{
     py_get_backend_capabilities, py_get_default_backend, py_get_system_info,
     py_list_available_backends, PyBackend, PyBackendCapabilities,
@@ -75,6 +83,11 @@ fn pytensorlogic(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Register persistence types
     m.add_class::<PyModelPackage>()?;
 
+    // Register async execution types
+    m.add_class::<PyAsyncResult>()?;
+    m.add_class::<PyBatchExecutor>()?;
+    m.add_class::<PyCancellationToken>()?;
+
     // Register functions - Logical operations
     m.add_function(wrap_pyfunction!(types::py_var, m)?)?;
     m.add_function(wrap_pyfunction!(types::py_const, m)?)?;
@@ -109,6 +122,11 @@ fn pytensorlogic(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_compile_with_context, m)?)?;
     m.add_function(wrap_pyfunction!(py_execute, m)?)?;
 
+    // Register async execution functions
+    m.add_function(wrap_pyfunction!(py_execute_async, m)?)?;
+    m.add_function(wrap_pyfunction!(py_execute_parallel, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cancellation_token, m)?)?;
+
     // Register adapter functions
     m.add_function(wrap_pyfunction!(py_domain_info, m)?)?;
     m.add_function(wrap_pyfunction!(py_predicate_info, m)?)?;
@@ -138,6 +156,15 @@ fn pytensorlogic(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Register DSL module
     dsl::register_dsl_module(m)?;
+
+    // Register performance module
+    performance::register_performance_module(m)?;
+
+    // Register streaming module
+    streaming::register_streaming_module(m)?;
+
+    // Register utils module
+    utils::register_utils_module(m)?;
 
     // Add version
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;

@@ -55,4 +55,20 @@ pub enum IrError {
     UnsupportedAggregation { op: String },
     #[error("Graph contains a cycle and cannot be topologically sorted")]
     CyclicGraph,
+    #[error("Type unification failed: cannot unify {type1} with {type2}")]
+    UnificationFailure { type1: String, type2: String },
+    #[error("Occurs check failed: type variable {var} occurs in {ty}")]
+    OccursCheckFailure { var: String, ty: String },
+    #[error("Kind mismatch: expected {expected}, got {actual}")]
+    KindMismatch { expected: String, actual: String },
+    #[error("Linearity violation: {0}")]
+    LinearityViolation(String),
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
+    #[error("Domain mismatch: expected {expected}, found {found}")]
+    DomainMismatch { expected: String, found: String },
+    #[error("Constraint violation: {message}")]
+    ConstraintViolation { message: String },
+    #[error("Formatting error: {0}")]
+    FormattingError(#[from] std::fmt::Error),
 }

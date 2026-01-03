@@ -1,9 +1,9 @@
-# Alpha.1 Release Status ✅
+# Alpha.2 Release Status ✅
 
-**Version**: 0.1.0-alpha.1  
+**Version**: 0.1.0-alpha.2  
 **Status**: Production Ready
 
-This crate is part of the TensorLogic v0.1.0-alpha.1 release with:
+This crate is part of the TensorLogic v0.1.0-alpha.2 release with:
 - Zero compiler warnings
 - 100% test pass rate
 - Complete documentation
@@ -124,10 +124,10 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Full example with RDFS inference integration
 
 ### Integration
-- [ ] Compile RDF→TLExpr→Tensor pipeline
-  - [ ] Full end-to-end example
-  - [ ] Handle large schemas efficiently
-  - [ ] Stream processing for big graphs
+- [x] **Compile RDF→TLExpr→Tensor pipeline** ✅ **COMPLETE**
+  - [x] Full end-to-end example (10_end_to_end_pipeline.rs)
+  - [x] Handle large schemas efficiently
+  - [x] Stream processing for big graphs (StreamingRdfLoader)
 - [ ] Execute and validate
   - [ ] Run compiled rules with SciRS2 backend
   - [ ] Generate validation reports
@@ -206,6 +206,10 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] 04_graphql_integration.rs - GraphQL schema to TensorLogic
   - [x] 05_rdfstar_provenance.rs - RDF* provenance tracking
   - [x] 06_validation_pipeline.rs - End-to-end validation workflow
+  - [x] 07_jsonld_export.rs - JSON-LD import/export
+  - [x] 08_performance_features.rs - Indexing and caching
+  - [x] 09_sparql_advanced.rs - Advanced SPARQL compilation
+  - [x] 10_end_to_end_pipeline.rs - Complete RDF→TLExpr pipeline (NEW)
 - [x] Add README.md (COMPLETE)
   - [x] Explain RDF → TensorLogic mapping
   - [x] Show SHACL examples
@@ -230,14 +234,17 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [ ] Test with real-world ontologies (FOAF, Dublin Core, SKOS)
   - [ ] Test with complex SHACL shapes
   - [ ] Test with large RDF graphs (>1M triples)
-- [ ] Property-based testing
-  - [ ] Generate random valid RDF schemas
-  - [ ] Test round-trip conversion
-  - [ ] Verify invariants
-- [ ] Benchmarks
-  - [ ] Parsing speed
-  - [ ] Memory usage
-  - [ ] Conversion time
+- [x] **Property-based testing** ✅ **COMPLETE**
+  - [x] Generate random valid RDF schemas
+  - [x] Test round-trip conversion (N-Quads, literals)
+  - [x] Verify invariants (StreamAnalyzer, graph separation)
+  - [x] 12 proptest tests with 100 cases each
+- [x] **Benchmarks** ✅ **COMPLETE**
+  - [x] Parsing speed (Turtle, N-Quads)
+  - [x] Streaming loader performance
+  - [x] SPARQL parsing and compilation
+  - [x] Schema analysis and SymbolTable conversion
+  - [x] Criterion-based benchmarks with throughput metrics
 
 ### Formats Support
 - [x] **N-Triples Support (COMPLETE)** -
@@ -258,9 +265,12 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Roundtrip conversion support
   - [x] 18 comprehensive tests (+7 new)
   - [x] Example: 07_jsonld_export.rs
-- [ ] Additional RDF serializations
-  - [ ] N-Quads parser
-  - [ ] RDF/XML parser (via external crate)
+- [x] **Additional RDF serializations** ✅ **PARTIAL**
+  - [x] N-Quads parser (NQuadsProcessor with graph support)
+  - [x] N-Quads serialization (to_nquads)
+  - [x] Named graph handling
+  - [x] 10 comprehensive tests
+  - [ ] RDF/XML parser (via external crate) (FUTURE)
 - [ ] Export formats
   - [ ] Export SymbolTable as Turtle
   - [x] Export provenance as RDF* (COMPLETE)
@@ -295,16 +305,27 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [ ] Convert to RDF* where possible
   - [ ] Track statement provenance
 
-### SPARQL Integration ✅ **BASIC SUPPORT COMPLETE** -
+### SPARQL Integration ✅ **COMPREHENSIVE SUPPORT COMPLETE** -
 - [x] Parse SPARQL queries (SELECT with WHERE and FILTER)
 - [x] Compile SPARQL to TLExpr
 - [x] Pattern element parsing (variables and constants)
-- [x] Filter conditions (equals, not equals, greater than, less than, regex)
+- [x] Filter conditions (equals, not equals, greater than, less than, regex, BOUND, isIRI, isLiteral)
 - [x] Triple pattern compilation
 - [x] IRI to predicate mapping
-- [x] 8 comprehensive tests
+- [x] Query types: SELECT, ASK, DESCRIBE, CONSTRUCT
+- [x] Graph patterns: OPTIONAL (left-outer join), UNION (disjunction)
+- [x] Solution modifiers: LIMIT, OFFSET, ORDER BY, DISTINCT
+- [x] **Aggregate functions (NEW):**
+  - [x] COUNT, COUNT(DISTINCT), COUNT(*)
+  - [x] SUM, AVG, MIN, MAX
+  - [x] GROUP_CONCAT with separator
+  - [x] SAMPLE
+- [x] **Grouping support (NEW):**
+  - [x] GROUP BY clause
+  - [x] HAVING conditions
+- [x] SelectElement type for variables and aggregates
+- [x] 28+ comprehensive tests
 - [ ] Execute SPARQL via tensor operations (requires SciRS2 backend integration)
-- [ ] Advanced SPARQL (CONSTRUCT, ASK, DESCRIBE, OPTIONAL, UNION)
 - [ ] Federated SPARQL queries
 
 ### Reasoning
@@ -325,8 +346,8 @@ See main [TODO.md](../../TODO.md) for overall project status.
 
 ---
 
-**Total Items:** 80+ tasks
-**Completion:** ~74% (60+/80)
+**Total Items:** 85+ tasks
+**Completion:** ~82% (70+/85)
 
 ## Recent Session Additions
 
@@ -637,3 +658,121 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - Tests: 15 → 41 tests (+173%)
 - Files: ~1500 lines of new production code
 - Zero warnings, 100% test pass rate
+
+## Recent Session Additions (November 2025)
+
+### Implemented Features
+1. **End-to-End Pipeline Example** (NEW)
+   - Comprehensive example demonstrating complete RDF→TLExpr pipeline
+   - 8 phases: Schema Loading, RDFS Inference, SHACL Constraints, SPARQL Queries, Provenance Tracking, Validation, Caching, GraphQL
+   - Shows all major crate capabilities in one executable
+   - Example: `examples/10_end_to_end_pipeline.rs` (720+ lines)
+
+2. **Streaming RDF Processing** (NEW)
+   - Memory-efficient streaming for large RDF datasets
+   - `StreamingRdfLoader` with callback-based processing
+   - Batch processing with configurable batch sizes
+   - Progress tracking and statistics
+   - Predicate and subject prefix filtering
+   - `StreamAnalyzer` for on-the-fly dataset analysis
+   - N-Triples line-by-line processing
+   - 7 comprehensive tests
+   - Implementation in `src/schema/streaming.rs` (600+ lines)
+
+3. **N-Quads Format Support** (NEW)
+   - Full N-Quads parser and serializer
+   - `NQuadsProcessor` with named graph support
+   - `Quad` type for representing quads
+   - Graph grouping and querying
+   - Conversion to Triple (losing graph info)
+   - Roundtrip support (parse → serialize → parse)
+   - 10 comprehensive tests
+   - Implementation in `src/schema/nquads.rs` (420+ lines)
+
+4. **Property-Based Testing** (NEW)
+   - Proptest-based test suite for invariant verification
+   - Tests: roundtrips, counts, sorting, serialization
+   - 12 property tests with 100 cases each
+   - Coverage: N-Quads, StreamAnalyzer, escaping
+   - Test file: `tests/proptest_validation.rs` (230+ lines)
+
+5. **Criterion Benchmarks** (NEW)
+   - Comprehensive benchmark suite for performance tracking
+   - Benchmarks: Turtle parsing, N-Quads parsing, streaming, SPARQL
+   - Throughput metrics with varying input sizes
+   - Schema analysis and SymbolTable conversion
+   - Benchmark file: `benches/parsing_benchmarks.rs` (220+ lines)
+
+### Statistics
+- Tests: 149 → 184 tests (+23%)
+- New production code: ~1020 lines
+- New test code: ~450 lines
+- New example code: ~720 lines
+- Total new code: ~2190 lines
+- Examples: 8 → 10 examples
+- Total crate size: ~12,500+ lines
+- Zero warnings, 100% test pass rate
+- Completion: 74% → 82% (+8%)
+
+### Quality Improvements
+- Complete RDF processing pipeline demonstrated
+- Memory-efficient streaming for large datasets
+- Named graph support via N-Quads
+- Property-based test validation for edge cases
+- Performance benchmarking infrastructure
+- Professional benchmark suite with criterion
+
+---
+
+## Session 3 Additions (Advanced SPARQL & SymbolTable Export)
+
+### New Features Implemented
+
+1. **SymbolTable Export/Import** (NEW)
+   - `symbol_table_to_turtle()` - Export to Turtle format
+   - `symbol_table_to_json()` - Export to JSON format
+   - `symbol_table_from_json()` - Import from JSON format
+   - Proper RDF serialization with domains as rdfs:Class and predicates as rdf:Property
+   - Full roundtrip support
+   - 4 comprehensive tests
+
+2. **Advanced SPARQL Aggregate Functions** (NEW)
+   - `AggregateFunction` enum with full SPARQL 1.1 support:
+     - COUNT (with DISTINCT and *)
+     - SUM (with DISTINCT)
+     - AVG (with DISTINCT)
+     - MIN, MAX
+     - GROUP_CONCAT (with separator)
+     - SAMPLE
+   - `SelectElement` enum for variables and aggregates
+   - Aggregate expression parsing with AS alias support
+   - 8 comprehensive aggregate tests
+
+3. **SPARQL GROUP BY and HAVING** (NEW)
+   - GROUP BY clause parsing
+   - HAVING condition support
+   - Filter conditions on aggregated results
+   - Integration with existing query modifiers
+
+4. **Real-World Ontology Tests** (NEW)
+   - FOAF (Friend of a Friend) ontology tests
+   - Dublin Core metadata vocabulary tests
+   - SKOS (Simple Knowledge Organization System) tests
+   - Schema.org vocabulary tests
+   - Combined multi-vocabulary tests
+   - Test file: `tests/real_world_ontologies.rs` (400+ lines)
+
+### Statistics
+- Tests: 184 → 213 tests (+16%)
+- New production code: ~300 lines (aggregate support in sparql.rs)
+- New test code: ~600 lines (aggregate tests + real-world ontologies)
+- Total crate size: ~13,400+ lines
+- Zero warnings, 100% test pass rate
+- SPARQL status: Basic → Comprehensive (aggregates, GROUP BY, HAVING)
+
+### Quality Improvements
+- Full SPARQL 1.1 aggregate function support
+- SymbolTable interoperability with standard formats (Turtle, JSON)
+- Real-world ontology validation
+- Improved test coverage for SPARQL edge cases
+- Professional-grade SPARQL parser for analytics queries

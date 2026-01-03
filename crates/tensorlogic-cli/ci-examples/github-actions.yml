@@ -1,0 +1,220 @@
+# GitHub Actions Workflow for TensorLogic Validation
+# Save as: .github/workflows/tensorlogic.yml
+
+name: TensorLogic Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'rules/**/*.tl'
+      - '.github/workflows/tensorlogic.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'rules/**/*.tl'
+
+env:
+  TENSORLOGIC_VERSION: '0.1.0-alpha.2'
+
+jobs:
+  validate:
+    name: Validate Logic Rules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install TensorLogic CLI
+        run: cargo install tensorlogic-cli --version ${{ env.TENSORLOGIC_VERSION }}
+
+      - name: Validate all rules
+        run: |
+          tensorlogic batch rules/*.tl --validate
+
+      - name: Generate statistics
+        run: |
+          mkdir -p reports
+          for rule in rules/*.tl; do
+            name=$(basename "$rule" .tl)
+            tensorlogic "$rule" \
+              --output-format stats \
+              --analyze > "reports/${name}_stats.txt"
+          done
+
+      - name: Upload statistics
+        uses: actions/upload-artifact@v4
+        with:
+          name: tensorlogic-stats
+          path: reports/
+
+  compile:
+    name: Compile to JSON
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install TensorLogic CLI
+        run: cargo install tensorlogic-cli --version ${{ env.TENSORLOGIC_VERSION }}
+
+      - name: Compile rules to JSON
+        run: |
+          mkdir -p compiled
+          for rule in rules/*.tl; do
+            name=$(basename "$rule" .tl)
+            tensorlogic "$rule" \
+              --output-format json \
+              --output "compiled/${name}.json" \
+              --validate
+          done
+
+      - name: Upload compiled graphs
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-graphs
+          path: compiled/
+
+  visualize:
+    name: Generate Visualizations
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install TensorLogic CLI
+        run: cargo install tensorlogic-cli --version ${{ env.TENSORLOGIC_VERSION }}
+
+      - name: Generate DOT graphs
+        run: |
+          mkdir -p visualizations
+          for rule in rules/*.tl; do
+            name=$(basename "$rule" .tl)
+            tensorlogic "$rule" \
+              --output-format dot \
+              --output "visualizations/${name}.dot"
+            dot -Tpng "visualizations/${name}.dot" \
+              -o "visualizations/${name}.png"
+            dot -Tsvg "visualizations/${name}.dot" \
+              -o "visualizations/${name}.svg"
+          done
+
+      - name: Upload visualizations
+        uses: actions/upload-artifact@v4
+        with:
+          name: visualizations
+          path: visualizations/
+
+  test-strategies:
+    name: Test Multiple Strategies
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        strategy:
+          - soft_differentiable
+          - hard_boolean
+          - fuzzy_godel
+          - fuzzy_product
+          - fuzzy_lukasiewicz
+          - probabilistic
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install TensorLogic CLI
+        run: cargo install tensorlogic-cli --version ${{ env.TENSORLOGIC_VERSION }}
+
+      - name: Test with ${{ matrix.strategy }}
+        run: |
+          for rule in rules/*.tl; do
+            echo "Testing $rule with ${{ matrix.strategy }}"
+            tensorlogic "$rule" \
+              --strategy ${{ matrix.strategy }} \
+              --validate \
+              --quiet
+          done
+
+  quality-check:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install TensorLogic CLI
+        run: cargo install tensorlogic-cli --version ${{ env.TENSORLOGIC_VERSION }}
+
+      - name: Check for large graphs
+        run: |
+          # Flag rules that compile to very large graphs
+          for rule in rules/*.tl; do
+            stats=$(tensorlogic "$rule" --output-format stats --quiet)
+            tensors=$(echo "$stats" | grep "Tensors:" | awk '{print $2}')
+            if [ "$tensors" -gt 100 ]; then
+              echo "⚠️  Large graph detected in $rule: $tensors tensors"
+            fi
+          done
+
+      - name: Format conversion check
+        run: |
+          # Ensure rules can be converted between formats
+          for rule in rules/*.tl; do
+            tensorlogic convert "$rule" \
+              --from expr \
+              --to json \
+              --quiet > /dev/null
+            tensorlogic convert "$rule" \
+              --from expr \
+              --to yaml \
+              --quiet > /dev/null
+          done
+
+  deploy:
+    name: Deploy Compiled Rules
+    runs-on: ubuntu-latest
+    needs: [validate, compile]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Download compiled graphs
+        uses: actions/download-artifact@v4
+        with:
+          name: compiled-graphs
+          path: compiled/
+
+      - name: Deploy to production
+        run: |
+          # Example: Upload to S3, artifact registry, etc.
+          echo "Deploying compiled rules..."
+          # aws s3 cp compiled/ s3://my-bucket/rules/ --recursive

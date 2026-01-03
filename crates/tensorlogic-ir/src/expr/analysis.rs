@@ -145,6 +145,97 @@ impl TLExpr {
                     expr.collect_free_vars(vars, bound);
                 }
             }
+            // Alpha.3 enhancements
+            TLExpr::Lambda { var, body, .. } => {
+                // Lambda binds the variable
+                let mut new_bound = bound.clone();
+                new_bound.insert(var.clone());
+                body.collect_free_vars(vars, &new_bound);
+            }
+            TLExpr::Apply { function, argument } => {
+                function.collect_free_vars(vars, bound);
+                argument.collect_free_vars(vars, bound);
+            }
+            TLExpr::SetMembership { element, set }
+            | TLExpr::SetUnion {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetIntersection {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetDifference {
+                left: element,
+                right: set,
+            } => {
+                element.collect_free_vars(vars, bound);
+                set.collect_free_vars(vars, bound);
+            }
+            TLExpr::SetCardinality { set } => {
+                set.collect_free_vars(vars, bound);
+            }
+            TLExpr::EmptySet => {
+                // No free variables
+            }
+            TLExpr::SetComprehension { var, condition, .. } => {
+                // Set comprehension binds the variable
+                let mut new_bound = bound.clone();
+                new_bound.insert(var.clone());
+                condition.collect_free_vars(vars, &new_bound);
+            }
+            TLExpr::CountingExists { var, body, .. }
+            | TLExpr::CountingForAll { var, body, .. }
+            | TLExpr::ExactCount { var, body, .. }
+            | TLExpr::Majority { var, body, .. } => {
+                // Counting quantifiers bind the variable
+                let mut new_bound = bound.clone();
+                new_bound.insert(var.clone());
+                body.collect_free_vars(vars, &new_bound);
+            }
+            TLExpr::LeastFixpoint { var, body } | TLExpr::GreatestFixpoint { var, body } => {
+                // Fixed-point operators bind the variable
+                let mut new_bound = bound.clone();
+                new_bound.insert(var.clone());
+                body.collect_free_vars(vars, &new_bound);
+            }
+            TLExpr::Nominal { .. } => {
+                // No free variables
+            }
+            TLExpr::At { formula, .. } => {
+                formula.collect_free_vars(vars, bound);
+            }
+            TLExpr::Somewhere { formula } | TLExpr::Everywhere { formula } => {
+                formula.collect_free_vars(vars, bound);
+            }
+            TLExpr::AllDifferent { variables } => {
+                // Variables in constraint are free if not bound
+                for v in variables {
+                    if !bound.contains(v) {
+                        vars.insert(v.clone());
+                    }
+                }
+            }
+            TLExpr::GlobalCardinality {
+                variables, values, ..
+            } => {
+                // Variables are free if not bound
+                for v in variables {
+                    if !bound.contains(v) {
+                        vars.insert(v.clone());
+                    }
+                }
+                // Collect from value expressions
+                for val in values {
+                    val.collect_free_vars(vars, bound);
+                }
+            }
+            TLExpr::Abducible { .. } => {
+                // No free variables (it's a literal)
+            }
+            TLExpr::Explain { formula } => {
+                formula.collect_free_vars(vars, bound);
+            }
         }
     }
 
@@ -258,6 +349,72 @@ impl TLExpr {
                 for (_, expr) in alternatives {
                     expr.collect_predicates(preds);
                 }
+            }
+            // Alpha.3 enhancements
+            TLExpr::Lambda { body, .. } => {
+                body.collect_predicates(preds);
+            }
+            TLExpr::Apply { function, argument } => {
+                function.collect_predicates(preds);
+                argument.collect_predicates(preds);
+            }
+            TLExpr::SetMembership { element, set }
+            | TLExpr::SetUnion {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetIntersection {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetDifference {
+                left: element,
+                right: set,
+            } => {
+                element.collect_predicates(preds);
+                set.collect_predicates(preds);
+            }
+            TLExpr::SetCardinality { set } => {
+                set.collect_predicates(preds);
+            }
+            TLExpr::EmptySet => {
+                // No predicates
+            }
+            TLExpr::SetComprehension { condition, .. } => {
+                condition.collect_predicates(preds);
+            }
+            TLExpr::CountingExists { body, .. }
+            | TLExpr::CountingForAll { body, .. }
+            | TLExpr::ExactCount { body, .. }
+            | TLExpr::Majority { body, .. } => {
+                body.collect_predicates(preds);
+            }
+            TLExpr::LeastFixpoint { body, .. } | TLExpr::GreatestFixpoint { body, .. } => {
+                body.collect_predicates(preds);
+            }
+            TLExpr::Nominal { .. } => {
+                // No predicates
+            }
+            TLExpr::At { formula, .. } => {
+                formula.collect_predicates(preds);
+            }
+            TLExpr::Somewhere { formula } | TLExpr::Everywhere { formula } => {
+                formula.collect_predicates(preds);
+            }
+            TLExpr::AllDifferent { .. } => {
+                // No predicates (constraint on variables)
+            }
+            TLExpr::GlobalCardinality { values, .. } => {
+                // Collect from value expressions
+                for val in values {
+                    val.collect_predicates(preds);
+                }
+            }
+            TLExpr::Abducible { .. } => {
+                // No predicates
+            }
+            TLExpr::Explain { formula } => {
+                formula.collect_predicates(preds);
             }
         }
     }

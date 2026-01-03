@@ -2,7 +2,7 @@
 //!
 //! **Engine-agnostic Abstract Syntax Tree & Intermediate Representation for TensorLogic**
 //!
-//! **Version**: 0.1.0-alpha.1 | **Status**: Production Ready
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
 //!
 //! This crate provides the core data structures and operations for representing logic-as-tensor
 //! computations in the TensorLogic framework. It serves as the foundational layer that all other
@@ -46,6 +46,14 @@
 //!
 //! ### Type System
 //! - Static type checking with [`PredicateSignature`] and [`TypeAnnotation`]
+//! - **Parametric types** with type constructors (`List<T>`, `Option<T>`, `Tuple<A,B>`, etc.)
+//! - Type unification using Robinson's algorithm
+//! - Generalization and instantiation for polymorphic types
+//! - **Effect system** for tracking computational effects (purity, differentiability, stochasticity)
+//! - Effect polymorphism and inference
+//! - **Dependent types** with value-dependent types (e.g., `Vec<n, T>` where n is a runtime value)
+//! - **Linear types** for resource management and safe in-place operations
+//! - **Refinement types** for constraint-based type checking (e.g., `{x: Int | x > 0}`)
 //! - Arity validation ensures consistent predicate usage
 //! - Type inference and compatibility checking
 //!
@@ -72,6 +80,7 @@
 //! - Expression statistics with [`ExprStats`]
 //! - Pretty printing and DOT export for visualization
 //! - Expression and graph diffing with [`diff_exprs`] and [`diff_graphs`]
+//! - **Profile-guided optimization (PGO)** for runtime-informed optimization decisions
 //!
 //! ## Quick Start
 //!
@@ -135,6 +144,16 @@
 //! - `03_graph_construction`: Building computation graphs
 //! - `05_serialization`: JSON and binary serialization
 //! - `06_visualization`: Pretty printing and DOT export
+//! - `07_parametric_types`: Parametric types, unification, and polymorphic signatures
+//! - `08_effect_system`: Effect tracking, polymorphism, and annotations
+//! - `09_dependent_types`: Dependent types with value-dependent dimensions
+//! - `10_linear_types`: Linear types for resource management
+//! - `11_refinement_types`: Refinement types with predicates
+//! - `12_profile_guided_optimization`: Profile-guided optimization with runtime profiling
+//! - `13_sequent_calculus`: Sequent calculus and proof search
+//! - `14_constraint_logic_programming`: Constraint satisfaction problems
+//! - `15_advanced_graph_algorithms`: Graph analysis (SCC, cycles, critical paths)
+//! - `16_resolution_theorem_proving`: Resolution-based automated theorem proving
 //!
 //! ## Architecture
 //!
@@ -144,10 +163,16 @@
 //! - **graph**: Tensor computation graphs and nodes
 //! - **domain**: Domain constraints and validation
 //! - **signature**: Type signatures for predicates
+//! - **[`parametric_types`]**: Parametric types, type constructors, and unification
+//! - **[`effect_system`]**: Effect tracking, polymorphism, and annotations
+//! - **[`dependent`]**: Dependent types with value-dependent dimensions
+//! - **[`linear`]**: Linear types for resource management and multiplicity tracking
+//! - **[`refinement`]**: Refinement types with logical predicates
 //! - **metadata**: Provenance and source tracking
 //! - **[`serialization`]**: Versioned JSON/binary formats
 //! - **[`util`]**: Pretty printing and statistics
 //! - **[`diff`]**: Expression and graph comparison
+//! - **graph::pgo**: Profile-guided optimization with runtime profiling
 //! - **error**: Comprehensive error types
 //!
 //! ## Logic-to-Tensor Mapping
@@ -176,24 +201,38 @@
 //! - **tensorlogic-scirs-backend**: SciRS2-powered runtime execution
 //! - **tensorlogic-adapters**: Symbol tables and axis metadata
 
+pub mod clp;
+pub mod dependent;
 pub mod diff;
 mod display;
 mod domain;
+pub mod effect_system;
 mod error;
 mod expr;
 pub mod fuzzing;
 mod graph;
+pub mod linear;
 mod metadata;
+pub mod parametric_types;
+pub mod refinement;
+pub mod resolution;
+pub mod sequent;
 pub mod serialization;
 mod signature;
 mod term;
+pub mod unification;
 pub mod util;
 
 #[cfg(test)]
 mod tests;
 
+pub use dependent::{DependentType, DependentTypeContext, DimConstraint, IndexExpr};
 pub use diff::{diff_exprs, diff_graphs, ExprDiff, GraphDiff, NodeDiff};
 pub use domain::{DomainInfo, DomainRegistry, DomainType};
+pub use effect_system::{
+    infer_operation_effects, ComputationalEffect, Effect, EffectAnnotation, EffectScheme,
+    EffectSet, EffectSubstitution, EffectVar, MemoryEffect, ProbabilisticEffect,
+};
 pub use error::IrError;
 pub use expr::ac_matching::{
     ac_equivalent, flatten_ac, normalize_ac, ACOperator, ACPattern, Multiset,
@@ -240,18 +279,78 @@ pub use expr::temporal_equivalences::apply_temporal_equivalences;
 pub use expr::{
     AggregateOp, FuzzyImplicationKind, FuzzyNegationKind, TCoNormKind, TLExpr, TNormKind,
 };
+pub use graph::advanced_algorithms::{
+    are_isomorphic, critical_path_analysis, find_all_paths, find_cycles, graph_diameter, is_dag,
+    strongly_connected_components, topological_sort, CriticalPath, Cycle, IsomorphismResult,
+    StronglyConnectedComponent,
+};
+pub use graph::constant_folding::{
+    analyze_constants, apply_constant_folding, fold_constants_aggressive,
+    identify_constant_subgraphs, ConstantInfo, ConstantPropagationResult, FoldingStats,
+};
 pub use graph::cost_model::{
     auto_annotate_costs, estimate_graph_cost, estimate_operation_cost, CostSummary, GraphCostModel,
     OperationCost,
 };
+pub use graph::export::{
+    export_to_onnx_text, export_to_onnx_text_with_options, export_to_torchscript_text,
+    export_to_torchscript_text_with_options, OnnxExportOptions, TorchScriptExportOptions,
+};
+pub use graph::fusion::{
+    fuse_all, fuse_einsum_operations, fuse_elementwise_operations, fuse_map_reduce, FusionStats,
+};
+pub use graph::layout::{
+    apply_layouts, find_layout_fusion_opportunities, optimize_layouts, LayoutOptimizationResult,
+    LayoutStrategy, StridePattern, TensorLayout,
+};
+pub use graph::memory::{
+    analyze_inplace_opportunities, analyze_memory, MemoryAnalysis, TensorMemory,
+};
+pub use graph::parallel::{
+    analyze_parallelization, partition_independent_subgraphs, ParallelGroup,
+    ParallelizationAnalysis,
+};
+pub use graph::pattern::{
+    GraphPattern, GraphRewriteRule, PatternMatch, PatternMatcher,
+    RewriteStats as PatternRewriteStats,
+};
+pub use graph::pgo::{
+    ExecutionProfile, NodeStats, OptimizationHint, ProfileGuidedOptimizer, TensorStats,
+};
+pub use graph::schedule::{ExecutionSchedule, GraphScheduler, SchedulingObjective};
+pub use graph::tiling::{
+    apply_multilevel_tiling, apply_register_tiling, apply_tiling, recommend_tiling_strategy,
+    TileConfig, TilingResult, TilingStrategy,
+};
 pub use graph::{
-    are_graphs_equivalent, canonical_hash, canonicalize_graph, export_to_dot,
-    export_to_dot_with_options, validate_graph, DotExportOptions, EinsumGraph, EinsumNode,
-    GraphValidationStats, OpType, ValidationError, ValidationErrorKind, ValidationReport,
-    ValidationWarning, ValidationWarningKind,
+    are_graphs_equivalent, canonical_hash, canonicalize_graph, eliminate_common_subexpressions,
+    eliminate_dead_code, export_to_dot, export_to_dot_with_options, optimize_graph,
+    simplify_identity_operations, validate_graph, DotExportOptions, EinsumGraph, EinsumNode,
+    GraphValidationStats, OpType, OptimizationStats, ValidationError, ValidationErrorKind,
+    ValidationReport, ValidationWarning, ValidationWarningKind,
+};
+pub use linear::{
+    Capability, LinearContext, LinearResource, LinearType, LinearityChecker, Multiplicity, Usage,
 };
 pub use metadata::{Metadata, Provenance, SourceLocation, SourceSpan};
+pub use parametric_types::{
+    compose_substitutions, generalize, instantiate, unify, Kind, ParametricType, TypeConstructor,
+    TypeSubstitution,
+};
+pub use refinement::{LiquidTypeInference, Refinement, RefinementContext, RefinementType};
+pub use resolution::{
+    Clause, Literal, ProofResult, ProverStats, ResolutionProver, ResolutionStep, ResolutionStrategy,
+};
+// Note: resolution::to_cnf exists but is not exported to avoid conflict with expr::normal_forms::to_cnf
+pub use sequent::{
+    CutElimination, InferenceRule, ProofSearchEngine, ProofSearchStats, ProofSearchStrategy,
+    ProofTree, Sequent,
+};
 pub use serialization::{VersionedExpr, VersionedGraph, FORMAT_VERSION};
 pub use signature::{PredicateSignature, SignatureRegistry};
 pub use term::{Term, TypeAnnotation};
+pub use unification::{
+    anti_unify_terms, are_unifiable, lgg_terms, rename_vars, unify_term_list, unify_terms,
+    Substitution,
+};
 pub use util::{pretty_print_expr, pretty_print_graph, ExprStats, GraphStats};

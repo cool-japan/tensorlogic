@@ -1,5 +1,7 @@
 //! TLExpr → EinsumGraph compiler (planning only).
 //!
+//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//!
 //! This crate compiles logical expressions into tensor computation graphs
 //! represented as einsum operations. It provides a bridge between symbolic
 //! logic and numeric tensor computations.
@@ -129,9 +131,14 @@ pub mod compile;
 pub mod config;
 mod context;
 pub mod debug;
+pub mod export;
+pub mod import;
 pub mod incremental;
 pub mod optimize;
+#[cfg(feature = "parallel")]
+pub mod parallel;
 pub mod passes;
+pub mod profiling;
 
 #[cfg(test)]
 mod property_tests;
@@ -172,6 +179,50 @@ use compile::{compile_expr, infer_domain};
 /// ```
 pub fn compile_to_einsum(expr: &TLExpr) -> Result<EinsumGraph> {
     let mut ctx = CompilerContext::new();
+    compile_to_einsum_with_context(expr, &mut ctx)
+}
+
+/// Compile a TLExpr into an EinsumGraph with a custom compilation configuration.
+///
+/// This allows you to control how logical operations are compiled to tensor operations,
+/// using different strategies for AND, OR, NOT, quantifiers, and other logic operators.
+///
+/// # Arguments
+///
+/// * `expr` - The logical expression to compile
+/// * `config` - Compilation configuration specifying strategies
+///
+/// # Returns
+///
+/// An `EinsumGraph` representing the compiled tensor computation.
+///
+/// # Example
+///
+/// ```
+/// use tensorlogic_compiler::{compile_to_einsum_with_config, CompilationConfig};
+/// use tensorlogic_ir::{TLExpr, Term};
+///
+/// // Use Łukasiewicz fuzzy logic
+/// let config = CompilationConfig::fuzzy_lukasiewicz();
+/// let expr = TLExpr::and(
+///     TLExpr::pred("P", vec![Term::var("x")]),
+///     TLExpr::pred("Q", vec![Term::var("x")]),
+/// );
+/// let graph = compile_to_einsum_with_config(&expr, &config).unwrap();
+///
+/// // Use hard Boolean logic
+/// let config = CompilationConfig::hard_boolean();
+/// let graph = compile_to_einsum_with_config(&expr, &config).unwrap();
+///
+/// // Use probabilistic logic
+/// let config = CompilationConfig::probabilistic();
+/// let graph = compile_to_einsum_with_config(&expr, &config).unwrap();
+/// ```
+pub fn compile_to_einsum_with_config(
+    expr: &TLExpr,
+    config: &CompilationConfig,
+) -> Result<EinsumGraph> {
+    let mut ctx = CompilerContext::with_config(config.clone());
     compile_to_einsum_with_context(expr, &mut ctx)
 }
 

@@ -163,6 +163,110 @@ impl TLExpr {
                 value.collect_and_validate_domains(registry, var_domains)?;
                 body.collect_and_validate_domains(registry, var_domains)?;
             }
+            // Alpha.3 enhancements
+            TLExpr::Lambda { body, .. } => {
+                // Lambda introduces a local binding, no domain validation
+                body.collect_and_validate_domains(registry, var_domains)?;
+            }
+            TLExpr::Apply { function, argument } => {
+                function.collect_and_validate_domains(registry, var_domains)?;
+                argument.collect_and_validate_domains(registry, var_domains)?;
+            }
+            TLExpr::SetMembership { element, set }
+            | TLExpr::SetUnion {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetIntersection {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetDifference {
+                left: element,
+                right: set,
+            } => {
+                element.collect_and_validate_domains(registry, var_domains)?;
+                set.collect_and_validate_domains(registry, var_domains)?;
+            }
+            TLExpr::SetCardinality { set } => {
+                set.collect_and_validate_domains(registry, var_domains)?;
+            }
+            TLExpr::EmptySet => {
+                // No domain validation needed
+            }
+            TLExpr::SetComprehension {
+                var,
+                domain,
+                condition,
+            } => {
+                registry.validate_domain(domain)?;
+                if let Some(existing_domain) = var_domains.get(var) {
+                    if existing_domain != domain
+                        && !registry.are_compatible(existing_domain, domain)?
+                    {
+                        return Err(IrError::VariableDomainMismatch {
+                            var: var.clone(),
+                            expected: existing_domain.clone(),
+                            actual: domain.clone(),
+                        });
+                    }
+                } else {
+                    var_domains.insert(var.clone(), domain.clone());
+                }
+                condition.collect_and_validate_domains(registry, var_domains)?;
+            }
+            TLExpr::CountingExists {
+                var, domain, body, ..
+            }
+            | TLExpr::CountingForAll {
+                var, domain, body, ..
+            }
+            | TLExpr::ExactCount {
+                var, domain, body, ..
+            }
+            | TLExpr::Majority { var, domain, body } => {
+                registry.validate_domain(domain)?;
+                if let Some(existing_domain) = var_domains.get(var) {
+                    if existing_domain != domain
+                        && !registry.are_compatible(existing_domain, domain)?
+                    {
+                        return Err(IrError::VariableDomainMismatch {
+                            var: var.clone(),
+                            expected: existing_domain.clone(),
+                            actual: domain.clone(),
+                        });
+                    }
+                } else {
+                    var_domains.insert(var.clone(), domain.clone());
+                }
+                body.collect_and_validate_domains(registry, var_domains)?;
+            }
+            TLExpr::LeastFixpoint { body, .. } | TLExpr::GreatestFixpoint { body, .. } => {
+                body.collect_and_validate_domains(registry, var_domains)?;
+            }
+            TLExpr::Nominal { .. } => {
+                // No domain validation needed
+            }
+            TLExpr::At { formula, .. } => {
+                formula.collect_and_validate_domains(registry, var_domains)?;
+            }
+            TLExpr::Somewhere { formula } | TLExpr::Everywhere { formula } => {
+                formula.collect_and_validate_domains(registry, var_domains)?;
+            }
+            TLExpr::AllDifferent { .. } => {
+                // Variables, no domain validation here
+            }
+            TLExpr::GlobalCardinality { values, .. } => {
+                for val in values {
+                    val.collect_and_validate_domains(registry, var_domains)?;
+                }
+            }
+            TLExpr::Abducible { .. } => {
+                // No domain validation needed
+            }
+            TLExpr::Explain { formula } => {
+                formula.collect_and_validate_domains(registry, var_domains)?;
+            }
             TLExpr::Pred { .. } | TLExpr::Constant(_) => {
                 // No domain validation needed for predicates and constants
             }
@@ -275,6 +379,67 @@ impl TLExpr {
             TLExpr::Let { value, body, .. } => {
                 value.collect_domains(domains);
                 body.collect_domains(domains);
+            }
+            // Alpha.3 enhancements
+            TLExpr::Lambda { body, .. } => {
+                body.collect_domains(domains);
+            }
+            TLExpr::Apply { function, argument } => {
+                function.collect_domains(domains);
+                argument.collect_domains(domains);
+            }
+            TLExpr::SetMembership { element, set }
+            | TLExpr::SetUnion {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetIntersection {
+                left: element,
+                right: set,
+            }
+            | TLExpr::SetDifference {
+                left: element,
+                right: set,
+            } => {
+                element.collect_domains(domains);
+                set.collect_domains(domains);
+            }
+            TLExpr::SetCardinality { set } => {
+                set.collect_domains(domains);
+            }
+            TLExpr::EmptySet => {}
+            TLExpr::SetComprehension {
+                domain, condition, ..
+            } => {
+                domains.push(domain.clone());
+                condition.collect_domains(domains);
+            }
+            TLExpr::CountingExists { domain, body, .. }
+            | TLExpr::CountingForAll { domain, body, .. }
+            | TLExpr::ExactCount { domain, body, .. }
+            | TLExpr::Majority { domain, body, .. } => {
+                domains.push(domain.clone());
+                body.collect_domains(domains);
+            }
+            TLExpr::LeastFixpoint { body, .. } | TLExpr::GreatestFixpoint { body, .. } => {
+                body.collect_domains(domains);
+            }
+            TLExpr::Nominal { .. } => {}
+            TLExpr::At { formula, .. } => {
+                formula.collect_domains(domains);
+            }
+            TLExpr::Somewhere { formula } | TLExpr::Everywhere { formula } => {
+                formula.collect_domains(domains);
+            }
+            TLExpr::AllDifferent { .. } => {}
+            TLExpr::GlobalCardinality { values, .. } => {
+                for val in values {
+                    val.collect_domains(domains);
+                }
+            }
+            TLExpr::Abducible { .. } => {}
+            TLExpr::Explain { formula } => {
+                formula.collect_domains(domains);
             }
             TLExpr::Pred { .. } | TLExpr::Constant(_) => {}
         }

@@ -1099,3 +1099,296 @@ def rule_builder(config: Optional[CompilationConfig] = None) -> RuleBuilder:
         >>> x, y = rb.vars("x", "y", domain="Person")
     """
     ...
+
+# ============================================================================
+# Async Execution Support
+# ============================================================================
+
+class AsyncResult:
+    """Future-like result for async execution.
+
+    Represents a pending or completed async execution result.
+    Use is_ready() to check if computation is complete, and result() to retrieve it.
+    Supports cancellation through a CancellationToken.
+    """
+
+    def is_ready(self) -> bool:
+        """Check if the async computation is ready."""
+        ...
+
+    def result(self) -> Dict[str, npt.NDArray[np.float64]]:
+        """Wait for computation to complete and get the result."""
+        ...
+
+    def wait(self, timeout_secs: float) -> bool:
+        """Wait for computation with timeout."""
+        ...
+
+    def cancel(self) -> None:
+        """Cancel the async operation."""
+        ...
+
+    def is_cancelled(self) -> bool:
+        """Check if the operation was cancelled."""
+        ...
+
+    def get_cancellation_token(self) -> Optional["CancellationToken"]:
+        """Get the cancellation token if available."""
+        ...
+
+class BatchExecutor:
+    """Batch executor for processing multiple inputs through the same graph."""
+
+    def __init__(self, graph: EinsumGraph, backend: Optional[Backend] = None) -> None: ...
+
+    def execute_batch(
+        self,
+        inputs_list: List[Dict[str, npt.NDArray[np.float64]]],
+        parallel: bool = True
+    ) -> List[Dict[str, npt.NDArray[np.float64]]]: ...
+
+def execute_async(
+    graph: EinsumGraph,
+    inputs: Dict[str, npt.NDArray[np.float64]],
+    backend: Optional[Backend] = None
+) -> AsyncResult:
+    """Execute a graph asynchronously without blocking."""
+    ...
+
+def execute_parallel(
+    graphs: List[EinsumGraph],
+    inputs_list: List[Dict[str, npt.NDArray[np.float64]]],
+    backend: Optional[Backend] = None
+) -> List[AsyncResult]:
+    """Execute multiple graphs in parallel."""
+    ...
+
+# ============================================================================
+# Cancellation Support
+# ============================================================================
+
+class CancellationToken:
+    """Cancellation token for async operations."""
+    def __init__(self) -> None: ...
+    def cancel(self) -> None: ...
+    def is_cancelled(self) -> bool: ...
+    def reset(self) -> None: ...
+
+def cancellation_token() -> CancellationToken:
+    """Create a cancellation token."""
+    ...
+
+# ============================================================================
+# Performance Monitoring
+# ============================================================================
+
+class MemorySnapshot:
+    """Memory usage snapshot."""
+    @property
+    def current_bytes(self) -> int: ...
+    @property
+    def peak_bytes(self) -> int: ...
+    @property
+    def allocation_count(self) -> int: ...
+    @property
+    def current_mb(self) -> float: ...
+    @property
+    def peak_mb(self) -> float: ...
+
+class Profiler:
+    """Performance profiler for tracking execution metrics."""
+    def __init__(self) -> None: ...
+    @property
+    def is_active(self) -> bool: ...
+    def start(self) -> None: ...
+    def stop(self) -> None: ...
+    def record_time(self, name: str, time_ms: float) -> None: ...
+    def snapshot(self, label: str) -> None: ...
+    def get_timing_stats(self, name: str) -> Dict[str, any]: ...
+    def get_operation_names(self) -> List[str]: ...
+    def get_memory_snapshots(self) -> List[tuple[str, MemorySnapshot]]: ...
+    def elapsed_ms(self) -> float: ...
+    def summary(self) -> str: ...
+
+class Timer:
+    """Timer context for measuring execution time."""
+    def __init__(self, name: Optional[str] = None) -> None: ...
+    def start(self) -> None: ...
+    def stop(self) -> float: ...
+    def elapsed(self) -> float: ...
+    def __enter__(self) -> "Timer": ...
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool: ...
+
+def memory_snapshot() -> MemorySnapshot:
+    """Get current memory snapshot."""
+    ...
+
+def profiler() -> Profiler:
+    """Create a new profiler."""
+    ...
+
+def timer(name: Optional[str] = None) -> Timer:
+    """Create a new timer."""
+    ...
+
+def get_memory_info() -> Dict[str, any]:
+    """Get system memory information."""
+    ...
+
+def reset_memory_tracking() -> None:
+    """Reset all memory tracking statistics."""
+    ...
+
+# ============================================================================
+# Streaming Execution
+# ============================================================================
+
+class StreamingExecutor:
+    """Streaming executor for processing large datasets in chunks."""
+    def __init__(
+        self,
+        graph: EinsumGraph,
+        chunk_size: int = 1000,
+        overlap: int = 0,
+        backend: Optional[Backend] = None
+    ) -> None: ...
+
+    def execute_streaming(
+        self,
+        inputs: Dict[str, npt.NDArray[np.float64]],
+        output_key: Optional[str] = None
+    ) -> List[npt.NDArray[np.float64]]: ...
+
+    @property
+    def chunk_size(self) -> int: ...
+
+    @chunk_size.setter
+    def chunk_size(self, size: int) -> None: ...
+
+class DataGenerator:
+    """Data generator for memory-efficient data loading."""
+    def __init__(
+        self,
+        data_sources: List[str],
+        batch_size: int = 32,
+        shuffle: bool = False
+    ) -> None: ...
+
+    def __len__(self) -> int: ...
+    def reset(self) -> None: ...
+
+class ResultAccumulator:
+    """Accumulator for streaming results."""
+    def __init__(self) -> None: ...
+    def add(self, result: npt.NDArray[np.float64]) -> None: ...
+    def count(self) -> int: ...
+    def total_elements(self) -> int: ...
+    def combine(self) -> npt.NDArray[np.float64]: ...
+    def clear(self) -> None: ...
+    def stats(self) -> Dict[str, any]: ...
+
+def streaming_executor(
+    graph: EinsumGraph,
+    chunk_size: int = 1000,
+    overlap: int = 0,
+    backend: Optional[Backend] = None
+) -> StreamingExecutor:
+    """Create a streaming executor."""
+    ...
+
+def result_accumulator() -> ResultAccumulator:
+    """Create a result accumulator."""
+    ...
+
+def process_stream(
+    graph: EinsumGraph,
+    input_iterator: any,
+    input_name: str,
+    backend: Optional[Backend] = None
+) -> List[npt.NDArray[np.float64]]:
+    """Process an iterator of inputs through a graph."""
+    ...
+
+# ============================================================================
+# Utility Functions and Context Managers
+# ============================================================================
+
+# Custom Exceptions
+class CompilationError(Exception):
+    """Raised when compilation fails."""
+    ...
+
+class ExecutionError(Exception):
+    """Raised when execution fails."""
+    ...
+
+class ValidationError(Exception):
+    """Raised when input validation fails."""
+    ...
+
+class BackendError(Exception):
+    """Raised when backend operations fail."""
+    ...
+
+class ConfigurationError(Exception):
+    """Raised when configuration is invalid."""
+    ...
+
+class ExecutionContext:
+    """Execution context manager for managed graph execution."""
+    def __init__(self, graph: EinsumGraph) -> None: ...
+    def execute(self, inputs: Dict[str, npt.NDArray[np.float64]]) -> Dict[str, npt.NDArray[np.float64]]: ...
+    def get_results(self) -> List[Dict[str, npt.NDArray[np.float64]]]: ...
+    def execution_count(self) -> int: ...
+    def clear_results(self) -> None: ...
+    def __enter__(self) -> "ExecutionContext": ...
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool: ...
+
+class CompilationContext:
+    """Compilation context manager for managed compilation."""
+    def __init__(self, config: Optional[CompilationConfig] = None) -> None: ...
+    def compile(self, expr: TLExpr, name: Optional[str] = None) -> EinsumGraph: ...
+    def get_graphs(self) -> List[tuple[str, EinsumGraph]]: ...
+    def get_graph(self, name: str) -> Optional[EinsumGraph]: ...
+    def graph_count(self) -> int: ...
+    def __enter__(self) -> "CompilationContext": ...
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool: ...
+
+def quick_execute(
+    expr: TLExpr,
+    inputs: Dict[str, npt.NDArray[np.float64]],
+    config: Optional[CompilationConfig] = None
+) -> Dict[str, npt.NDArray[np.float64]]:
+    """Quick compile and execute in one step."""
+    ...
+
+def validate_inputs(
+    inputs: Dict[str, npt.NDArray[np.float64]],
+    expected_names: List[str],
+    min_dims: Optional[int] = None,
+    max_dims: Optional[int] = None
+) -> None:
+    """Validate input tensors against expected schema."""
+    ...
+
+def batch_compile(
+    expressions: List[TLExpr],
+    config: Optional[CompilationConfig] = None
+) -> List[EinsumGraph]:
+    """Create multiple graphs from expressions in batch."""
+    ...
+
+def batch_predict(
+    graph: EinsumGraph,
+    inputs_list: List[Dict[str, npt.NDArray[np.float64]]]
+) -> List[Dict[str, npt.NDArray[np.float64]]]:
+    """Predict on multiple inputs using the same graph."""
+    ...
+
+def execution_context(graph: EinsumGraph) -> ExecutionContext:
+    """Create an execution context."""
+    ...
+
+def compilation_context(config: Optional[CompilationConfig] = None) -> CompilationContext:
+    """Create a compilation context."""
+    ...

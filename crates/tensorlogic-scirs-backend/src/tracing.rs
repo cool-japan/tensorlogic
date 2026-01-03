@@ -306,7 +306,7 @@ pub fn operation_name(node: &EinsumNode) -> String {
     }
 }
 
-/// Helper to get tensor shape as Vec<usize>
+/// Helper to get tensor shape as `Vec<usize>`
 pub fn tensor_shape(tensor: &ArrayD<f64>) -> Vec<usize> {
     tensor.shape().to_vec()
 }

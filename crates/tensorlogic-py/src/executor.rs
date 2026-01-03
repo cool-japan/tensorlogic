@@ -1,4 +1,8 @@
 //! Execution functions for Python
+//!
+//! This module provides the main execution API for TensorLogic graphs.
+//! It supports GIL release during CPU-bound computation for better
+//! concurrency with Python threads.
 
 use crate::backend::PyBackend;
 use crate::numpy_conversion::arrayd_to_numpy;
@@ -8,8 +12,28 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use scirs2_core::ndarray::ArrayD;
+use std::collections::HashMap;
 use tensorlogic_infer::TlAutodiff;
+use tensorlogic_ir::EinsumGraph;
 use tensorlogic_scirs_backend::Scirs2Exec;
+
+/// Execute a graph without GIL (internal function)
+fn execute_without_gil(
+    graph: &EinsumGraph,
+    inputs: HashMap<String, ArrayD<f64>>,
+) -> Result<ArrayD<f64>, String> {
+    let mut executor = Scirs2Exec::new();
+
+    // Add input tensors to executor
+    for (name, tensor) in inputs {
+        executor.add_tensor(name, tensor);
+    }
+
+    // Execute forward pass
+    executor
+        .forward(graph)
+        .map_err(|e| format!("Execution failed: {}", e))
+}
 
 /// Execute an EinsumGraph with given inputs
 ///
@@ -55,10 +79,10 @@ pub fn py_execute<'py>(
     // All CPU-based backends (CPU, SIMD) use the same executor
     // The SIMD acceleration is handled automatically by scirs2-core when built with simd feature
     // GPU backend would require different initialization when supported
-    let backend_name = match backend {
-        PyBackend::Auto => "SciRS2",
-        PyBackend::SciRS2CPU => "SciRS2",
-        PyBackend::SciRS2SIMD => "SciRS2",  // Same as CPU, SIMD handled by scirs2-core
+    match backend {
+        PyBackend::Auto | PyBackend::SciRS2CPU | PyBackend::SciRS2SIMD => {
+            // All use SciRS2 executor, SIMD handled by scirs2-core
+        }
         PyBackend::SciRS2GPU => {
             return Err(PyRuntimeError::new_err(
                 "GPU backend is not yet implemented. Use Backend.SciRS2CPU or Backend.SciRS2SIMD instead.",
@@ -66,14 +90,8 @@ pub fn py_execute<'py>(
         }
     };
 
-    // Create executor based on backend selection
-    // Note: SIMD acceleration is transparent when scirs2-core is built with simd feature
-    let mut executor = match backend_name {
-        "SciRS2" => Scirs2Exec::new(),
-        _ => unreachable!("Invalid backend after validation"),
-    };
-
-    // Add input tensors to executor
+    // Collect input tensors before releasing GIL
+    let mut input_tensors: HashMap<String, ArrayD<f64>> = HashMap::new();
     for (key, value) in inputs.iter() {
         let name: String = key.extract()?;
 
@@ -83,13 +101,19 @@ pub fn py_execute<'py>(
 
         // Convert to owned ArrayD
         let owned_array: ArrayD<f64> = array_ref.to_owned();
-        executor.add_tensor(name, owned_array);
+        input_tensors.insert(name, owned_array);
     }
 
-    // Execute forward pass
-    let result = executor
-        .forward(&graph.inner)
-        .map_err(|e| PyRuntimeError::new_err(format!("Execution failed: {}", e)))?;
+    // Clone graph for GIL-free execution
+    let graph_clone = graph.inner.clone();
+
+    // Release GIL during CPU-bound computation
+    // This allows other Python threads to run while we compute
+    // Note: allow_threads is the correct method for GIL release in PyO3 0.27
+    #[allow(deprecated)]
+    let result = py
+        .allow_threads(move || execute_without_gil(&graph_clone, input_tensors))
+        .map_err(PyRuntimeError::new_err)?;
 
     // Convert result back to Python dict with NumPy array
     let output_dict = PyDict::new(py);

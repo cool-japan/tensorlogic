@@ -18,7 +18,7 @@ pub trait CurriculumStrategy {
     /// # Arguments
     /// * `epoch` - Current training epoch
     /// * `total_epochs` - Total number of training epochs
-    /// * `difficulties` - Difficulty scores for each sample [N]
+    /// * `difficulties` - Difficulty scores for each sample `[N]`
     ///
     /// # Returns
     /// Indices of samples to include in training at this stage
@@ -32,12 +32,12 @@ pub trait CurriculumStrategy {
     /// Compute difficulty scores for training samples.
     ///
     /// # Arguments
-    /// * `data` - Training data [N, features]
-    /// * `labels` - Training labels [N, classes]
-    /// * `predictions` - Model predictions [N, classes] (optional, for adaptive strategies)
+    /// * `data` - Training data `[N, features]`
+    /// * `labels` - Training labels `[N, classes]`
+    /// * `predictions` - Model predictions `[N, classes]` (optional, for adaptive strategies)
     ///
     /// # Returns
-    /// Difficulty score for each sample [N] (higher = more difficult)
+    /// Difficulty score for each sample `[N]` (higher = more difficult)
     fn compute_difficulty(
         &self,
         data: &Array2<f64>,

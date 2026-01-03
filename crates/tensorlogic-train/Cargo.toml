@@ -1,12 +1,11 @@
 [package]
 name = "tensorlogic-train"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 description = "Training loops, loss composition, and optimization schedules for TensorLogic"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-rust-version.workspace = true
 
 [dependencies]
 # Core tensorlogic crates
@@ -28,14 +27,52 @@ indexmap.workspace = true
 
 # Logging
 log.workspace = true
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, optional = true }
 
 # Serialization (for checkpoints)
 serde.workspace = true
 serde_json.workspace = true
 
+# Compression for checkpoints
+flate2 = "1.1"
+
+# Time for TensorBoard timestamps
+chrono = "0.4"
+
+# CRC for TensorBoard event format
+crc32fast = "1.5"
+
+# Byte order utilities
+byteorder = "1.5"
+
+# Hostname for TensorBoard filenames
+hostname = "0.4"
+
+[features]
+default = []
+structured-logging = ["tracing", "tracing-subscriber"]
+
 [dev-dependencies]
 criterion = "0.7"
+approx = "0.5"
 
 [[bench]]
 name = "training_performance"
+harness = false
+
+[[bench]]
+name = "scheduler_performance"
+harness = false
+
+[[bench]]
+name = "loss_performance"
+harness = false
+
+[[bench]]
+name = "callback_overhead"
+harness = false
+
+[[bench]]
+name = "metrics_performance"
 harness = false

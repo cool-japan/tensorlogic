@@ -6,17 +6,23 @@
 //! **Note**: This benchmark requires the `integration-tests` feature to avoid
 //! circular dev-dependencies with tensorlogic-compiler.
 
-#![cfg(feature = "integration-tests")]
-
+#[cfg(feature = "integration-tests")]
 use std::hint::black_box;
 
+#[cfg(feature = "integration-tests")]
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+#[cfg(feature = "integration-tests")]
 use scirs2_core::ndarray::ArrayD;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_compiler::compile_to_einsum;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_infer::TlAutodiff;
+#[cfg(feature = "integration-tests")]
 use tensorlogic_ir::{TLExpr, Term};
+#[cfg(feature = "integration-tests")]
 use tensorlogic_scirs_backend::Scirs2Exec;
 
+#[cfg(feature = "integration-tests")]
 fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
     ArrayD::from_shape_vec(
         shape.to_vec(),
@@ -27,11 +33,13 @@ fn create_test_tensor(shape: &[usize]) -> ArrayD<f64> {
     .unwrap()
 }
 
+#[cfg(feature = "integration-tests")]
 fn create_grad_tensor(shape: &[usize]) -> ArrayD<f64> {
     ArrayD::ones(shape.to_vec())
 }
 
 /// Benchmark gradient computation for simple operations
+#[cfg(feature = "integration-tests")]
 fn bench_gradient_simple_ops(c: &mut Criterion) {
     let mut group = c.benchmark_group("gradient_simple_ops");
 
@@ -68,6 +76,7 @@ fn bench_gradient_simple_ops(c: &mut Criterion) {
 }
 
 /// Benchmark gradient computation for nested operations
+#[cfg(feature = "integration-tests")]
 fn bench_gradient_nested_ops(c: &mut Criterion) {
     let mut group = c.benchmark_group("gradient_nested_ops");
 
@@ -104,6 +113,7 @@ fn bench_gradient_nested_ops(c: &mut Criterion) {
 }
 
 /// Benchmark gradient computation for matrix-like operations
+#[cfg(feature = "integration-tests")]
 fn bench_gradient_matrix_ops(c: &mut Criterion) {
     let mut group = c.benchmark_group("gradient_matrix_ops");
 
@@ -136,6 +146,7 @@ fn bench_gradient_matrix_ops(c: &mut Criterion) {
 }
 
 /// Benchmark gradient computation for quantifiers
+#[cfg(feature = "integration-tests")]
 fn bench_gradient_quantifiers(c: &mut Criterion) {
     let mut group = c.benchmark_group("gradient_quantifiers");
 
@@ -165,6 +176,7 @@ fn bench_gradient_quantifiers(c: &mut Criterion) {
 }
 
 /// Benchmark gradient computation for complex expressions
+#[cfg(feature = "integration-tests")]
 fn bench_gradient_complex(c: &mut Criterion) {
     let mut group = c.benchmark_group("gradient_complex");
 
@@ -202,6 +214,7 @@ fn bench_gradient_complex(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "integration-tests")]
 criterion_group!(
     benches,
     bench_gradient_simple_ops,
@@ -210,4 +223,13 @@ criterion_group!(
     bench_gradient_quantifiers,
     bench_gradient_complex
 );
+
+#[cfg(feature = "integration-tests")]
 criterion_main!(benches);
+
+// Fallback main when integration-tests feature is not enabled
+#[cfg(not(feature = "integration-tests"))]
+fn main() {
+    eprintln!("This benchmark requires the 'integration-tests' feature to be enabled.");
+    eprintln!("Run with: cargo bench --features integration-tests");
+}

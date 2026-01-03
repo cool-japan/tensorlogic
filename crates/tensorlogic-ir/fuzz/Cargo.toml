@@ -1,0 +1,38 @@
+[package]
+name = "tensorlogic-ir-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[workspace]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+serde_json = "1.0"
+
+[dependencies.tensorlogic-ir]
+path = ".."
+
+[[bin]]
+name = "fuzz_tlexpr"
+path = "fuzz_targets/fuzz_tlexpr.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_einsum_graph"
+path = "fuzz_targets/fuzz_einsum_graph.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_optimizations"
+path = "fuzz_targets/fuzz_optimizations.rs"
+test = false
+doc = false
+bench = false

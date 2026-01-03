@@ -37,7 +37,7 @@ pub struct SimpleHMM {
     pub num_states: usize,
     /// Number of observable symbols
     pub num_observations: usize,
-    /// Initial state distribution π: [num_states]
+    /// Initial state distribution π: `[num_states]`
     pub initial_distribution: Array1<f64>,
     /// Transition probabilities A: [from_state, to_state]
     pub transition_probabilities: Array2<f64>,
@@ -69,7 +69,7 @@ impl SimpleHMM {
 
     /// Create an HMM with random initialization.
     pub fn new_random(num_states: usize, num_observations: usize) -> Self {
-        use scirs2_core::random::{thread_rng, Rng};
+        use scirs2_core::random::thread_rng;
 
         let mut rng = thread_rng();
         let mut hmm = Self::new(num_states, num_observations);
@@ -366,6 +366,7 @@ impl BaumWelchLearner {
     /// # Returns
     ///
     /// Final log-likelihood
+    #[allow(clippy::needless_range_loop)]
     pub fn learn(&self, hmm: &mut SimpleHMM, observation_sequences: &[Vec<usize>]) -> Result<f64> {
         let num_states = hmm.num_states;
         let num_observations = hmm.num_observations;
@@ -456,7 +457,7 @@ impl BaumWelchLearner {
     }
 
     /// Forward-backward algorithm.
-    #[allow(clippy::type_complexity)]
+    #[allow(clippy::type_complexity, clippy::needless_range_loop)]
     fn forward_backward(
         &self,
         hmm: &SimpleHMM,

@@ -765,5 +765,5 @@ post_compilation_passes(&mut graph, &ctx, options)?;
 
 ---
 
-**Last Updated:** 2025-11-04
-**Version:** 0.1.0-alpha.1
+**Last Updated:** 2025-12-16
+**Version:** 0.1.0-alpha.2
