@@ -362,7 +362,7 @@ pytest tests/ -v
 - **4,363 tests** across all crates (lib + integration + doc)
 - **100% pass rate** (12 tests intentionally skipped)
 - **Zero compiler warnings, zero clippy warnings**
-- **311,686+ lines of code** (277,371 Rust, 42,858 comments)
+- **311,757 lines of code** (277,488 Rust, 42,923 comments, 50,413 blank)
 - Coverage includes:
   - Unit tests (logic operations, type checking, optimization)
   - Integration tests (end-to-end workflows)
