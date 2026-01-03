@@ -1064,8 +1064,10 @@ mod tests {
         assert!(result.is_ok());
 
         let profile = result.unwrap();
-        // Variance should be calculated
-        assert!(profile.variance.min_time_us > 0);
+        // Variance should be calculated correctly
+        // Note: min_time_us can be 0 if execution is faster than 1 microsecond
         assert!(profile.variance.max_time_us >= profile.variance.min_time_us);
+        // With multiple runs, we should have phase variance data
+        assert!(!profile.variance.phase_variance.is_empty());
     }
 }

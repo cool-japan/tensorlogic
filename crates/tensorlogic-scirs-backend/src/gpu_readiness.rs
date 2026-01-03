@@ -418,15 +418,28 @@ mod tests {
     }
 
     #[test]
-    fn test_assess_gpu_readiness_no_gpu() {
-        // This test runs in test mode where GPUs are not detected
+    fn test_assess_gpu_readiness() {
+        // Test GPU readiness assessment - behavior depends on actual hardware
         let report = assess_gpu_readiness();
 
-        // In test environment, no GPUs should be detected
-        assert_eq!(report.gpu_count, 0);
-        assert!(!report.gpu_available);
-        assert_eq!(report.recommended_device, Device::cpu());
-        assert!(report.estimated_speedup.is_none());
+        // Validate internal consistency regardless of GPU presence
+        assert_eq!(report.gpu_count, report.gpus.len());
+        assert_eq!(report.gpu_available, report.gpu_count > 0);
+
+        if report.gpu_available {
+            // If GPU is available, should have estimated speedup and recommend GPU
+            assert!(report.estimated_speedup.is_some());
+            assert_ne!(report.recommended_device, Device::cpu());
+            // At least one GPU should be marked as recommended
+            assert!(report.gpus.iter().any(|g| g.recommended));
+        } else {
+            // If no GPU, should recommend CPU and have no estimated speedup
+            assert_eq!(report.recommended_device, Device::cpu());
+            assert!(report.estimated_speedup.is_none());
+        }
+
+        // Should always have recommendation reasons
+        assert!(!report.recommendation_reasons.is_empty());
     }
 
     #[test]
