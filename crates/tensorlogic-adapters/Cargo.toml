@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-adapters"
-version = "0.1.0-alpha.2"
+version.workspace = true
 description = "Symbol tables, axis metadata, and domain masks for TensorLogic"
 edition.workspace = true
 license.workspace = true
@@ -15,12 +15,12 @@ serde_yaml.workspace = true
 indexmap.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
-bincode.workspace = true
+oxicode.workspace = true
 
 # Optional database backends
-rusqlite = { version = "0.36", features = ["bundled"], optional = true }
+rusqlite = { version = "0.38", features = ["bundled"], optional = true }
 tokio-postgres = { version = "0.7", optional = true }
-tokio = { version = "1.48", features = ["full"], optional = true }
+tokio = { version = "1.49", features = ["full"], optional = true }
 async-trait = { version = "0.1", optional = true }
 
 [features]

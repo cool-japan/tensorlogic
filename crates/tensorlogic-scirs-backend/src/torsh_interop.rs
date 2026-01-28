@@ -76,7 +76,7 @@ pub type Result<T> = std::result::Result<T, TorshInteropError>;
 ///
 /// # Arguments
 ///
-/// * `tl_tensor` - TensorLogic tensor (ArrayD<f64>)
+/// * `tl_tensor` - TensorLogic tensor (`ArrayD<f64>`)
 /// * `device` - Target ToRSh device (CPU/GPU)
 ///
 /// # Returns
@@ -120,7 +120,7 @@ pub fn tl_to_torsh(tl_tensor: &Scirs2Tensor, device: DeviceType) -> Result<Tenso
 ///
 /// # Arguments
 ///
-/// * `tl_tensor` - TensorLogic tensor (ArrayD<f64>)
+/// * `tl_tensor` - TensorLogic tensor (`ArrayD<f64>`)
 /// * `device` - Target ToRSh device (CPU/GPU)
 ///
 /// # Returns
@@ -168,7 +168,7 @@ pub fn tl_to_torsh_f32(tl_tensor: &Scirs2Tensor, device: DeviceType) -> Result<T
 ///
 /// # Returns
 ///
-/// TensorLogic tensor (ArrayD<f64>)
+/// TensorLogic tensor (`ArrayD<f64>`)
 ///
 /// # Example
 ///
@@ -211,7 +211,7 @@ pub fn torsh_to_tl(torsh_tensor: &Tensor<f64>) -> Result<Scirs2Tensor> {
 ///
 /// # Returns
 ///
-/// TensorLogic tensor (ArrayD<f64>)
+/// TensorLogic tensor (`ArrayD<f64>`)
 ///
 /// # Example
 ///

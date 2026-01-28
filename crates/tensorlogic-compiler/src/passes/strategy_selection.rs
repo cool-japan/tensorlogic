@@ -238,7 +238,7 @@ impl ExpressionProfile {
             TLExpr::Pred { .. } | TLExpr::Constant(_) => {
                 // Leaf nodes
             }
-            // All other expression types (alpha.3 enhancements)
+            // All other expression types (enhancements)
             _ => {
                 // Leaf or unhandled node
             }
@@ -328,7 +328,7 @@ impl ExpressionProfile {
             }
 
             TLExpr::Pred { .. } | TLExpr::Constant(_) | TLExpr::Aggregate { .. } => false,
-            // All other expression types (alpha.3 enhancements)
+            // All other expression types (enhancements)
             _ => false,
         }
     }
@@ -404,7 +404,7 @@ impl ExpressionProfile {
                 .any(|(_prob, expr)| Self::contains_logical_op(expr)),
 
             TLExpr::Pred { .. } | TLExpr::Constant(_) | TLExpr::Aggregate { .. } => false,
-            // All other expression types (alpha.3 enhancements)
+            // All other expression types (enhancements)
             _ => false,
         }
     }
@@ -497,7 +497,7 @@ impl ExpressionProfile {
             }
 
             TLExpr::Pred { .. } | TLExpr::Constant(_) | TLExpr::Aggregate { .. } => false,
-            // All other expression types (alpha.3 enhancements)
+            // All other expression types (enhancements)
             _ => false,
         }
     }

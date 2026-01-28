@@ -275,7 +275,7 @@ open target/criterion/report/index.html
 
 ## 🎯 Performance Goals
 
-### v0.1.0-alpha.2 Targets
+### v0.1.0-beta.1 Targets
 
 - ✅ Domain lookup: < 100ns
 - ✅ Predicate lookup: < 100ns

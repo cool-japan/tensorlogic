@@ -135,7 +135,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tensorlogic-adapters = "0.1.0-alpha.2"
+tensorlogic-adapters = "0.1.0-beta.1"
 ```
 
 ## Quick Start
@@ -519,7 +519,7 @@ cargo nextest run -p tensorlogic-adapters
 **Lines of Code**: ~23,000 (production code)
 **Examples**: 13 complete examples in `examples/`
 **Benchmarks**: 6 comprehensive benchmark suites
-**Recent Enhancements v0.1.0-alpha.2**:
+**Recent Enhancements v0.1.0-beta.1**:
 - ✨ **Semantic Subtyping** - Practical SMT-based implication checking (+8 tests)
 - ✨ **Database Property Tests** - 10 comprehensive proptest validations
 - ✨ **Refinement Benchmarks** - 6 benchmark suites measuring type checking performance
@@ -564,8 +564,8 @@ Licensed under the Apache License, Version 2.0. See [LICENSE](../../LICENSE) for
 
 ---
 
-**Status**: 🎉 Production Ready (v0.1.0-alpha.2)
-**Last Updated**: 2025-12-16 (Alpha.2 Release)
+**Status**: 🎉 Production Ready (v0.1.0-beta.1)
+**Last Updated**: 2026-01-28 (Beta.1 Release)
 **Tests**: 447/447 passing (100%) ⬆️ +18 new tests (8 subtyping + 10 database property tests)
 **Lines of Code**: ~23,000 (production code)
 **Examples**: 13 comprehensive examples
@@ -573,7 +573,7 @@ Licensed under the Apache License, Version 2.0. See [LICENSE](../../LICENSE) for
 **Completion**: ~99% (Advanced production features)
 **CLI Tools**: 2 production-ready binaries with integration tests
 **Code Quality**: Zero warnings, zero clippy issues
-**New in 0.1.0-alpha.2**:
+**New in 0.1.0-beta.1**:
 - ✨ **Semantic Subtyping** - Practical SMT-based subtyping check for refinement types (+8 tests)
 - ✨ **Database Property Tests** - 10 comprehensive proptest validations for database operations
 - ✨ **Refinement Benchmarks** - 6 benchmark groups measuring type checking, subtyping, and scaling

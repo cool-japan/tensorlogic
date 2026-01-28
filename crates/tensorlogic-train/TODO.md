@@ -1,9 +1,9 @@
-# Alpha.2 Development Status 🚧
+# Beta.1 Development Status 🚧
 
-**Version**: 0.1.0-alpha.2 (in development)
+**Version**: 0.1.0-beta.1 (in development)
 **Status**: Enhanced with Cutting-Edge Features
 
-This crate is being enhanced for TensorLogic v0.1.0-alpha.2 with:
+This crate is being enhanced for TensorLogic v0.1.0-beta.1 with:
 - **502 tests** (100% passing) ⬆️ NEW: +172 tests from 330 baseline (+55 latest enhancements)
 - Zero compiler warnings (verified with clippy)
 - Complete documentation
@@ -26,7 +26,7 @@ This crate is being enhanced for TensorLogic v0.1.0-alpha.2 with:
 - **DropPath/Stochastic Depth** - Modern regularization for deep networks 🆕⭐
 - **SCIRS2 policy compliance verified** ✅
 
-**NEW in Alpha.2:**
+**NEW in Beta.1:**
 - ✅ **Utilities Module** (11 tests) - Model introspection, gradient analysis, training time estimation
 - ✅ **Lion Optimizer** (7 tests) - Modern memory-efficient optimizer with sign-based updates
 - ✅ **Poly Loss** (2 tests) - Polynomial expansion of cross-entropy for better generalization
@@ -473,7 +473,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Reproducible with seeding
   - [x] Result tracking and comparison
   - [x] 2 comprehensive tests
-- [x] **Bayesian Optimization** - GP-based intelligent search ✨ **NEW ALPHA.2** 🆕
+- [x] **Bayesian Optimization** - GP-based intelligent search ✨ **NEW BETA.1** 🆕
   - [x] Gaussian Process surrogate model (RBF, Matérn 3/2 kernels)
   - [x] Acquisition functions (Expected Improvement, UCB, Probability of Improvement)
   - [x] Cholesky decomposition for efficient GP inference
@@ -482,7 +482,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Automatic exploration-exploitation balancing
   - [x] 19 comprehensive tests (GP, acquisition, optimization)
   - [x] Complete example (21_bayesian_optimization.rs, 280+ lines)
-- [x] **Gradient Centralization** - Advanced gradient preprocessing ✨ **NEW ALPHA.2** 🆕⭐
+- [x] **Gradient Centralization** - Advanced gradient preprocessing ✨ **NEW BETA.1** 🆕⭐
   - [x] GcStrategy enum (LayerWise, Global, PerRow, PerColumn)
   - [x] GcConfig with builder pattern (enable/disable, min_dims, eps)
   - [x] GradientCentralization optimizer wrapper (works with any optimizer)
@@ -575,7 +575,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - Data preprocessor (standardize, normalize, min-max) ✅
   - Label encoder and one-hot encoder ✅
   - 12 new tests (230 total) ✅
-**Phase 6.8 Completion:** 100% (Alpha.2 Enhancements - NEW)
+**Phase 6.8 Completion:** 100% (Beta.1 Enhancements - NEW)
   - **Utilities module** for model introspection (11 tests) ✅
     - ParameterStats and ModelSummary for parameter analysis
     - GradientStats for gradient monitoring
@@ -700,12 +700,12 @@ See main [TODO.md](../../TODO.md) for overall project status.
     - Reference: Yong et al., "Gradient Centralization", ECCV 2020
   - 33 new tests (447 total) ✅
 
-**Overall Completion:** 100% (Core ✅, Advanced features ✅, Alpha.2 enhancements ✅, Code quality ✅, Advanced ML ✅, Bayesian Optimization ✅, Gradient Centralization ✅, only FUTURE items remaining)
+**Overall Completion:** 100% (Core ✅, Advanced features ✅, Beta.1 enhancements ✅, Code quality ✅, Advanced ML ✅, Bayesian Optimization ✅, Gradient Centralization ✅, only FUTURE items remaining)
 
 **Notes:**
 - Core training infrastructure is production-ready
 - All implemented features have comprehensive tests (447 tests, 100% passing) 🆕 +117 from baseline
-- **NEW in Alpha.2:** Modern optimizers (Lion), advanced losses (Poly), utilities module, CV metrics (IoU, mAP, Dice), model pruning, advanced regularization, advanced sampling
+- **NEW in Beta.1:** Modern optimizers (Lion), advanced losses (Poly), utilities module, CV metrics (IoU, mAP, Dice), model pruning, advanced regularization, advanced sampling
 - **Phase 6.9 ADDITIONS:** Model quantization (INT8/4/2, PTQ/QAT), mixed precision training (FP16/BF16, loss scaling), enhanced gradient accumulation (multiple strategies, overflow detection)
 - **Phase 6.10 ADDITIONS:** Metrics refactoring (2340→7 files), structured logging (tracing integration), few-shot learning (prototypical/matching networks), meta-learning (MAML/Reptile) 🆕
 - **Phase 6.11 ADDITIONS:** Bayesian Optimization (GP surrogate, acquisition functions, 19 tests), Gradient Centralization (4 strategies, optimizer wrapper, 14 tests) 🆕⭐
@@ -723,13 +723,13 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - Data loading and preprocessing utilities
 - 21 comprehensive examples covering all features (6000+ lines)
   - Including 6 complete production-ready training recipes (model compression, robust training, multi-task, transfer learning, hyperparameter optimization, production pipeline)
-  - 5 new alpha.2 examples: few-shot learning (17), meta-learning (18), Sophia optimizer (19), model soups (20), Bayesian optimization (21)
+  - 5 new beta.1 examples: few-shot learning (17), meta-learning (18), Sophia optimizer (19), model soups (20), Bayesian optimization (21)
 - Complete documentation guides (ADVANCED_FEATURES.md, LOSS_FUNCTIONS.md, HYPERPARAMETER_TUNING.md)
 - Ready for integration with actual models and autodiff
 - Follows SciRS2 integration policy strictly
 - Zero warnings, zero errors in build
 - Total source lines: ~23,000+ (across 24 modules, including examples and docs) 🆕
-- **Alpha.2 additions:**
+- **Beta.1 additions:**
   - 16 total optimizers (including modern Lion optimizer)
   - 15 total loss functions (including advanced Poly Loss)
   - 19 total metrics (including IoU, mIoU, Dice, mAP for computer vision)

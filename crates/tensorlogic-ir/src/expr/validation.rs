@@ -140,7 +140,7 @@ impl TLExpr {
                 Ok(())
             }
 
-            // Alpha.3 enhancements
+            // Beta.1 enhancements
             TLExpr::Lambda { body, .. } => body.validate_arity_recursive(seen),
             TLExpr::Apply { function, argument } => {
                 let mut new_seen = seen.clone();
@@ -319,7 +319,7 @@ impl TLExpr {
                 Ok(())
             }
 
-            // Alpha.3 enhancements
+            // Beta.1 enhancements
             TLExpr::Lambda { body, .. } => body.collect_and_check_arity(seen),
             TLExpr::Apply { function, argument } => {
                 function.collect_and_check_arity(seen)?;

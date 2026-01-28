@@ -1,9 +1,9 @@
-# Alpha.2+ Release Status ✅
+# Beta.1 Release Status ✅
 
-**Version**: 0.1.0-alpha.2+
+**Version**: 0.1.0-beta.1
 **Status**: Production Ready (Further Enhanced)
 
-This crate is part of the TensorLogic v0.1.0-alpha.2 release with:
+This crate is part of the TensorLogic v0.1.0-beta.1 release with:
 - Zero compiler warnings
 - 100% test pass rate (391 tests)
 - Complete documentation
@@ -124,7 +124,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Comprehensive tests (14 tests)
   - [x] Example: symbolic_kernels.rs
 
-## Alpha.2 Enhancements 🆕 ✅ NEW
+## Beta.1 Enhancements 🆕 ✅ NEW
 
 ### ARD (Automatic Relevance Determination) Kernels ✅ NEW
 Per-dimension length scales for automatic feature relevance learning:
@@ -228,7 +228,7 @@ Nonlinear dimensionality reduction:
 **Total Items:** 52 tasks (38 original + 14 new)
 **Completion:** 🎉 **100% (52/52)** 🎉 **ALL TASKS COMPLETE!**
 
-**Alpha.2+ New Features Summary:**
+**Beta.1 New Features Summary:**
 - ✅ **ARD Kernels** (3 kernels + gradient support, 35+ tests)
   - ArdRbfKernel with per-dimension length scales
   - ArdMaternKernel with ARD support
@@ -272,7 +272,7 @@ Nonlinear dimensionality reduction:
 
 ---
 
-**Previous Features (Alpha.1):**
+**Previous Features:**
 - ✅ Multi-task Kernel Learning (30 tests)
 - ✅ Online Kernel Updates (25 tests)
 - ✅ Symbolic Kernel Composition (14 tests)

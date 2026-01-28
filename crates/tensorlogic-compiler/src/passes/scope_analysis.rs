@@ -266,7 +266,7 @@ fn analyze_expr(
                 bound_vars.remove(var);
             }
         }
-        // All other expression types (alpha.3 enhancements) - skip for now
+        // All other expression types (enhancements) - skip for now
         _ => {
             // For unimplemented expression types, no scope analysis yet
         }

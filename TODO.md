@@ -1,8 +1,8 @@
 # TODO — Tensorlogic
 
-## 🎉 **v0.1.0-alpha.2 Release Status**
+## 🎉 **v0.1.0-beta.1 Release Status**
 
-**Status**: ✅ **PRODUCTION READY FOR ALPHA.2**
+**Status**: ✅ **PRODUCTION READY FOR BETA.1**
 
 This release represents completion of all 8 development phases with production-quality implementation:
 - **4,364 tests passing** (100% success rate, 12 intentionally skipped, +77 new tests)
@@ -10,11 +10,11 @@ This release represents completion of all 8 development phases with production-q
 - **ToRSh tensor interoperability** (pure Rust neurosymbolic AI integration)
 - **Comprehensive CI/CD** pipeline enabled
 - **Complete documentation** with tutorials and examples
-- **Latest dependencies** from crates.io (oxicode 0.1.1, ToRSh 0.1.0-alpha.2)
+- **Latest dependencies** from crates.io (oxicode 0.1.1, ToRSh 0.1.0-beta.1)
 - **313,107 lines of code** (278,630 Rust, 34,790 comments, 50,564 blank)
 - **CUDA/GPU infrastructure** (experimental, device management ready)
 
-See [Release Checklist](#release-checklist-v010-alpha2) for details.
+See [Release Checklist](#release-checklist-v010-beta1) for details.
 
 ---
 
@@ -158,7 +158,7 @@ Major enhancement to planning layer with production-grade features
   - [x] diagnose_expression() for validation
   - [x] Unused binding warnings
   - [x] Source location support
-- [x] **Advanced Analysis & Profiling (Alpha.2)** ✅ **NEW**
+- [x] **Advanced Analysis & Profiling (Beta.1)** ✅ **NEW**
   - [x] Compilation profiling (time, memory, cache statistics) - profiling.rs (649 lines, 11 tests)
   - [x] Dataflow analysis (live variables, reaching definitions, use-def chains) - dataflow.rs (586 lines, 10 tests)
   - [x] Contraction optimization (dynamic programming for einsum) - contraction_opt.rs (497 lines, 13 tests)
@@ -167,7 +167,7 @@ Major enhancement to planning layer with production-grade features
   - [x] Integrated post-compilation pipeline - post_compilation.rs (enhanced)
   - [x] Example demonstrating all features - 21_profiling_and_optimization.rs (292 lines)
 - [x] Test coverage: **437 tests** (100% passing, zero warnings) ✅
-- [x] **Comprehensive README documentation** with Alpha.2 features (218 lines of new docs)
+- [x] **Comprehensive README documentation** with Beta.1 features (218 lines of new docs)
 
 ### `tensorlogic-infer` Enhancements (67% → 100% completion) ✅ **PRODUCTION READY**
 - [x] **Batch Execution**
@@ -189,7 +189,7 @@ Major enhancement to planning layer with production-grade features
   - [x] MemoryProfile with allocation tracking
   - [x] Profiler with automatic operation timing
   - [x] TlProfiledExecutor trait for profiling support
-- [x] **Advanced Quantization (Alpha.2)** 🆕
+- [x] **Advanced Quantization (Beta.1)** 🆕
   - [x] Multiple quantization types (INT8, INT4, INT2, FP8, Binary, Ternary)
   - [x] Quantization-aware training (QAT) support
   - [x] Post-training quantization (PTQ) with calibration
@@ -198,27 +198,27 @@ Major enhancement to planning layer with production-grade features
   - [x] Calibration strategies (MinMax, Percentile, MSE, KL-divergence)
   - [x] Fake quantization for QAT simulation
   - [x] Quantization summary with compression ratios
-- [x] **Dynamic Batching (Alpha.2)** 🆕
+- [x] **Dynamic Batching (Beta.1)** 🆕
   - [x] Priority-based request queuing (Low/Normal/High/Critical)
   - [x] Adaptive batch sizing with latency targeting
   - [x] Request timeout handling
   - [x] Multiple batching strategies (throughput/latency/interactive)
   - [x] Comprehensive statistics tracking
-- [x] **Advanced Kernel Fusion (Alpha.2)** 🆕
+- [x] **Advanced Kernel Fusion (Beta.1)** 🆕
   - [x] Pattern-based fusion (MatMul+Bias, MatMul+Activation, etc.)
   - [x] Vertical fusion (producer-consumer chains)
   - [x] Horizontal fusion (parallel independent operations)
   - [x] Memory bandwidth-aware cost modeling
   - [x] Multiple fusion strategies (conservative/aggressive/balanced/memory-aware)
   - [x] Fusion benefit scoring and analysis
-- [x] **Workspace Management (Alpha.2)** 🆕
+- [x] **Workspace Management (Beta.1)** 🆕
   - [x] Pre-allocated memory pools with multiple allocation strategies
   - [x] Workspace recycling and reuse
   - [x] Size-based bucket allocation
   - [x] Automatic expansion and defragmentation
   - [x] Thread-safe shared workspace pools
   - [x] Comprehensive statistics and efficiency metrics
-- [x] **Multi-Model Coordination (Alpha.2)** 🆕
+- [x] **Multi-Model Coordination (Beta.1)** 🆕
   - [x] Ensemble inference (averaging, voting, stacking, boosting)
   - [x] Model routing strategies (priority, latency, accuracy, round-robin)
   - [x] Model cascade with early-exit
@@ -505,7 +505,7 @@ Full property test validation + integration tests + benchmarks
 
 ### Production-Ready Status ✅
 
-**Version**: 0.1.0-alpha.2
+**Version**: 0.1.0-beta.1
 **Status**: 🎉 **PRODUCTION READY**
 
 ### Comprehensive Statistics
@@ -619,17 +619,17 @@ Full property test validation + integration tests + benchmarks
 - [ ] Reference comparisons against symbolic logic solvers
 - [ ] Scale optimizations (sparsity, low-rank, partitioned reductions)
 
-### Release Checklist (v0.1.0-alpha.2) ✅ **READY FOR RELEASE**
+### Release Checklist (v0.1.0-beta.1) ✅ **READY FOR RELEASE**
 
-**Alpha.2 Release Status**: All quality gates passed! 🎉
+**Beta.1 Release Status**: All quality gates passed! 🎉
 
 1. **Pre-release** ✅ **COMPLETE**:
    - [x] Review and finalize all documentation
-   - [x] Update version numbers in all Cargo.toml files (0.1.0-alpha.2)
+   - [x] Update version numbers in all Cargo.toml files (0.1.0-beta.1)
    - [x] Create release notes from CHANGELOG.md
    - [x] Update README with accurate metrics (4,364 tests)
-   - [x] Update CHANGELOG with alpha.2 date (2025-12-16)
-   - [x] Update TODO.md with alpha.2 status
+   - [x] Update CHANGELOG with beta.1 date (2026-01-28)
+   - [x] Update TODO.md with beta.1 status
    - [x] Verify 100% test pass rate (4,364/4,364)
    - [x] Add CUDA/GPU infrastructure notes
    - [x] Update code statistics (313,107 lines)
@@ -649,21 +649,21 @@ Full property test validation + integration tests + benchmarks
    - [ ] Publish to crates.io (11 crates in dependency order)
    - [ ] Build Python wheels for all platforms
    - [ ] Publish to PyPI
-   - [ ] Create GitHub release v0.1.0-alpha.2 with artifacts
+   - [ ] Create GitHub release v0.1.0-beta.1 with artifacts
    - [ ] Tag release in git
 
 4. **Post-release**:
-   - [ ] Announce alpha.2 release
+   - [ ] Announce beta.1 release
    - [ ] Gather user feedback
    - [ ] Monitor for issues
-   - [ ] Plan beta.1 improvements
+   - [ ] Plan beta.2 improvements
 
-### Alpha.2 → Beta.1 Roadmap
+### Beta.1 → Beta.2 Roadmap
 
 **Focus**: GPU Acceleration, Stability, User Feedback
 
 **Planned Improvements**:
-- [ ] Address alpha.2 user feedback
+- [ ] Address beta.1 user feedback
 - [ ] Complete GPU/CUDA backend implementation
 - [ ] Multi-GPU support and benchmarking
 - [ ] Performance optimization based on benchmarks

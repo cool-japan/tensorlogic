@@ -1,6 +1,6 @@
 //! Example 09: Modern LLM Optimizations
 //!
-//! This example demonstrates the new alpha.2 features for efficient LLM training and inference:
+//! This example demonstrates the new beta.1 features for efficient LLM training and inference:
 //! - Grouped-Query Attention (GQA): Reduces KV cache memory
 //! - Sliding Window Attention: Efficient long-context handling
 //! - LoRA: Parameter-efficient fine-tuning

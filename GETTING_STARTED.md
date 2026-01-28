@@ -679,5 +679,5 @@ TLExpr::aggregate(AggregateOp::Sum, "x", "Domain", body, vec![])
 
 For more examples and detailed documentation, explore the `crates/` directory and individual crate READMEs.
 
-**Version**: 0.1.0-alpha.2
+**Version**: 0.1.0-beta.1
 **Status**: Production Ready

@@ -681,5 +681,5 @@ let early_stopping = EarlyStoppingCallback::new(10, 0.001);
 
 ---
 
-****Last Updated**: 2025-12-16
-**Version**: 0.1.0-alpha.2
+****Last Updated**: 2026-01-28
+**Version**: 0.1.0-beta.1

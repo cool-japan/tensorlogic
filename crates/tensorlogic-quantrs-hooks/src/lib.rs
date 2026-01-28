@@ -1,6 +1,6 @@
 //! TL <-> QuantrS2 hooks (PGM/message passing as reductions).
 //!
-//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//! **Version**: 0.1.0-beta.1 | **Status**: Production Ready
 //!
 //! This crate provides integration between TensorLogic and probabilistic graphical models (PGMs).
 //! It maps belief propagation and other message passing algorithms onto einsum reduction patterns.
@@ -36,7 +36,10 @@ mod models;
 mod parallel_message_passing;
 pub mod parameter_learning;
 pub mod quantrs_hooks;
+pub mod quantum_circuit;
+pub mod quantum_simulation;
 mod sampling;
+pub mod tensor_network_bridge;
 mod variable_elimination;
 mod variational;
 
@@ -68,13 +71,24 @@ pub use parameter_learning::{
     BaumWelchLearner, BayesianEstimator, MaximumLikelihoodEstimator, SimpleHMM,
 };
 pub use quantrs_hooks::{
-    DistributionExport, DistributionMetadata, ModelExport, ModelStatistics, QuantRSAssignment,
-    QuantRSDistribution, QuantRSInferenceQuery, QuantRSModelExport, QuantRSParameterLearning,
-    QuantRSSamplingHook,
+    AnnealingConfig, DistributionExport, DistributionMetadata, ModelExport, ModelStatistics,
+    QuantRSAssignment, QuantRSDistribution, QuantRSInferenceQuery, QuantRSModelExport,
+    QuantRSParameterLearning, QuantRSSamplingHook, QuantumAnnealing, QuantumInference,
+    QuantumSolution, QuantumSolutionMetadata,
+};
+pub use quantum_circuit::{
+    tlexpr_to_qaoa_circuit, IsingModel, QAOAConfig, QAOAResult, QUBOProblem, QuantumCircuitBuilder,
+};
+pub use quantum_simulation::{
+    run_qaoa, QuantumSimulationBackend, SimulatedState, SimulationConfig,
 };
 pub use sampling::{
     Assignment, GibbsSampler, ImportanceSampler, LikelihoodWeighting, Particle, ParticleFilter,
     ProposalDistribution, WeightedSample,
+};
+pub use tensor_network_bridge::{
+    factor_graph_to_tensor_network, linear_chain_to_mps, MatrixProductState, Tensor, TensorNetwork,
+    TensorNetworkStats,
 };
 pub use variable_elimination::VariableElimination;
 pub use variational::{BetheApproximation, MeanFieldInference, TreeReweightedBP};

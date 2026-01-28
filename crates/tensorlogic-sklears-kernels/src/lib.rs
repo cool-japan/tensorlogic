@@ -1,6 +1,6 @@
 //! # Tensorlogic-SkleaRS-Kernels
 //!
-//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//! **Version**: 0.1.0-beta.1 | **Status**: Production Ready
 //!
 //! Logic-derived similarity kernels for machine learning integration.
 //!

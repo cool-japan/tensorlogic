@@ -291,7 +291,7 @@ pub fn apply_temporal_equivalences(expr: &TLExpr) -> TLExpr {
                 .collect(),
         ),
 
-        // Alpha.3 enhancements - just recurse, no temporal-specific optimizations
+        // Beta.1 enhancements - just recurse, no temporal-specific optimizations
         TLExpr::Lambda {
             var,
             var_type,

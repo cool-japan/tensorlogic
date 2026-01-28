@@ -2,8 +2,9 @@
 //!
 //! Run with: cargo bench -p tensorlogic-infer
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
+use std::hint::black_box;
 use tensorlogic_infer::{DummyExecutor, DummyTensor};
 use tensorlogic_ir::{EinsumGraph, EinsumNode, OpType};
 

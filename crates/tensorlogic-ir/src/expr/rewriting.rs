@@ -424,7 +424,7 @@ impl RewriteSystem {
                     .collect(),
             ),
 
-            // Alpha.3 enhancements: recurse into subexpressions
+            // Beta.1 enhancements: recurse into subexpressions
             TLExpr::Lambda {
                 var,
                 var_type,

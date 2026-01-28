@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-train"
-version = "0.1.0-alpha.2"
+version.workspace = true
 description = "Training loops, loss composition, and optimization schedules for TensorLogic"
 edition.workspace = true
 license.workspace = true
@@ -54,7 +54,7 @@ default = []
 structured-logging = ["tracing", "tracing-subscriber"]
 
 [dev-dependencies]
-criterion = "0.7"
+criterion = "0.8"
 approx = "0.5"
 
 [[bench]]

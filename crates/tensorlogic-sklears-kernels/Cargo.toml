@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-sklears-kernels"
-version = "0.1.0-alpha.2"
+version.workspace = true
 description = "Logic-derived similarity kernels for SkleaRS integration"
 edition.workspace = true
 license.workspace = true

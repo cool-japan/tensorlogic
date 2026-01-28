@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-scirs-backend"
-version = "0.1.0-alpha.2"
+version.workspace = true
 description = "SciRS2-powered tensor execution backend for TensorLogic"
 edition.workspace = true
 license.workspace = true

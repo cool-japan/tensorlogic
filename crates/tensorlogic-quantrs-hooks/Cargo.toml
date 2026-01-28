@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-quantrs-hooks"
-version = "0.1.0-alpha.2"
+version.workspace = true
 description = "Probabilistic graphical model and message-passing interoperability for QuantRS2"
 edition.workspace = true
 license.workspace = true
@@ -17,6 +17,11 @@ tensorlogic-compiler.workspace = true
 tensorlogic-infer.workspace = true
 scirs2-core = { workspace = true, features = ["random"] }
 rayon = "1.11"
+
+# QuantRS2 integration - Quantum computing & probabilistic inference
+quantrs2-core.workspace = true
+quantrs2-circuit.workspace = true
+quantrs2-sim.workspace = true
 
 [dev-dependencies]
 approx = "0.5"

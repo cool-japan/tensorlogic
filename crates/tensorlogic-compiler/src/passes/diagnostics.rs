@@ -350,7 +350,7 @@ fn diagnose_unused_bindings(expr: &TLExpr, diagnostics: &mut Vec<Diagnostic>) {
 
         TLExpr::Pred { .. } => {}
         TLExpr::Constant(_) => {}
-        // All other expression types (alpha.3 enhancements)
+        // All other expression types (enhancements)
         _ => {}
     }
 }
@@ -463,7 +463,7 @@ fn uses_variable(expr: &TLExpr, var_name: &str) -> bool {
             .any(|(_weight, alt_expr)| uses_variable(alt_expr, var_name)),
 
         TLExpr::Constant(_) => false,
-        // All other expression types (alpha.3 enhancements)
+        // All other expression types (enhancements)
         _ => false,
     }
 }
@@ -770,7 +770,7 @@ pub fn pretty_print_expr(expr: &TLExpr) -> String {
         }
 
         TLExpr::Constant(value) => format!("{}", value),
-        // All other expression types (alpha.3 enhancements)
+        // All other expression types (enhancements)
         _ => "<expr>".to_string(),
     }
 }

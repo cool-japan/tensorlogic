@@ -221,7 +221,7 @@ impl SymbolTable {
                 self.collect_domains_from_expr(body)?;
             }
             TLExpr::Pred { .. } | TLExpr::Constant(_) => {}
-            // All other expression types (alpha.3 enhancements) - don't introduce new domains
+            // All other expression types (enhancements) - don't introduce new domains
             _ => {
                 // For now, skip domain collection for unimplemented expression types
                 // This allows the code to compile while features are being implemented
@@ -347,7 +347,7 @@ impl SymbolTable {
                 self.collect_predicates_from_expr(body)?;
             }
             TLExpr::Constant(_) => {}
-            // All other expression types (alpha.3 enhancements) - don't introduce predicates
+            // All other expression types (enhancements) - don't introduce predicates
             _ => {
                 // For now, skip predicate collection for unimplemented expression types
                 // This allows the code to compile while features are being implemented

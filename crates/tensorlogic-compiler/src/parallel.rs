@@ -551,7 +551,7 @@ fn estimate_complexity(expr: &TLExpr) -> usize {
         | TLExpr::CountingForAll { body, .. }
         | TLExpr::ExactCount { body, .. }
         | TLExpr::Majority { body, .. } => 2 + estimate_complexity(body),
-        // All other expression types (alpha.3 enhancements) - conservative complexity estimate
+        // All other expression types (enhancements) - conservative complexity estimate
         _ => 3,
     }
 }

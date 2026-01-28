@@ -173,7 +173,7 @@ impl TypeChecker {
             TLExpr::Constant(_) => {
                 // Constants are always well-typed
             }
-            // All other expression types (alpha.3 enhancements) - skip for now
+            // All other expression types (enhancements) - skip for now
             _ => {
                 // For unimplemented expression types, no type checking yet
             }
@@ -415,7 +415,7 @@ fn infer_types_recursive(
         TLExpr::Constant(_) => {
             // Constants have no variables to infer
         }
-        // All other expression types (alpha.3 enhancements) - skip for now
+        // All other expression types (enhancements) - skip for now
         _ => {
             // For unimplemented expression types, no type inference yet
         }

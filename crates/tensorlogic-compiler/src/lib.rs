@@ -1,6 +1,6 @@
 //! TLExpr → EinsumGraph compiler (planning only).
 //!
-//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//! **Version**: 0.1.0-beta.1 | **Status**: Production Ready
 //!
 //! This crate compiles logical expressions into tensor computation graphs
 //! represented as einsum operations. It provides a bridge between symbolic

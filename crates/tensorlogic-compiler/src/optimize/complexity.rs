@@ -509,7 +509,7 @@ fn analyze_complexity_impl(
             }
         }
 
-        // All other expression types (alpha.3 enhancements)
+        // All other expression types (enhancements)
         _ => {}
     }
 }

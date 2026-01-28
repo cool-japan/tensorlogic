@@ -582,7 +582,7 @@ let (encoder, decoder) = presets::transformer_base();
 
 ---
 
-**Status**: 🎉 Production Ready (v0.1.0-alpha.2)
+**Status**: 🎉 Production Ready (v0.1.0-beta.1)
 ****Last Updated**: 2025-12-16
 **Tests**: 229/229 passing (100%)
 **Examples**: 6 comprehensive examples

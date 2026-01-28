@@ -222,7 +222,7 @@ pub fn apply_modal_equivalences(expr: &TLExpr) -> TLExpr {
                 .collect(),
         ),
 
-        // Alpha.3 enhancements - just recurse, no modal-specific optimizations
+        // Beta.1 enhancements - just recurse, no modal-specific optimizations
         TLExpr::Lambda {
             var,
             var_type,

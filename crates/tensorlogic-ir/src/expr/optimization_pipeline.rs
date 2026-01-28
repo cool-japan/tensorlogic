@@ -414,7 +414,7 @@ fn count_nodes(expr: &TLExpr) -> usize {
         } => 1 + count_nodes(condition) + count_nodes(then_branch) + count_nodes(else_branch),
         TLExpr::Let { value, body, .. } => 1 + count_nodes(value) + count_nodes(body),
 
-        // Alpha.3 enhancements
+        // Beta.1 enhancements
         TLExpr::Lambda { body, .. } => 1 + count_nodes(body),
         TLExpr::Apply { function, argument } => 1 + count_nodes(function) + count_nodes(argument),
         TLExpr::SetMembership { element, set }

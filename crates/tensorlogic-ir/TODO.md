@@ -1,9 +1,9 @@
-# Alpha.2 Release Status ✅
+# Beta.1 Release Status ✅
 
-**Version**: 0.1.0-alpha.2
+**Version**: 0.1.0-beta.1
 **Status**: Production Ready
 
-This crate is part of the TensorLogic v0.1.0-alpha.2 release with:
+This crate is part of the TensorLogic v0.1.0-beta.1 release with:
 - Zero compiler warnings
 - 100% test pass rate
 - Complete documentation
@@ -494,7 +494,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 
 ## Recently Completed ✅
 
-### Effect System ✅ PRODUCTION READY (v0.1.0-alpha.2)
+### Effect System ✅ PRODUCTION READY (v0.1.0-beta.1)
 - [x] Effect types (Computational, Memory, Probabilistic, Differentiable, etc.)
 - [x] EffectSet for tracking multiple effects
 - [x] Effect combination (union, intersection, subset checking)
@@ -515,7 +515,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - **Type Safety**: Effect polymorphism integrated with parametric types
 - **Expressiveness**: Can annotate operations with effect information
 
-### Parametric Types System ✅ PRODUCTION READY (v0.1.0-alpha.2)
+### Parametric Types System ✅ PRODUCTION READY (v0.1.0-beta.1)
 - [x] Kind system for type constructors (*, * -> *, * -> * -> *)
 - [x] Type constructors (List, Option, Tuple, Function, Array, Set, Map, Custom)
 - [x] Parametric types with type variables and type application
@@ -542,11 +542,11 @@ See main [TODO.md](../../TODO.md) for overall project status.
 ## Future Enhancements 🔮
 
 ### Advanced Types ✅ ALL COMPLETE
-- [x] Parametric types (List<T>) ✅ COMPLETE (alpha.2)
-- [x] Effect system ✅ COMPLETE (alpha.2)
-- [x] Dependent types ✅ COMPLETE (alpha.2)
-- [x] Linear types ✅ COMPLETE (alpha.2)
-- [x] Refinement types ✅ COMPLETE (alpha.2)
+- [x] Parametric types (List<T>) ✅ COMPLETE (beta.1)
+- [x] Effect system ✅ COMPLETE (beta.1)
+- [x] Dependent types ✅ COMPLETE (beta.1)
+- [x] Linear types ✅ COMPLETE (beta.1)
+- [x] Refinement types ✅ COMPLETE (beta.1)
 
 ### Advanced Operators ✅ ALL COMPLETE
 - [x] Probabilistic operators with bounds propagation ✅ COMPLETE
@@ -560,7 +560,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - [x] Automatic optimization pass ordering ✅ COMPLETE
 - [x] Automatic strategy selection ✅ COMPLETE
 - [x] Advanced algebraic rewriting with term rewriting systems ✅ COMPLETE
-- [x] Profile-guided optimization (PGO) based on runtime metrics ✅ COMPLETE (alpha.2)
+- [x] Profile-guided optimization (PGO) based on runtime metrics ✅ COMPLETE (beta.1)
 
 ### Testing & Quality ✅ COMPLETE
 - [x] Fuzzing with property-based testing ✅ COMPLETE (fuzzing.rs module with 7 comprehensive tests)
@@ -610,13 +610,13 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - Defuzzification methods (14 tests)
 - **Parametric types system** (27 + 7 = 34 tests)
 - **Effect system** ✨ NEW (19 tests)
-**Test Coverage:** 676 tests total (676 passing) ✅ ENHANCED (+141 from alpha.1)
+**Test Coverage:** 676 tests total (676 passing) ✅ ENHANCED (+141 from beta.1)
   - 632 unit tests (including comprehensive theorem proving tests)
   - 44 property tests (43 passing, 1 ignored)
 
-## Alpha.2 Release - New Features ✅
+## Beta.1 Release - New Features ✅
 
-### Advanced Type Systems (0.1.0-alpha.2)
+### Advanced Type Systems (0.1.0-beta.1)
 
 **Dependent Types** (`dependent.rs`) - 864 lines, fully tested
 - Value-dependent types (Vec<n, T> where n is runtime)
@@ -641,7 +641,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - Liquid type inference
 - Examples: 11_refinement_types.rs
 
-### Profile-Guided Optimization (0.1.0-alpha.2)
+### Profile-Guided Optimization (0.1.0-beta.1)
 
 **PGO Module** (`graph/pgo.rs`) - 683 lines, fully tested
 - Execution profiling with runtime metrics
@@ -652,7 +652,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - Profile merging and JSON serialization
 - Examples: 12_profile_guided_optimization.rs
 
-### Automated Theorem Proving (0.1.0-alpha.2) ✨ NEW
+### Automated Theorem Proving (0.1.0-beta.1) ✨ NEW
 
 **Unification** (`unification.rs`) - 826 lines, fully tested
 - Robinson's unification algorithm for first-order terms
@@ -698,7 +698,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - Constraint propagation
 - Examples: 14_constraint_logic_programming.rs
 
-### Advanced Graph Analysis (0.1.0-alpha.2) ✨ ENHANCED
+### Advanced Graph Analysis (0.1.0-beta.1) ✨ ENHANCED
 
 **Advanced Algorithms** (`graph/advanced_algorithms.rs`) - enhanced
 - Strongly connected components (Tarjan's algorithm)

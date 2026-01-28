@@ -392,6 +392,437 @@ pub trait QuantRSSamplingHook {
     fn unnormalized_probability(&self, assignment: &QuantRSAssignment) -> Result<f64>;
 }
 
+// ============================================================================
+// Quantum Computing Integration Traits
+// ============================================================================
+
+/// Configuration for quantum annealing optimization.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnnealingConfig {
+    /// Number of annealing steps
+    pub num_steps: usize,
+    /// Total annealing time
+    pub annealing_time: f64,
+    /// Number of samples per run
+    pub num_samples: usize,
+    /// Initial temperature (for simulated annealing)
+    pub initial_temperature: f64,
+    /// Final temperature (for simulated annealing)
+    pub final_temperature: f64,
+}
+
+impl Default for AnnealingConfig {
+    fn default() -> Self {
+        Self {
+            num_steps: 100,
+            annealing_time: 10.0,
+            num_samples: 100,
+            initial_temperature: 10.0,
+            final_temperature: 0.01,
+        }
+    }
+}
+
+impl AnnealingConfig {
+    /// Create a new annealing configuration.
+    pub fn new(num_steps: usize, annealing_time: f64) -> Self {
+        Self {
+            num_steps,
+            annealing_time,
+            ..Default::default()
+        }
+    }
+
+    /// Set the number of samples.
+    pub fn with_samples(mut self, num_samples: usize) -> Self {
+        self.num_samples = num_samples;
+        self
+    }
+
+    /// Set the temperature schedule.
+    pub fn with_temperature(mut self, initial: f64, final_temp: f64) -> Self {
+        self.initial_temperature = initial;
+        self.final_temperature = final_temp;
+        self
+    }
+}
+
+/// Solution from quantum annealing or QAOA.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QuantumSolution {
+    /// Variable assignments
+    pub assignments: HashMap<String, usize>,
+    /// Objective value (energy)
+    pub objective_value: f64,
+    /// Solution quality indicator (lower is better)
+    pub quality: f64,
+    /// Number of iterations/shots used
+    pub iterations: usize,
+    /// Additional metadata
+    pub metadata: QuantumSolutionMetadata,
+}
+
+/// Metadata for quantum solutions.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QuantumSolutionMetadata {
+    /// Algorithm used
+    pub algorithm: String,
+    /// Number of QAOA layers (if applicable)
+    pub num_layers: Option<usize>,
+    /// Optimal parameters found
+    pub optimal_params: Option<Vec<f64>>,
+    /// Time taken in seconds
+    pub time_seconds: Option<f64>,
+}
+
+impl QuantumSolution {
+    /// Create a new quantum solution.
+    pub fn new(assignments: HashMap<String, usize>, objective_value: f64, algorithm: &str) -> Self {
+        Self {
+            assignments,
+            objective_value,
+            quality: objective_value.abs(),
+            iterations: 1,
+            metadata: QuantumSolutionMetadata {
+                algorithm: algorithm.to_string(),
+                num_layers: None,
+                optimal_params: None,
+                time_seconds: None,
+            },
+        }
+    }
+
+    /// Get variable assignment.
+    pub fn get(&self, variable: &str) -> Option<usize> {
+        self.assignments.get(variable).copied()
+    }
+}
+
+/// Trait for quantum-enhanced inference on factor graphs.
+///
+/// This trait provides methods for using quantum algorithms (QAOA, quantum annealing)
+/// to perform inference tasks on probabilistic graphical models.
+///
+/// # Example
+///
+/// ```no_run
+/// use tensorlogic_quantrs_hooks::{FactorGraph, QuantumInference};
+/// use std::collections::HashMap;
+///
+/// let mut graph = FactorGraph::new();
+/// graph.add_variable_with_card("x".to_string(), "Binary".to_string(), 2);
+/// graph.add_variable_with_card("y".to_string(), "Binary".to_string(), 2);
+///
+/// // Solve using QAOA
+/// let solution = graph.solve_qaoa(2).unwrap();
+/// println!("Best assignment: {:?}", solution);
+/// ```
+pub trait QuantumInference {
+    /// Solve the optimization problem using QAOA (Quantum Approximate Optimization Algorithm).
+    ///
+    /// QAOA maps the factor graph to a quantum circuit and finds the optimal
+    /// variable assignment that maximizes the joint probability (or minimizes energy).
+    ///
+    /// # Arguments
+    ///
+    /// * `num_layers` - Number of QAOA layers (p parameter). More layers give
+    ///   better approximation but require more quantum resources.
+    ///
+    /// # Returns
+    ///
+    /// A map from variable names to their optimal values.
+    fn solve_qaoa(&self, num_layers: usize) -> Result<HashMap<String, usize>>;
+
+    /// Compute marginal distributions using quantum sampling.
+    ///
+    /// This method uses quantum circuits to sample from the joint distribution
+    /// and estimates marginal probabilities from the samples.
+    ///
+    /// # Arguments
+    ///
+    /// * `num_shots` - Number of measurement shots for sampling.
+    ///
+    /// # Returns
+    ///
+    /// A map from variable names to their marginal probability distributions.
+    fn quantum_marginals(&self, num_shots: usize) -> Result<HashMap<String, ArrayD<f64>>>;
+
+    /// Compute the partition function using quantum amplitude estimation.
+    ///
+    /// This is useful for computing normalized probabilities and
+    /// free energy.
+    fn quantum_partition_function(&self) -> Result<f64>;
+}
+
+/// Trait for quantum annealing optimization.
+///
+/// Quantum annealing is a metaheuristic that uses quantum fluctuations
+/// to find the global minimum of an objective function.
+///
+/// # Example
+///
+/// ```no_run
+/// use tensorlogic_quantrs_hooks::{FactorGraph, QuantumAnnealing, AnnealingConfig};
+/// use tensorlogic_quantrs_hooks::quantum_circuit::QUBOProblem;
+///
+/// let mut graph = FactorGraph::new();
+/// graph.add_variable_with_card("x".to_string(), "Binary".to_string(), 2);
+///
+/// // Convert to QUBO
+/// let qubo = graph.to_qubo().unwrap();
+///
+/// // Run annealing
+/// let config = AnnealingConfig::default();
+/// let solution = graph.anneal(&config).unwrap();
+/// ```
+pub trait QuantumAnnealing {
+    /// Convert the factor graph to a QUBO (Quadratic Unconstrained Binary Optimization) problem.
+    ///
+    /// QUBO is the natural formulation for quantum annealing.
+    fn to_qubo(&self) -> Result<crate::quantum_circuit::QUBOProblem>;
+
+    /// Run quantum annealing to find the optimal assignment.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - Annealing configuration parameters.
+    ///
+    /// # Returns
+    ///
+    /// The optimal solution found by annealing.
+    fn anneal(&self, config: &AnnealingConfig) -> Result<QuantumSolution>;
+
+    /// Run multiple annealing runs and return the best solution.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - Annealing configuration parameters.
+    /// * `num_runs` - Number of independent annealing runs.
+    ///
+    /// # Returns
+    ///
+    /// The best solution across all runs.
+    fn anneal_multiple(&self, config: &AnnealingConfig, num_runs: usize)
+        -> Result<QuantumSolution>;
+}
+
+// Implement QuantumInference for FactorGraph
+impl QuantumInference for FactorGraph {
+    fn solve_qaoa(&self, num_layers: usize) -> Result<HashMap<String, usize>> {
+        use crate::quantum_circuit::{factor_graph_to_qubo, QAOAConfig};
+        use crate::quantum_simulation::{run_qaoa, QuantumSimulationBackend};
+
+        let qubo = factor_graph_to_qubo(self)?;
+        let config = QAOAConfig::new(num_layers);
+        let backend = QuantumSimulationBackend::new();
+        let result = run_qaoa(&qubo, &config, &backend)?;
+
+        // Convert result to HashMap
+        let var_names: Vec<String> = self.variable_names().cloned().collect();
+        let mut assignments: HashMap<String, usize> = HashMap::new();
+
+        let solution: &Vec<usize> = &result.best_solution;
+        for (idx, &value) in solution.iter().enumerate() {
+            if idx < var_names.len() {
+                let var_name: &String = &var_names[idx];
+                assignments.insert(var_name.clone(), value);
+            }
+        }
+
+        Ok(assignments)
+    }
+
+    fn quantum_marginals(&self, num_shots: usize) -> Result<HashMap<String, ArrayD<f64>>> {
+        use crate::quantum_simulation::{QuantumSimulationBackend, SimulationConfig};
+
+        // Create backend and run quantum sampling
+        let config = SimulationConfig::with_shots(num_shots);
+        let backend = QuantumSimulationBackend::with_config(config);
+        let samples = backend.quantum_sample(self, num_shots)?;
+
+        // Compute marginals from samples
+        let mut counts: HashMap<String, Vec<usize>> = HashMap::new();
+        let var_names: Vec<String> = self.variable_names().cloned().collect();
+
+        for var in &var_names {
+            counts.insert(var.clone(), vec![0, 0]); // Binary variables
+        }
+
+        for sample in &samples {
+            for (var, &value) in sample {
+                if let Some(count) = counts.get_mut(var) {
+                    if value < count.len() {
+                        count[value] += 1;
+                    }
+                }
+            }
+        }
+
+        // Convert counts to probabilities
+        let mut marginals: HashMap<String, ArrayD<f64>> = HashMap::new();
+        let total = samples.len() as f64;
+
+        for (var, count_vec) in counts {
+            let probs: Vec<f64> = count_vec.iter().map(|&c| c as f64 / total).collect();
+            let shape = vec![probs.len()];
+            let arrd = ArrayD::from_shape_vec(shape, probs)
+                .map_err(|e| PgmError::InvalidDistribution(format!("Reshape failed: {}", e)))?;
+            marginals.insert(var, arrd);
+        }
+
+        Ok(marginals)
+    }
+
+    fn quantum_partition_function(&self) -> Result<f64> {
+        // Simplified: sum over all configurations
+        // In practice, would use quantum amplitude estimation
+        let mut z = 0.0;
+        let var_names: Vec<String> = self.variable_names().cloned().collect();
+        let cardinalities: Vec<usize> = var_names
+            .iter()
+            .filter_map(|name| self.get_variable(name).map(|v| v.cardinality))
+            .collect();
+
+        let total_configs: usize = cardinalities.iter().product();
+
+        for config_idx in 0..total_configs {
+            let mut assignment = HashMap::new();
+            let mut temp = config_idx;
+
+            for (i, &card) in cardinalities.iter().enumerate().rev() {
+                assignment.insert(var_names[i].clone(), temp % card);
+                temp /= card;
+            }
+
+            // Compute unnormalized probability for this configuration
+            let mut prob = 1.0;
+            for factor in self.factors() {
+                let mut indices = Vec::new();
+                for var in &factor.variables {
+                    if let Some(&val) = assignment.get(var) {
+                        indices.push(val);
+                    }
+                }
+                if !indices.is_empty() {
+                    prob *= factor.values[indices.as_slice()];
+                }
+            }
+
+            z += prob;
+        }
+
+        Ok(z)
+    }
+}
+
+// Implement QuantumAnnealing for FactorGraph
+impl QuantumAnnealing for FactorGraph {
+    fn to_qubo(&self) -> Result<crate::quantum_circuit::QUBOProblem> {
+        crate::quantum_circuit::factor_graph_to_qubo(self)
+    }
+
+    fn anneal(&self, config: &AnnealingConfig) -> Result<QuantumSolution> {
+        // Use classical simulated annealing as placeholder
+        // Full quantum annealing would require hardware integration
+        use scirs2_core::random::thread_rng;
+
+        let qubo = self.to_qubo()?;
+        let num_vars = qubo.num_variables;
+        let var_names: Vec<String> = self.variable_names().cloned().collect();
+
+        // Initialize random solution using f64 and converting
+        let mut rng = thread_rng();
+        let mut best_solution: Vec<usize> = (0..num_vars)
+            .map(|_| if rng.random::<f64>() < 0.5 { 0 } else { 1 })
+            .collect();
+
+        // Compute initial value
+        let compute_value = |sol: &[usize]| -> f64 {
+            let mut val = qubo.offset;
+            for i in 0..num_vars {
+                val += qubo.linear[i] * sol[i] as f64;
+                for j in (i + 1)..num_vars {
+                    val += qubo.quadratic[[i, j]] * (sol[i] * sol[j]) as f64;
+                }
+            }
+            val
+        };
+
+        let mut best_value = compute_value(&best_solution);
+
+        // Simulated annealing loop
+        let mut current = best_solution.clone();
+        let mut current_value = best_value;
+
+        for step in 0..config.num_steps {
+            let temp = config.annealing_time * (1.0 - step as f64 / config.num_steps as f64);
+
+            // Flip a random bit using f64 random
+            let flip_idx = (rng.random::<f64>() * num_vars as f64) as usize % num_vars;
+            current[flip_idx] = 1 - current[flip_idx];
+
+            let new_value = compute_value(&current);
+            let delta = new_value - current_value;
+
+            if delta < 0.0 || rng.random::<f64>() < (-delta / temp.max(1e-10)).exp() {
+                current_value = new_value;
+                if current_value < best_value {
+                    best_value = current_value;
+                    best_solution = current.clone();
+                }
+            } else {
+                // Revert flip
+                current[flip_idx] = 1 - current[flip_idx];
+            }
+        }
+
+        // Convert solution to HashMap
+        let mut assignments: HashMap<String, usize> = HashMap::new();
+        for (idx, &val) in best_solution.iter().enumerate() {
+            if idx < var_names.len() {
+                let var_name: &String = &var_names[idx];
+                assignments.insert(var_name.clone(), val);
+            }
+        }
+
+        Ok(QuantumSolution {
+            assignments,
+            objective_value: best_value,
+            quality: best_value.abs(),
+            iterations: config.num_steps,
+            metadata: QuantumSolutionMetadata {
+                algorithm: "simulated_annealing".to_string(),
+                num_layers: None,
+                optimal_params: None,
+                time_seconds: None,
+            },
+        })
+    }
+
+    fn anneal_multiple(
+        &self,
+        config: &AnnealingConfig,
+        num_runs: usize,
+    ) -> Result<QuantumSolution> {
+        let mut best_solution: Option<QuantumSolution> = None;
+
+        for _ in 0..num_runs {
+            let solution = self.anneal(config)?;
+
+            match &best_solution {
+                None => best_solution = Some(solution),
+                Some(best) => {
+                    if solution.objective_value < best.objective_value {
+                        best_solution = Some(solution);
+                    }
+                }
+            }
+        }
+
+        best_solution.ok_or_else(|| PgmError::InvalidGraph("No solution found".to_string()))
+    }
+}
+
 /// Utility functions for QuantRS integration.
 pub mod utils {
     use super::*;

@@ -65,14 +65,14 @@ impl VersionedExpr {
 
     /// Serialize to binary format
     pub fn to_binary(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        bincode::serde::encode_to_vec(self, bincode::config::standard())
+        oxicode::serde::encode_to_vec(self, oxicode::config::standard())
             .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
     }
 
     /// Deserialize from binary format
     pub fn from_binary(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let (result, _): (Self, usize) =
-            bincode::serde::decode_from_slice(bytes, bincode::config::standard())
+            oxicode::serde::decode_from_slice(bytes, oxicode::config::standard())
                 .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
         Ok(result)
     }
@@ -132,14 +132,14 @@ impl VersionedGraph {
 
     /// Serialize to binary format
     pub fn to_binary(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        bincode::serde::encode_to_vec(self, bincode::config::standard())
+        oxicode::serde::encode_to_vec(self, oxicode::config::standard())
             .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
     }
 
     /// Deserialize from binary format
     pub fn from_binary(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let (result, _): (Self, usize) =
-            bincode::serde::decode_from_slice(bytes, bincode::config::standard())
+            oxicode::serde::decode_from_slice(bytes, oxicode::config::standard())
                 .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
         Ok(result)
     }

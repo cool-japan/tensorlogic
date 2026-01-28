@@ -56,7 +56,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tensorlogic-quantrs-hooks = "0.1.0-alpha.2"
+tensorlogic-quantrs-hooks = "0.1.0-beta.1"
 scirs2-core = "0.1.0-rc.2"  # For tensor operations
 ```
 
@@ -1490,7 +1490,7 @@ Apache-2.0
 
 ---
 
-**Status**: 🎉 Production Ready (v0.1.0-alpha.2+)
+**Status**: 🎉 Production Ready (v0.1.0-beta.1)
 **Last Updated**: 2025-12-16
 **Tests**: 133+ passing (94%: 108 unit + 14 property [10 passing, 4 ignored] + 13 old integration + 14 new TLExpr integration)
 **Benchmarks**: 3 comprehensive suites (50+ benchmarks: factor operations, message passing, inference algorithms)

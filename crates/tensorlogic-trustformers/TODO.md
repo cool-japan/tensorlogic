@@ -1,9 +1,9 @@
-# Alpha.2 Release Status ✅
+# Beta.1 Release Status ✅
 
-**Version**: 0.1.0-alpha.2  
+**Version**: 0.1.0-beta.1  
 **Status**: Production Ready
 
-This crate is part of the TensorLogic v0.1.0-alpha.2 release with:
+This crate is part of the TensorLogic v0.1.0-beta.1 release with:
 - Zero compiler warnings
 - 100% test pass rate
 - Complete documentation
@@ -98,7 +98,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Graph building (simplified)
   - [x] 12 comprehensive tests
   - [x] Complete example (07_vision_transformers.rs)
-- [x] **Mixture-of-Experts (MoE)** (NEW! alpha.2)
+- [x] **Mixture-of-Experts (MoE)** (NEW! beta.1)
   - [x] Expert networks (multiple FFN layers)
   - [x] Router/Gating mechanisms (TopK, Softmax, Switch, ExpertChoice)
   - [x] Load balancing support
@@ -146,9 +146,9 @@ See main [TODO.md](../../TODO.md) for overall project status.
 ---
 
 **Total Items:** 84 tasks
-**Completion:** 100% (84/84) 🎉 **ENHANCED for alpha.2**
+**Completion:** 100% (84/84) 🎉 **ENHANCED for beta.1**
 
-## Recent Updates (Alpha.2 Enhancements)
+## Recent Updates (Beta.1 Enhancements)
 
 ### Modern LLM Optimizations Complete! 🚀
 

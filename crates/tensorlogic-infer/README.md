@@ -368,7 +368,7 @@ match executor.execute_with_recovery(&graph, &inputs, &config)? {
 - **FallbackExecution**: Fall back to alternative execution path
 - **GracefulDegradation**: Continue with reduced functionality
 
-## Alpha.2 Features 🆕
+## Beta.1 Features 🆕
 
 ### Zero-Copy Tensor Operations
 
@@ -1219,9 +1219,9 @@ cargo test -p tensorlogic-infer test_streaming
 
 **Test Coverage**: 368 tests covering all traits and utilities (100% passing)
 
-### New Alpha.2 Modules
+### New Beta.1 Modules
 
-The following production-grade modules have been added in Alpha.2:
+The following production-grade modules have been added in Beta.1:
 
 #### Advanced Quantization (`quantization.rs`)
 Complete quantization pipeline for model compression:
@@ -1269,11 +1269,11 @@ Apache-2.0
 
 ---
 
-**Status**: 🎉 Production Ready (v0.1.0-alpha.2)
+**Status**: 🎉 Production Ready (v0.1.0-beta.1)
 **Last Updated**: 2025-12-10
 **Tests**: 368 passing (100%)
 **Code**: 46 files, 19,921 lines
 **Completeness**: 100%
-**Alpha.1 Features**: JIT Compilation, Distributed Execution, Comprehensive Debugging Tools
-**Alpha.2 Features**: Zero-Copy Tensor Views, Async Execution, Enhanced Diagnostics, Advanced Quantization, Dynamic Batching, Kernel Fusion, Workspace Management, Multi-Model Coordination 🆕
+**Previous Features**: JIT Compilation, Distributed Execution, Comprehensive Debugging Tools
+**Beta.1 Features**: Zero-Copy Tensor Views, Async Execution, Enhanced Diagnostics, Advanced Quantization, Dynamic Batching, Kernel Fusion, Workspace Management, Multi-Model Coordination 🆕
 **Part of**: [TensorLogic Ecosystem](https://github.com/cool-japan/tensorlogic)

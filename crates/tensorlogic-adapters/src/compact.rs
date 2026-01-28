@@ -204,14 +204,14 @@ impl CompactSchema {
 
     /// Serialize to compact binary format.
     pub fn to_binary(&self) -> Result<Vec<u8>> {
-        bincode::serde::encode_to_vec(self, bincode::config::standard())
+        oxicode::serde::encode_to_vec(self, oxicode::config::standard())
             .map_err(|e| anyhow::anyhow!("Bincode encode error: {}", e))
     }
 
     /// Deserialize from compact binary format.
     pub fn from_binary(data: &[u8]) -> Result<Self> {
         let (result, _): (Self, usize) =
-            bincode::serde::decode_from_slice(data, bincode::config::standard())
+            oxicode::serde::decode_from_slice(data, oxicode::config::standard())
                 .map_err(|e| anyhow::anyhow!("Bincode decode error: {}", e))?;
         Ok(result)
     }

@@ -1,6 +1,6 @@
 //! Adapter utilities for the Tensorlogic ecosystem.
 //!
-//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//! **Version**: 0.1.0-beta.1 | **Status**: Production Ready
 //!
 //! This crate provides the bridge between logical expressions and tensor execution
 //! by managing symbol tables, domain hierarchies, and schema validation.

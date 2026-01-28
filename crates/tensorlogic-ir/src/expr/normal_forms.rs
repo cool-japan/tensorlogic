@@ -168,7 +168,7 @@ pub fn to_nnf(expr: &TLExpr) -> TLExpr {
             TLExpr::strong_release(to_nnf(released), to_nnf(releaser))
         }
 
-        // Alpha.3 enhancements: pass through (treat as atomic for NNF purposes)
+        // Beta.1 enhancements: pass through (treat as atomic for NNF purposes)
         TLExpr::Lambda {
             var,
             var_type,

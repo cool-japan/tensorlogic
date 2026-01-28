@@ -1295,7 +1295,7 @@ Add the `sklears` feature to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tensorlogic-sklears-kernels = { version = "0.1.0-alpha.2", features = ["sklears"] }
+tensorlogic-sklears-kernels = { version = "0.1.0-beta.1", features = ["sklears"] }
 ```
 
 ### Usage
@@ -1957,7 +1957,7 @@ This crate is part of the TensorLogic project and is licensed under Apache-2.0.
 ---
 
 **Status**: Production Ready
-**Version**: 0.1.0-alpha.2
+**Version**: 0.1.0-beta.1
 **Tests**: 213/213 passing ✨ **UPDATED**
 **Warnings**: 0
 **Completion**: 🎉 **105%** 🎉 **BEYOND COMPLETE!**

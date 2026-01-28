@@ -2,7 +2,7 @@
 //!
 //! **Engine-agnostic Abstract Syntax Tree & Intermediate Representation for TensorLogic**
 //!
-//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//! **Version**: 0.1.0-beta.1 | **Status**: Production Ready
 //!
 //! This crate provides the core data structures and operations for representing logic-as-tensor
 //! computations in the TensorLogic framework. It serves as the foundational layer that all other

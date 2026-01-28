@@ -1,6 +1,6 @@
 //! OxiRS Bridge: RDF*/SHACL/GraphQL → TensorLogic Integration
 //!
-//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//! **Version**: 0.1.0-beta.1 | **Status**: Production Ready
 //!
 //! This crate provides comprehensive bidirectional integration between RDF knowledge graphs
 //! and TensorLogic's tensor-based logical reasoning system. It enables semantic web data
@@ -244,6 +244,9 @@
 mod compilation;
 mod error;
 pub mod graphql;
+pub mod knowledge_embeddings;
+pub mod oxirs_executor;
+pub mod oxirs_graphql;
 mod provenance;
 pub mod rdfstar;
 pub mod schema;
@@ -258,6 +261,12 @@ mod tests;
 pub use compilation::compile_rules;
 pub use error::{BridgeError, ParseLocation};
 pub use graphql::{DirectiveValue, GraphQLConverter, GraphQLDirective};
+pub use knowledge_embeddings::{
+    cosine_similarity, euclidean_distance, EmbeddingConfig, EmbeddingModel, KGTriple,
+    KnowledgeEmbeddings,
+};
+pub use oxirs_executor::{OxirsSparqlExecutor, QueryResults, QueryValue, TripleResult};
+pub use oxirs_graphql::{GraphQLField, GraphQLObjectType, GraphQLType, OxirsGraphQLBridge};
 pub use provenance::ProvenanceTracker;
 pub use rdfstar::{
     MetadataBuilder, ProvenanceStats, QuotedTriple, RdfStarProvenanceStore, StatementMetadata,

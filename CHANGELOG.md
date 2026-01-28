@@ -78,6 +78,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Execute fuzzing on nightly Rust
 - Reference comparisons against symbolic logic solvers
 
+## [0.1.0-beta.1] - 2026-01-28
+
+### Added - Beta.1 Release
+
+#### Production Release
+- **First Beta Release** - All alpha.2 features stabilized
+- **4,364 tests passing** (100% pass rate)
+- **Zero warnings** across all build configurations
+- **Complete documentation** and examples
+- **Production-ready** for real-world use
+
 ## [0.1.0-alpha.2] - 2025-12-16
 
 ### Added - Alpha.2 Release
@@ -392,7 +403,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Version Number Convention
 - **Major.Minor.Patch-PreRelease**
-- Example: `0.1.0-alpha.2`
+- Example: `0.1.0-beta.1`
 - Pre-release tags: `dev`, `alpha`, `beta`, `rc`
 
 ### Section Categories

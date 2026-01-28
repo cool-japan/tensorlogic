@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-trustformers"
-version = "0.1.0-alpha.2"
+version.workspace = true
 description = "Transformer-as-rules: Self-attention and FFN layers as einsum expressions"
 edition.workspace = true
 license.workspace = true

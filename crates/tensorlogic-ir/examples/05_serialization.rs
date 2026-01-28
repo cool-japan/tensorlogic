@@ -156,13 +156,13 @@ fn main() -> Result<(), IrError> {
         TLExpr::pred("Q", vec![Term::var("y")]),
     );
 
-    let binary_data = bincode::serde::encode_to_vec(&expr, bincode::config::standard())
+    let binary_data = oxicode::serde::encode_to_vec(&expr, oxicode::config::standard())
         .expect("Failed to serialize to binary");
     println!("   Expression binary size: {} bytes", binary_data.len());
 
     // Deserialize from binary
     let (_restored_expr, _): (TLExpr, usize) =
-        bincode::serde::decode_from_slice(&binary_data, bincode::config::standard())
+        oxicode::serde::decode_from_slice(&binary_data, oxicode::config::standard())
             .expect("Failed to deserialize from binary");
     println!("   ✓ Binary roundtrip successful");
 
@@ -193,7 +193,7 @@ fn main() -> Result<(), IrError> {
 
     large_graph.add_output(current_tensor)?;
 
-    let graph_binary = bincode::serde::encode_to_vec(&large_graph, bincode::config::standard())
+    let graph_binary = oxicode::serde::encode_to_vec(&large_graph, oxicode::config::standard())
         .expect("Failed to serialize graph to binary");
     let graph_json =
         serde_json::to_string(&large_graph).expect("Failed to serialize graph to JSON");
@@ -226,7 +226,7 @@ fn main() -> Result<(), IrError> {
     let graph_bin_path = temp_dir.join("tensorlogic_graph.bin");
     let versioned_graph = VersionedGraph::new(large_graph.clone());
     let binary_content =
-        bincode::serde::encode_to_vec(&versioned_graph, bincode::config::standard())
+        oxicode::serde::encode_to_vec(&versioned_graph, oxicode::config::standard())
             .expect("Failed to serialize to binary");
     fs::write(&graph_bin_path, binary_content).expect("Failed to write binary file");
     println!("   ✓ Saved graph to: {:?}", graph_bin_path);
@@ -251,7 +251,7 @@ fn main() -> Result<(), IrError> {
     // Load graph from binary
     let loaded_binary = fs::read(&graph_bin_path).expect("Failed to read binary file");
     let (loaded_graph, _): (VersionedGraph, usize) =
-        bincode::serde::decode_from_slice(&loaded_binary, bincode::config::standard())
+        oxicode::serde::decode_from_slice(&loaded_binary, oxicode::config::standard())
             .expect("Failed to deserialize binary");
     println!("   ✓ Loaded graph from binary");
     println!(

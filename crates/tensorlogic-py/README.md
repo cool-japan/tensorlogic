@@ -10,7 +10,7 @@
 ## Overview
 
 **Status**: 🎉 **Production Ready - ALL HIGH-PRIORITY FEATURES COMPLETE (100%)**
-**Version**: 0.1.0-alpha.2 (with Async Execution)
+**Version**: 0.1.0-beta.1 (with Async Execution)
 **Last Updated**: 2025-11-17
 
 TensorLogic compiles logical rules (predicates, quantifiers, implications) into **tensor equations (einsum graphs)** that can be executed on various backends. This Python package provides a comprehensive Pythonic API for researchers and practitioners to use TensorLogic from Jupyter notebooks and Python workflows.
@@ -1010,7 +1010,7 @@ Apache-2.0 - See [LICENSE](../../LICENSE) for details.
 
 ---
 
-**Status**: 🎉 **Production Ready (v0.1.0-alpha.2)**
+**Status**: 🎉 **Production Ready (v0.1.0-beta.1)**
 **Last Updated**: 2025-12-16
 **Completion**: 100% of high-priority features (13/13 phases complete)
 **Tests**: 100+ tests passing (5 test suites)

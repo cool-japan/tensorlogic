@@ -35,6 +35,7 @@
 //! remain lightweight and engine-agnostic. The rand usage here is minimal (only
 //! for exploration strategy) and does not involve heavy tensor operations.
 
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use thiserror::Error;
@@ -271,7 +272,7 @@ impl QLearningAgent {
                 OptimizationAction::Parallelize,
                 OptimizationAction::Sequential,
             ];
-            actions[rand::random::<usize>() % actions.len()]
+            actions[rand::rng().random_range(0..actions.len())]
         } else {
             // Greedy exploitation
             let actions = [

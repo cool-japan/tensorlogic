@@ -1,6 +1,6 @@
 //! Engine-agnostic traits and execution planning API.
 //!
-//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//! **Version**: 0.1.0-beta.1 | **Status**: Production Ready
 //!
 //! This crate defines the abstract execution interfaces and optimization utilities for TensorLogic:
 
@@ -53,19 +53,19 @@
 //! - **PipelineParallelCoordinator**: Pipeline parallelism across stages
 //! - **CommunicationBackend**: Abstract interface for device communication
 //!
-//! ## Zero-Copy Operations (Alpha.2) 🆕
+//! ## Zero-Copy Operations (Beta.1) 🆕
 //! - **TensorView**: Zero-copy tensor views and slicing
 //! - **SliceSpec**: Flexible slicing specifications
 //! - **ViewBuilder**: Ergonomic view construction
 //! - **TensorViewable**: Trait for zero-copy tensor operations
 //!
-//! ## Async Execution (Alpha.2) 🆕
+//! ## Async Execution (Beta.1) 🆕
 //! - **TlAsyncExecutor**: Async/await-based non-blocking execution
 //! - **TlAsyncBatchExecutor**: Asynchronous batch processing
 //! - **TlAsyncStreamExecutor**: Async streaming with backpressure
 //! - **AsyncExecutorPool**: Load-balanced executor pool
 //!
-//! ## Enhanced Diagnostics (Alpha.2) 🆕
+//! ## Enhanced Diagnostics (Beta.1) 🆕
 //! - **Diagnostic**: Rich error messages with suggestions
 //! - **DiagnosticCollector**: Error aggregation and reporting
 //! - **ShapeMismatchDiagnostic**: Helpful shape error messages
@@ -99,78 +99,78 @@
 //! - **Variable**: Variables with gradient tracking
 //! - **EagerTape**: Dynamic computation graph recording
 //!
-//! ## Advanced Quantization (Alpha.2) 🆕
+//! ## Advanced Quantization (Beta.1) 🆕
 //! - **Quantizer**: Complete quantization pipeline (QAT/PTQ)
 //! - **QuantizationType**: INT8, INT4, INT2, FP8, Binary, Ternary support
 //! - **CalibrationStrategy**: Multiple calibration methods (MinMax, Percentile, MSE, KL-divergence)
 //! - **FakeQuantize**: Quantization simulation for training
 //!
-//! ## Dynamic Batching (Alpha.2) 🆕
+//! ## Dynamic Batching (Beta.1) 🆕
 //! - **DynamicBatcher**: Adaptive request batching with priority queues
 //! - **RequestQueue**: Priority-based queuing (Low/Normal/High/Critical)
 //! - **AdaptiveBatcher**: Automatic batch size optimization
 //! - **BatchingStats**: Comprehensive throughput and latency metrics
 //!
-//! ## Advanced Kernel Fusion (Alpha.2) 🆕
+//! ## Advanced Kernel Fusion (Beta.1) 🆕
 //! - **FusionOptimizer**: Pattern-based fusion detection and optimization
 //! - **FusionStrategy**: Conservative/Aggressive/Balanced/Memory-aware modes
 //! - **FusionCostModel**: Memory bandwidth-aware cost modeling
 //! - **FusionPattern**: Common patterns (MatMul+Bias, MatMul+Activation, etc.)
 //!
-//! ## Workspace Management (Alpha.2) 🆕
+//! ## Workspace Management (Beta.1) 🆕
 //! - **WorkspacePool**: Memory pool with multiple allocation strategies
 //! - **SharedWorkspacePool**: Thread-safe workspace sharing
 //! - **AllocationStrategy**: BestFit/FirstFit/ExactFit/PowerOfTwo
 //! - **WorkspaceStats**: Efficiency metrics and hit rate tracking
 //!
-//! ## Multi-Model Coordination (Alpha.2) 🆕
+//! ## Multi-Model Coordination (Beta.1) 🆕
 //! - **MultiModelCoordinator**: Ensemble and multi-model management
 //! - **EnsembleStrategy**: Averaging/Voting/Stacking/Boosting
 //! - **RoutingStrategy**: Priority/Latency/Accuracy-based model selection
 //! - **CascadeConfig**: Early-exit model cascades
 //!
-//! ## Mixed Precision Training (Alpha.2) 🆕
+//! ## Mixed Precision Training (Beta.1) 🆕
 //! - **MixedPrecisionConfig**: FP16/BF16/FP8 configuration
 //! - **LossScaler**: Automatic loss scaling with dynamic adjustment
 //! - **PrecisionMode**: Multiple precision modes (FP32/FP16/BF16/FP8/FP64)
 //! - **GradientCheckpoint**: Memory-efficient gradient checkpointing
 //! - **MixedPrecisionState**: Complete training state management
 //!
-//! ## Sparse Tensor Support (Alpha.2) 🆕
+//! ## Sparse Tensor Support (Beta.1) 🆕
 //! - **SparseTensor**: CSR/CSC/COO sparse formats
 //! - **SparseCSR**: Compressed Sparse Row format
 //! - **SparseCSC**: Compressed Sparse Column format
 //! - **SparseCOO**: Coordinate format for construction
 //! - **Automatic sparsity detection**: Convert dense to sparse when beneficial
 //!
-//! ## Parallel Execution (Alpha.2) 🆕
+//! ## Parallel Execution (Beta.1) 🆕
 //! - **WorkStealingScheduler**: Dynamic load balancing scheduler
 //! - **Task**: Parallel task with dependencies and priorities
 //! - **StealStrategy**: Multiple work-stealing strategies
 //! - **NumaStrategy**: NUMA-aware memory allocation
 //! - **LoadBalanceStats**: Load balancing metrics
 //!
-//! ## SIMD Optimizations (Alpha.2) 🆕
+//! ## SIMD Optimizations (Beta.1) 🆕
 //! - **SimdCapabilities**: Platform detection (AVX2/AVX-512/NEON/SVE)
 //! - **AlignedBuffer**: SIMD-aligned memory allocations
 //! - **SimdInstructionSet**: Instruction set abstractions
 //! - **SimdOptimizationHints**: Compiler optimization hints
 //!
-//! ## Graph Rewriting (Alpha.2) 🆕
+//! ## Graph Rewriting (Beta.1) 🆕
 //! - **RewriteEngine**: Pattern-based graph transformations
 //! - **Pattern**: Flexible pattern matching DSL
 //! - **RewriteRule**: Custom rewrite rules
 //! - **CommonRules**: Standard optimization rules (constant folding, etc.)
 //! - **RewriteStrategy**: Application strategies (exhaustive, fixed-point, etc.)
 //!
-//! ## Profiling-Guided Optimization (Alpha.2) 🆕
+//! ## Profiling-Guided Optimization (Beta.1) 🆕
 //! - **ProfilingOptimizer**: Adaptive performance tuning
 //! - **ExecutionProfile**: Runtime performance metrics
 //! - **Hotspot**: Performance bottleneck detection
 //! - **OptimizationGoal**: Optimization objectives (latency, throughput, memory)
 //! - **Auto-tuning**: Automatic configuration selection
 //!
-//! ## Cache Optimization (Alpha.2) 🆕
+//! ## Cache Optimization (Beta.1) 🆕
 //! - **CacheOptimizer**: Memory hierarchy aware optimization
 //! - **CacheConfig**: L1/L2/L3 cache configuration
 //! - **TilingParams**: Loop tiling for cache efficiency

@@ -211,7 +211,7 @@ impl OperatorCounts {
                 self.count_recursive(body);
             }
 
-            // Alpha.3 enhancements
+            // Beta.1 enhancements
             TLExpr::Lambda { body, .. } => {
                 self.control_flow += 1;
                 self.count_recursive(body);
@@ -723,7 +723,7 @@ impl ComplexityMetrics {
                 );
             }
 
-            // Alpha.3 enhancements - comprehensive coverage
+            // Beta.1 enhancements - comprehensive coverage
             TLExpr::Lambda { body, .. }
             | TLExpr::SetCardinality { set: body }
             | TLExpr::SetComprehension {
@@ -1048,7 +1048,7 @@ impl PatternAnalysis {
                 self.detect_recursive(body, _context);
             }
 
-            // Alpha.3 enhancements
+            // Beta.1 enhancements
             TLExpr::Lambda { body, .. }
             | TLExpr::SetCardinality { set: body }
             | TLExpr::SetComprehension {

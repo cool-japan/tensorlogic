@@ -163,7 +163,7 @@ impl TLExpr {
                 value.collect_and_validate_domains(registry, var_domains)?;
                 body.collect_and_validate_domains(registry, var_domains)?;
             }
-            // Alpha.3 enhancements
+            // Beta.1 enhancements
             TLExpr::Lambda { body, .. } => {
                 // Lambda introduces a local binding, no domain validation
                 body.collect_and_validate_domains(registry, var_domains)?;
@@ -380,7 +380,7 @@ impl TLExpr {
                 value.collect_domains(domains);
                 body.collect_domains(domains);
             }
-            // Alpha.3 enhancements
+            // Beta.1 enhancements
             TLExpr::Lambda { body, .. } => {
                 body.collect_domains(domains);
             }

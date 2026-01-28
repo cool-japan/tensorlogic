@@ -4,7 +4,7 @@
 
 [package]
 name = "tensorlogic-py"
-version = "0.1.0-alpha.2"
+version = "0.1.0-beta.1"
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://github.com/cool-japan/tensorlogic"
@@ -34,7 +34,7 @@ tensorlogic-infer = { path = "../tensorlogic-infer" }
 tensorlogic-adapters = { path = "../tensorlogic-adapters" }
 tensorlogic-scirs-backend = { path = "../tensorlogic-scirs-backend" }
 tensorlogic-oxirs-bridge = { path = "../tensorlogic-oxirs-bridge" }
-scirs2-core = "0.1.0-rc.2"
+scirs2-core = "0.1.2"
 
 [package.metadata.maturin]
 # optional: maturin build config

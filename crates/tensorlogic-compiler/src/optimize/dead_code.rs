@@ -468,7 +468,7 @@ fn eliminate_dead_code_impl(expr: &TLExpr, stats: &mut DeadCodeStats) -> TLExpr 
             body: Box::new(eliminate_dead_code_impl(body, stats)),
         },
 
-        // All other expression types (alpha.3 enhancements)
+        // All other expression types (enhancements)
         _ => expr.clone(),
     }
 }
@@ -615,7 +615,7 @@ fn collect_free_vars_impl(
         // Leaves
         TLExpr::Constant(_) => {}
 
-        // All other expression types (alpha.3 enhancements)
+        // All other expression types (enhancements)
         _ => {}
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-compiler"
-version = "0.1.0-alpha.2"
+version.workspace = true
 description = "Compiler for transforming logic expressions into tensor computation graphs"
 edition.workspace = true
 license.workspace = true

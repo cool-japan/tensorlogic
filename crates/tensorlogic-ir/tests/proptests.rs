@@ -116,8 +116,8 @@ proptest! {
     /// Property: Binary serialization roundtrip preserves equality
     #[test]
     fn prop_binary_roundtrip(e in arb_expr(4)) {
-        let binary = bincode::serde::encode_to_vec(&e, bincode::config::standard()).expect("serialization failed");
-        let (decoded, _): (TLExpr, usize) = bincode::serde::decode_from_slice(&binary, bincode::config::standard()).expect("deserialization failed");
+        let binary = oxicode::serde::encode_to_vec(&e, oxicode::config::standard()).expect("serialization failed");
+        let (decoded, _): (TLExpr, usize) = oxicode::serde::decode_from_slice(&binary, oxicode::config::standard()).expect("deserialization failed");
         prop_assert_eq!(e, decoded);
     }
 

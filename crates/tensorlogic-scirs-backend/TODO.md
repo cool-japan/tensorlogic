@@ -1,9 +1,9 @@
-# Alpha.2 Release Status ✅
+# Beta.1 Release Status ✅
 
-**Version**: 0.1.0-alpha.2
+**Version**: 0.1.0-beta.1
 **Status**: Production Ready
 
-This crate is part of the TensorLogic v0.1.0-alpha.2 release with:
+This crate is part of the TensorLogic v0.1.0-beta.1 release with:
 - Zero compiler warnings
 - 100% test pass rate
 - Complete documentation
@@ -434,7 +434,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 
 **Total Items:** 100+ tasks
 **Phase 3:** ✅ COMPLETE (forward pass with all operations, production-ready backward pass with einsum gradients, parallel execution, backend features)
-**Recent Additions (Alpha.2):**
+**Recent Additions (Beta.1):**
 - **Custom Operations**: User-defined operation system ✅ COMPLETE
   - CustomOp trait with forward/backward pass support
   - OpRegistry for dynamic registration
@@ -469,7 +469,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - All unary/binary/scalar operations
   - Memory savings tracking with InplaceStats
   - 15 comprehensive tests for inplace operations
-**Previous Additions (Alpha.1):**
+**Previous Additions:**
 - **Backend Features**: Execution modes, device management, precision control ✅ COMPLETE
   - ExecutionMode abstraction (Eager/Graph/JIT)
   - Device management API with DeviceType and DeviceManager

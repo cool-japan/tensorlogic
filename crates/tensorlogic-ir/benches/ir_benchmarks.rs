@@ -309,16 +309,16 @@ fn bench_serialization(c: &mut Criterion) {
     group.bench_function("expr_to_binary", |b| {
         b.iter(|| {
             let _binary =
-                bincode::serde::encode_to_vec(black_box(&expr), bincode::config::standard())
+                oxicode::serde::encode_to_vec(black_box(&expr), oxicode::config::standard())
                     .unwrap();
         });
     });
 
-    let binary = bincode::serde::encode_to_vec(&expr, bincode::config::standard()).unwrap();
+    let binary = oxicode::serde::encode_to_vec(&expr, oxicode::config::standard()).unwrap();
     group.bench_function("expr_from_binary", |b| {
         b.iter(|| {
             let (_expr, _): (TLExpr, usize) =
-                bincode::serde::decode_from_slice(black_box(&binary), bincode::config::standard())
+                oxicode::serde::decode_from_slice(black_box(&binary), oxicode::config::standard())
                     .unwrap();
         });
     });
@@ -351,17 +351,17 @@ fn bench_serialization(c: &mut Criterion) {
     group.bench_function("graph_to_binary", |b| {
         b.iter(|| {
             let _binary =
-                bincode::serde::encode_to_vec(black_box(&graph), bincode::config::standard())
+                oxicode::serde::encode_to_vec(black_box(&graph), oxicode::config::standard())
                     .unwrap();
         });
     });
 
-    let graph_binary = bincode::serde::encode_to_vec(&graph, bincode::config::standard()).unwrap();
+    let graph_binary = oxicode::serde::encode_to_vec(&graph, oxicode::config::standard()).unwrap();
     group.bench_function("graph_from_binary", |b| {
         b.iter(|| {
-            let (_graph, _): (EinsumGraph, usize) = bincode::serde::decode_from_slice(
+            let (_graph, _): (EinsumGraph, usize) = oxicode::serde::decode_from_slice(
                 black_box(&graph_binary),
-                bincode::config::standard(),
+                oxicode::config::standard(),
             )
             .unwrap();
         });

@@ -1,6 +1,6 @@
 //! # Tensorlogic-Trustformers
 //!
-//! **Version**: 0.1.0-alpha.2 | **Status**: Production Ready
+//! **Version**: 0.1.0-beta.1 | **Status**: Production Ready
 //!
 //! Transform transformer architectures into TensorLogic IR using einsum operations.
 //!

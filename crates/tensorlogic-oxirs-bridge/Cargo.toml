@@ -1,6 +1,6 @@
 [package]
 name = "tensorlogic-oxirs-bridge"
-version = "0.1.0-alpha.2"
+version.workspace = true
 description = "RDF/GraphQL/SHACL integration and provenance tracking for TensorLogic"
 edition.workspace = true
 license.workspace = true
@@ -12,9 +12,17 @@ tensorlogic-ir.workspace = true
 tensorlogic-adapters.workspace = true
 tensorlogic-compiler.workspace = true
 
-# Lightweight RDF support (oxrdf only, no heavy oxirs-core)
-oxrdf = { version = "0.3.1" }
-oxttl = { version = "0.2.1" }  # Turtle/N-Triples parser
+# OxiRS integration - RDF/Knowledge Graph/SPARQL
+oxirs-core.workspace = true
+oxirs-gql.workspace = true
+oxirs-ttl.workspace = true
+
+# Low-level RDF types (for compatibility with existing code)
+oxrdf = "0.3.2"
+oxttl = "0.2.2"
+
+# Random number generation
+scirs2-core = { workspace = true, features = ["random"] }
 
 # Utilities
 anyhow.workspace = true
@@ -27,6 +35,7 @@ chrono = { version = "0.4", features = ["serde"] }
 [dev-dependencies]
 proptest.workspace = true
 criterion.workspace = true
+approx.workspace = true
 
 [[bench]]
 name = "parsing_benchmarks"

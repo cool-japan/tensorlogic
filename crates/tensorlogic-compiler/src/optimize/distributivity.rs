@@ -320,7 +320,7 @@ fn optimize_distributivity_impl(expr: &TLExpr, stats: &mut DistributivityStats) 
         | TLExpr::WeakUntil { .. }
         | TLExpr::StrongRelease { .. } => expr.clone(),
 
-        // All other expression types (alpha.3 enhancements)
+        // All other expression types (enhancements)
         _ => expr.clone(),
     }
 }

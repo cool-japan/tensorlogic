@@ -145,7 +145,7 @@ impl TLExpr {
                     expr.collect_free_vars(vars, bound);
                 }
             }
-            // Alpha.3 enhancements
+            // Beta.1 enhancements
             TLExpr::Lambda { var, body, .. } => {
                 // Lambda binds the variable
                 let mut new_bound = bound.clone();
@@ -350,7 +350,7 @@ impl TLExpr {
                     expr.collect_predicates(preds);
                 }
             }
-            // Alpha.3 enhancements
+            // Beta.1 enhancements
             TLExpr::Lambda { body, .. } => {
                 body.collect_predicates(preds);
             }

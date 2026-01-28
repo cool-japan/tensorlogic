@@ -1,9 +1,9 @@
-# Alpha.7 Development Status 🚀
+# Beta.1 Development Status 🚀
 
-**Version**: 0.1.0-alpha.7 (in development)
+**Version**: 0.1.0-beta.1
 **Status**: Enhanced with Advanced Simplification & Cache Analytics
 
-This CLI tool has been enhanced beyond alpha.6 with:
+This CLI tool has been enhanced beyond beta.1 with:
 - ✅ **Advanced Expression Simplification**: Constant folding, identity laws, and annihilation laws
 - ✅ **Cache Analytics**: Efficiency scoring, recommendations, and JSON export capabilities
 - ✅ **Parallel Batch Compilation**: Multi-threaded batch processing using rayon (2-4x faster)
@@ -20,7 +20,7 @@ This CLI tool has been enhanced beyond alpha.6 with:
 - ✅ 195 passing tests (+19 new tests for simplification and analytics)
 - ✅ Production-ready quality
 
-Previous alpha.2 features:
+Previous beta.1 features:
 - Execution and optimization commands
 - Benchmark command for performance testing
 - Real optimization integration with tensorlogic-compiler
@@ -284,7 +284,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - [x] Convert command with --from and --to flags
 - [x] Pretty flag for formatted output
 
-## Alpha.2 Features 🆕
+## Beta.1 Features 🆕
 
 ### Execution Command ✅ COMPLETE
 - [x] Execute compiled graphs
@@ -380,8 +380,8 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Configurable cache size
   - [x] Cache statistics (.cache command)
   - [x] Clear cache (.clearcache command)
-  - [x] **Persistent disk cache** (NEW in alpha.4)
-  - [x] **Cache management commands** (NEW in alpha.4)
+  - [x] **Persistent disk cache** (NEW in beta.1)
+  - [x] **Cache management commands** (NEW in beta.1)
     - [x] `tensorlogic cache stats` - Show cache statistics
     - [x] `tensorlogic cache clear` - Clear entire cache
     - [x] `tensorlogic cache path` - Show cache directory
@@ -447,7 +447,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Graph analysis
   - [x] Examples README with usage instructions
 
-## Recently Completed (Alpha.3) ✅
+## Recently Completed (Beta.1) ✅
 
 ### Library Mode ✅ COMPLETE
 - [x] Export CLI functionality as reusable library
@@ -535,7 +535,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - [x] Memory usage estimation
   - [x] Bottleneck identification
   - [x] Performance variance analysis
-- [x] **Graph execution profiling** (NEW in alpha.4)
+- [x] **Graph execution profiling** (NEW in beta.1)
   - [x] Actual execution time tracking
   - [x] Runtime memory measurement
   - [x] Throughput analysis (graphs/second)
@@ -565,7 +565,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - ✅ **Shell completion** generation (bash/zsh/fish/powershell)
 - ✅ Complete documentation
 
-**Alpha.2 Features:**
+**Beta.1 Features:**
 - ✅ **Execute command** with multiple backends
 - ✅ **Optimize command** with real optimization passes
 - ✅ **Benchmark command** for performance testing
@@ -573,7 +573,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
 - ✅ **REPL execute/optimize** commands
 - ✅ **Profile command** with phase-by-phase timing breakdown
 
-**Alpha.3 Features:**
+**Beta.1 Features:**
 - ✅ **Library Mode** - Use CLI as a library in Rust projects
 - ✅ **Macro System** - Define and reuse logical patterns
 - ✅ **Workspace Policy** - All dependencies centralized
@@ -582,7 +582,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - Python ctypes wrapper (tensorlogic_ffi.py)
   - Full support for compilation, execution, optimization, benchmarking
 
-**Alpha.4 Features:**
+**Beta.1 Features:**
 - ✅ **Persistent Compilation Cache** - Disk-based caching for faster recompilation
   - Automatic caching based on expression and context hash
   - Configurable cache size limits (default: 500 MB)
@@ -596,7 +596,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - Variance and standard deviation tracking
   - `--execute` flag in profile command
 
-**Alpha.5 Features:**
+**Beta.1 Features:**
 - ✅ **LRU Cache Eviction** - Intelligent cache management
   - Least-recently-used eviction policy with access time tracking
   - Automatic cleanup when cache size exceeds limits
@@ -620,7 +620,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - De Morgan's law application: NOT(AND(x, y)) => OR(NOT(x), NOT(y))
   - Public simplify module API for library users
 
-**Alpha.6 Features:**
+**Beta.1 Features:**
 - ✅ **Parallel Batch Compilation** - High-performance batch processing
   - Multi-threaded compilation using rayon for 2-4x performance improvement
   - Configurable thread pool size for optimal resource utilization
@@ -638,7 +638,7 @@ See main [TODO.md](../../TODO.md) for overall project status.
   - Format: `expression | strategy | domains`
   - Example: `AND(a, b) | soft_differentiable | Person:100,Item:50`
 
-**Alpha.7 Features (NEW):**
+**Beta.1 Features (NEW):**
 - ✅ **Advanced Expression Simplification** - Extended logical optimization
   - Constant folding for arithmetic operations (Add, Mul, Sqrt, etc.)
   - Identity laws: AND(x, true) => x, OR(x, false) => x
@@ -663,9 +663,9 @@ See main [TODO.md](../../TODO.md) for overall project status.
 ```
 Source Code (~8,900 lines):
   analysis.rs           ~227 lines  - Graph metrics and complexity analysis
-  batch.rs              ~299 lines  - Parallel batch processing (ENHANCED in alpha.6)
+  batch.rs              ~299 lines  - Parallel batch processing (ENHANCED in beta.1)
   benchmark.rs          ~337 lines  - Performance benchmarking
-  cache.rs              ~1042 lines - LRU cache with analytics & warmup (ENHANCED in alpha.7)
+  cache.rs              ~1042 lines - LRU cache with analytics & warmup (ENHANCED in beta.1)
   cli.rs                ~345 lines  - Clap CLI definitions (with cache commands)
   completion.rs         ~24 lines   - Shell completion generation
   config.rs             ~251 lines  - Configuration file support with cache config
@@ -680,7 +680,7 @@ Source Code (~8,900 lines):
   parser.rs             ~393 lines  - Enhanced expression parser
   profile.rs            ~1071 lines - Profiling with execution metrics
   repl.rs               ~590 lines  - Interactive REPL mode with execute/optimize
-  simplify.rs           ~669 lines  - Expression simplification (ENHANCED in alpha.7)
+  simplify.rs           ~669 lines  - Expression simplification (ENHANCED in beta.1)
   watch.rs              ~113 lines  - File watching and auto-recompilation
   tests/cli_integration ~400 lines  - Integration tests (32 tests)
   tests/end_to_end      ~410 lines  - End-to-end tests (20 tests)
@@ -716,7 +716,7 @@ Documentation & Examples (~5,300+ lines):
 - chrono 0.4 - Timestamp formatting
 
 **Notes:**
-- CLI is feature-complete for alpha.1 release
+- CLI is feature-complete for beta.1 release
 - All high-priority features implemented
 - All medium-priority features implemented
 - Shell completion support added

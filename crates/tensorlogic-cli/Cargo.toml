@@ -43,7 +43,7 @@ indicatif.workspace = true
 dirs.workspace = true
 chrono.workspace = true
 num_cpus.workspace = true
-bincode.workspace = true
+oxicode.workspace = true
 flate2.workspace = true
 rayon.workspace = true
 
