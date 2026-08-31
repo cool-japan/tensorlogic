@@ -1,6 +1,6 @@
 # TensorLogic — TODO
 
-**Status**: Stable | **Version**: 0.1.2 | **Released**: 2026-08-30 | **Last Updated**: 2026-08-30
+**Status**: Stable | **Version**: 0.1.3 | **Last Release**: 0.1.2 (2026-08-30) | **Last Updated**: 2026-08-31
 
 ## Stubs to implement (added 2026-06-12 by /cooljapan-stub-check)
 

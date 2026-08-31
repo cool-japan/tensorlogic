@@ -8,7 +8,7 @@
 [![Examples](https://img.shields.io/badge/examples-17-blue)](#)
 [![Benchmarks](https://img.shields.io/badge/benchmarks-50+-orange)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
-[![Version](https://img.shields.io/badge/version-0.1.2-blue)](#)
+[![Version](https://img.shields.io/badge/version-0.1.3-blue)](#)
 [![Zero Warnings](https://img.shields.io/badge/warnings-0-success)](#)
 
 ## Overview
@@ -19,7 +19,7 @@ This crate serves as the **lingua franca** between all TensorLogic components, p
 
 ## Features
 
-### Production Ready (v0.1.2)
+### Production Ready (v0.1.3)
 
 #### Advanced Type Systems
 - **Parametric Types**: Type constructors (`List<T>`, `Option<T>`, `Map<K,V>`), unification, generalization
@@ -68,7 +68,7 @@ This crate serves as the **lingua franca** between all TensorLogic components, p
 
 ```toml
 [dependencies]
-tensorlogic-ir = "0.1.2"
+tensorlogic-ir = "0.1.3"
 ```
 
 ## Quick Start
@@ -605,8 +605,8 @@ Apache-2.0
 
 ---
 
-**Status**: Stable (v0.1.2)
-**Last Updated**: 2026-08-30
+**Status**: Stable (v0.1.3)
+**Last Updated**: 2026-08-31
 **Tests**: 823/823 passing (100%)
 **Examples**: 17 comprehensive demonstrations
 **Benchmarks**: 50+ performance tests

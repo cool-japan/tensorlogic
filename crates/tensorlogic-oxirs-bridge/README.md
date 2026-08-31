@@ -494,8 +494,8 @@ Apache-2.0
 
 ---
 
-**Status**: Production Ready (v0.1.2 Stable)
-**Last Updated**: 2026-08-30
+**Status**: Production Ready (v0.1.3 Stable)
+**Last Updated**: 2026-08-31
 **Tests**: 541/541 passing (100%)
 **Examples**: 9 comprehensive examples
 **Features**: Full SPARQL 1.1 query support (SELECT/ASK/DESCRIBE/CONSTRUCT + OPTIONAL/UNION + aggregates)

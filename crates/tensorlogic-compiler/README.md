@@ -6,7 +6,7 @@
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-compiler)
 [![Tests](https://img.shields.io/badge/tests-920%2F920_passing-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-stable-success)](#)
-[![Version](https://img.shields.io/badge/version-0.1.2-blue)](#)
+[![Version](https://img.shields.io/badge/version-0.1.3-blue)](#)
 [![Zero Warnings](https://img.shields.io/badge/warnings-0-success)](#)
 
 ## Overview
@@ -702,14 +702,14 @@ cargo test -p tensorlogic-compiler
 cargo llvm-cov --package tensorlogic-compiler
 ```
 
-**Current Test Status (v0.1.2):**
+**Current Test Status (v0.1.3):**
 - **920 tests** (100% passing)
 - **Zero warnings** (strict clippy compliance)
 - Stable quality
 
 ## Current Status & Roadmap
 
-### Stable (v0.1.2)
+### Stable (v0.1.3)
 - Core logic compilation (AND, OR, NOT, quantifiers, implications)
 - Arithmetic and comparison operations
 - Conditional expressions (if-then-else)
@@ -790,7 +790,7 @@ Apache-2.0
 
 ---
 
-**Status**: Stable (v0.1.2)
-**Last Updated**: 2026-08-30
+**Status**: Stable (v0.1.3)
+**Last Updated**: 2026-08-31
 **Tests**: 920/920 passing (100%)
 **Part of**: [TensorLogic Ecosystem](https://github.com/cool-japan/tensorlogic)

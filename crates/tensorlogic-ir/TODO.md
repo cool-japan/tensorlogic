@@ -1,6 +1,6 @@
 # TensorLogic IR — TODO
 
-**Status**: Stable | **Version**: 0.1.2 | **Released**: 2026-04-06 | **Last Updated**: 2026-08-30
+**Status**: Stable | **Version**: 0.1.3 | **Released**: 2026-04-06 | **Last Updated**: 2026-08-31
 **History**: See [CHANGELOG.md](../../CHANGELOG.md) for release history.
 
 Intermediate representation, DSL types, and einsum graph for logical rules.

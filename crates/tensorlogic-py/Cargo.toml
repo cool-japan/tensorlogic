@@ -4,7 +4,7 @@
 
 [package]
 name = "tensorlogic-py"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 description = "Python bindings for TensorLogic"
 license = "Apache-2.0"
@@ -33,12 +33,12 @@ serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
 oxicode = { version = "0.2.6", features = ["serde"] }
-tensorlogic-ir = { version = "0.1.2", path = "../tensorlogic-ir" }
-tensorlogic-compiler = { version = "0.1.2", path = "../tensorlogic-compiler" }
-tensorlogic-infer = { version = "0.1.2", path = "../tensorlogic-infer" }
-tensorlogic-adapters = { version = "0.1.2", path = "../tensorlogic-adapters" }
-tensorlogic-scirs-backend = { version = "0.1.2", path = "../tensorlogic-scirs-backend" }
-tensorlogic-oxirs-bridge = { version = "0.1.2", path = "../tensorlogic-oxirs-bridge" }
+tensorlogic-ir = { version = "0.1.3", path = "../tensorlogic-ir" }
+tensorlogic-compiler = { version = "0.1.3", path = "../tensorlogic-compiler" }
+tensorlogic-infer = { version = "0.1.3", path = "../tensorlogic-infer" }
+tensorlogic-adapters = { version = "0.1.3", path = "../tensorlogic-adapters" }
+tensorlogic-scirs-backend = { version = "0.1.3", path = "../tensorlogic-scirs-backend" }
+tensorlogic-oxirs-bridge = { version = "0.1.3", path = "../tensorlogic-oxirs-bridge" }
 scirs2-core = "0.6.5"
 
 [package.metadata.maturin]

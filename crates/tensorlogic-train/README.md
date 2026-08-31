@@ -721,9 +721,9 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
 
 ---
 
-**Status**: Production Ready (v0.1.2 Stable)
-**Last Updated**: 2026-08-30
-**Version**: 0.1.2
+**Status**: Production Ready (v0.1.3 Stable)
+**Last Updated**: 2026-08-31
+**Version**: 0.1.3
 **Test Coverage**: 745/745 tests passing (100%)
 **Code Quality**: Zero warnings, clippy clean
 **Features**: 15 losses, 18 optimizers, 12 schedulers, 14+ callbacks, 9 regularization techniques, 9 augmentations, DropPath, DropBlock, quantization, mixed precision, few-shot learning, meta-learning, Bayesian optimization, gradient centralization, Neural ODE (RK4/DOPRI5/adjoint), online learning (Perceptron/PA/OGD/FTRL), adversarial training (FGSM/PGD)

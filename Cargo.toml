@@ -28,7 +28,7 @@ exclude = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["COOLJAPAN OU (Team Kitasan)"]
 license = "Apache-2.0"
@@ -115,21 +115,21 @@ oxisql-core = "0.4.1"
 oxisql-sqlite-compat = "0.4.1"
 
 # Internal tensorlogic crates
-tensorlogic-ir = { version = "0.1.2", path = "crates/tensorlogic-ir" }
-tensorlogic-adapters = { version = "0.1.2", path = "crates/tensorlogic-adapters" }
-tensorlogic-infer = { version = "0.1.2", path = "crates/tensorlogic-infer" }
-tensorlogic-compiler = { version = "0.1.2", path = "crates/tensorlogic-compiler" }
-tensorlogic-scirs-backend = { version = "0.1.2", path = "crates/tensorlogic-scirs-backend" }
-tensorlogic-train = { version = "0.1.2", path = "crates/tensorlogic-train" }
-tensorlogic-oxirs-bridge = { version = "0.1.2", path = "crates/tensorlogic-oxirs-bridge" }
-tensorlogic-sklears-kernels = { version = "0.1.2", path = "crates/tensorlogic-sklears-kernels" }
-tensorlogic-quantrs-hooks = { version = "0.1.2", path = "crates/tensorlogic-quantrs-hooks" }
-tensorlogic-trustformers = { version = "0.1.2", path = "crates/tensorlogic-trustformers" }
+tensorlogic-ir = { version = "0.1.3", path = "crates/tensorlogic-ir" }
+tensorlogic-adapters = { version = "0.1.3", path = "crates/tensorlogic-adapters" }
+tensorlogic-infer = { version = "0.1.3", path = "crates/tensorlogic-infer" }
+tensorlogic-compiler = { version = "0.1.3", path = "crates/tensorlogic-compiler" }
+tensorlogic-scirs-backend = { version = "0.1.3", path = "crates/tensorlogic-scirs-backend" }
+tensorlogic-train = { version = "0.1.3", path = "crates/tensorlogic-train" }
+tensorlogic-oxirs-bridge = { version = "0.1.3", path = "crates/tensorlogic-oxirs-bridge" }
+tensorlogic-sklears-kernels = { version = "0.1.3", path = "crates/tensorlogic-sklears-kernels" }
+tensorlogic-quantrs-hooks = { version = "0.1.3", path = "crates/tensorlogic-quantrs-hooks" }
+tensorlogic-trustformers = { version = "0.1.3", path = "crates/tensorlogic-trustformers" }
 
 # New Round 5 tensorlogic wrapper crates
-tensorlogic-oxicuda-sparse = { version = "0.1.2", path = "crates/tensorlogic-oxicuda-sparse" }
-tensorlogic-oxicuda-solver = { version = "0.1.2", path = "crates/tensorlogic-oxicuda-solver" }
-tensorlogic-oxicuda-rng    = { version = "0.1.2", path = "crates/tensorlogic-oxicuda-rng" }
+tensorlogic-oxicuda-sparse = { version = "0.1.3", path = "crates/tensorlogic-oxicuda-sparse" }
+tensorlogic-oxicuda-solver = { version = "0.1.3", path = "crates/tensorlogic-oxicuda-solver" }
+tensorlogic-oxicuda-rng    = { version = "0.1.3", path = "crates/tensorlogic-oxicuda-rng" }
 
 # OxiCUDA sub-feature crates (Round 5)
 oxicuda-backend = "0.5.5"

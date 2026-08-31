@@ -1,6 +1,6 @@
 # TensorLogic SciRS2 Backend — TODO
 
-**Status**: Stable | **Version**: 0.1.2 | **Released**: 2026-04-06 | **Last Updated**: 2026-08-30
+**Status**: Stable | **Version**: 0.1.3 | **Released**: 2026-04-06 | **Last Updated**: 2026-08-31
 **History**: See [CHANGELOG.md](../../CHANGELOG.md) for release history.
 
 SciRS2-backed execution engine with SIMD acceleration and autograd.

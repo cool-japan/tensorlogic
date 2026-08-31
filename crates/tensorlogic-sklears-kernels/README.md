@@ -315,8 +315,8 @@ Apache-2.0
 
 ---
 
-**Status**: Production Ready (v0.1.2 Stable)
-**Last Updated**: 2026-08-30
+**Status**: Production Ready (v0.1.3 Stable)
+**Last Updated**: 2026-08-31
 **Tests**: 564/564 passing (100%)
 **Benchmarks**: 5 suites, 47 benchmark groups
 **Part of**: [TensorLogic Ecosystem](https://github.com/cool-japan/tensorlogic)

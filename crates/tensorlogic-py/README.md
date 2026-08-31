@@ -10,7 +10,7 @@
 ## Overview
 
 **Status**: Alpha (Python bindings — build and test via maturin/pytest, not cargo nextest)
-**Version**: 0.1.2
+**Version**: 0.1.3
 **PyPI Classifier**: Development Status :: 3 - Alpha
 **Last Updated**: 2026-08-30
 
@@ -1157,8 +1157,8 @@ Apache-2.0 - See [LICENSE](../../LICENSE) for details.
 
 ---
 
-**Status**: Production Ready (v0.1.2)
-**Last Updated**: 2026-08-30
+**Status**: Production Ready (v0.1.3)
+**Last Updated**: 2026-08-31
 **Completion**: 100% of high-priority features (21/21 phases complete)
 **Tests**: 300+ tests passing (7 test suites)
 **API**: 80+ functions, 35+ classes, 5 custom exceptions, 6 compilation strategies, 3 serialization formats

@@ -1,6 +1,6 @@
 //! TL <-> QuantrS2 hooks (PGM/message passing as reductions).
 //!
-//! **Version**: 0.1.2 | **Status**: Production Ready
+//! **Version**: 0.1.3 | **Status**: Production Ready
 //!
 //! This crate provides integration between TensorLogic and probabilistic graphical models (PGMs).
 //! It maps belief propagation and other message passing algorithms onto einsum reduction patterns.
