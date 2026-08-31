@@ -4,7 +4,7 @@
 
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic--scirs--backend-orange)](https://crates.io/crates/tensorlogic-scirs-backend)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-scirs-backend)
-[![Tests](https://img.shields.io/badge/tests-669%2F669-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-730%2F730-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-stable-success)](#)
 
 ## Overview
@@ -86,7 +86,7 @@ let input_grads = executor.backward(&graph, grads)?;
 - **Checkpoint/Resume**: Full training state save/load with JSON serialization
 
 ### Testing
-- **669 Tests**: All passing with comprehensive coverage
+- **730 Tests**: All passing with comprehensive coverage
 - **Optimization Tests**: DCE, CSE, and memory planning
 - **In-Place Tests**: Zero-allocation operations
 - **Checkpoint Tests**: Save/load/restore functionality
@@ -717,7 +717,7 @@ cargo bench -p tensorlogic-scirs-backend --bench parallel_performance --features
 
 ### Test Coverage
 
-**669 tests, all passing:**
+**730 tests, all passing:**
 
 | Module | Tests |
 |--------|-------|
@@ -844,7 +844,7 @@ Apache-2.0
 
 ---
 
-**Status**: Stable (v0.1.1)
-**Last Updated**: 2026-06-09
-**Tests**: 669/669 passing (100%)
+**Status**: Stable (v0.1.2)
+**Last Updated**: 2026-08-30
+**Tests**: 730/730 passing (100%)
 **Part of**: [TensorLogic Ecosystem](https://github.com/cool-japan/tensorlogic)

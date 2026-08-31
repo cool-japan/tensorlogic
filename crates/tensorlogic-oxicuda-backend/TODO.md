@@ -1,6 +1,6 @@
 # TensorLogic OxiCUDA Backend — TODO
 
-**Status**: Research Preview | **Version**: 0.1.1 | **Last Updated**: 2026-06-09
+**Status**: Research Preview | **Version**: 0.1.2 | **Last Updated**: 2026-08-30
 **History**: See [CHANGELOG.md](../../CHANGELOG.md) for release history.
 
 GPU tensor execution backend for TensorLogic, built on the COOLJAPAN **OxiCUDA** ecosystem

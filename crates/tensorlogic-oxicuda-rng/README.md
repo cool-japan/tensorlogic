@@ -4,7 +4,7 @@ GPU-accelerated random number generation for TensorLogic with pure-Rust CPU fall
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 [![Status](https://img.shields.io/badge/status-Alpha-yellow.svg)]()
-[![Tests](https://img.shields.io/badge/tests-60%2F60-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-59%2F59-brightgreen.svg)]()
 
 Provides a unified `RngEngine` that seamlessly dispatches to either a pure-Rust CPU
 backend (PCG-XSH-RR + Box-Muller) or an OxiCUDA GPU backend — chosen at construction

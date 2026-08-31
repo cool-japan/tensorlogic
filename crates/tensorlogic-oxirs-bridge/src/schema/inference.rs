@@ -110,7 +110,7 @@ impl RdfsInferenceEngine {
         for triple in self.graph.iter() {
             if triple.predicate == rdfs_subclass.as_ref() {
                 if let (NamedOrBlankNodeRef::NamedNode(subj), TermRef::NamedNode(obj)) =
-                    (triple.subject, triple.object)
+                    (&triple.subject, &triple.object)
                 {
                     direct_subclasses
                         .entry(subj.as_str().to_string())
@@ -156,7 +156,7 @@ impl RdfsInferenceEngine {
         for triple in self.graph.iter() {
             if triple.predicate == rdfs_subproperty.as_ref() {
                 if let (NamedOrBlankNodeRef::NamedNode(subj), TermRef::NamedNode(obj)) =
-                    (triple.subject, triple.object)
+                    (&triple.subject, &triple.object)
                 {
                     direct_subprops
                         .entry(subj.as_str().to_string())
@@ -199,7 +199,7 @@ impl RdfsInferenceEngine {
         for triple in self.graph.iter() {
             if triple.predicate == rdfs_domain.as_ref() {
                 if let (NamedOrBlankNodeRef::NamedNode(subj), TermRef::NamedNode(obj)) =
-                    (triple.subject, triple.object)
+                    (&triple.subject, &triple.object)
                 {
                     self.property_domains
                         .entry(subj.as_str().to_string())
@@ -208,7 +208,7 @@ impl RdfsInferenceEngine {
                 }
             } else if triple.predicate == rdfs_range.as_ref() {
                 if let (NamedOrBlankNodeRef::NamedNode(subj), TermRef::NamedNode(obj)) =
-                    (triple.subject, triple.object)
+                    (&triple.subject, &triple.object)
                 {
                     self.property_ranges
                         .entry(subj.as_str().to_string())
@@ -230,11 +230,10 @@ impl RdfsInferenceEngine {
             let pred_str = triple.predicate.as_str().to_string();
 
             if let Some(domains) = self.property_domains.get(&pred_str) {
-                if let NamedOrBlankNodeRef::NamedNode(subj) = triple.subject {
+                if let NamedOrBlankNodeRef::NamedNode(subj) = &triple.subject {
                     for domain in domains {
                         let domain_node = NamedNode::new(domain.clone())?;
-                        let type_triple =
-                            Triple::new(subj.into_owned(), rdf_type.clone(), domain_node.clone());
+                        let type_triple = Triple::new(*subj, rdf_type.clone(), domain_node.clone());
 
                         // Check if triple already exists
                         if !self.graph.contains(&type_triple)
@@ -265,11 +264,10 @@ impl RdfsInferenceEngine {
             let pred_str = triple.predicate.as_str().to_string();
 
             if let Some(ranges) = self.property_ranges.get(&pred_str) {
-                if let TermRef::NamedNode(obj) = triple.object {
+                if let TermRef::NamedNode(obj) = &triple.object {
                     for range in ranges {
                         let range_node = NamedNode::new(range.clone())?;
-                        let type_triple =
-                            Triple::new(obj.into_owned(), rdf_type.clone(), range_node.clone());
+                        let type_triple = Triple::new(*obj, rdf_type.clone(), range_node.clone());
 
                         if !self.graph.contains(&type_triple)
                             && !self.inferred.contains(&type_triple)
@@ -298,7 +296,7 @@ impl RdfsInferenceEngine {
         for triple in self.graph.iter() {
             if triple.predicate == rdf_type.as_ref() {
                 if let (NamedOrBlankNodeRef::NamedNode(subj), TermRef::NamedNode(class_obj)) =
-                    (triple.subject, triple.object)
+                    (&triple.subject, &triple.object)
                 {
                     let class_str = class_obj.as_str().to_string();
 
@@ -306,11 +304,8 @@ impl RdfsInferenceEngine {
                     if let Some(superclasses) = self.subclass_hierarchy.get(&class_str) {
                         for superclass in superclasses {
                             let superclass_node = NamedNode::new(superclass.clone())?;
-                            let type_triple = Triple::new(
-                                subj.into_owned(),
-                                rdf_type.clone(),
-                                superclass_node.clone(),
-                            );
+                            let type_triple =
+                                Triple::new(*subj, rdf_type.clone(), superclass_node.clone());
 
                             if !self.graph.contains(&type_triple)
                                 && !self.inferred.contains(&type_triple)
@@ -342,11 +337,8 @@ impl RdfsInferenceEngine {
             if let Some(superprops) = self.subproperty_hierarchy.get(&pred_str) {
                 for superprop in superprops {
                     let superprop_node = NamedNode::new(superprop.clone())?;
-                    let new_triple = Triple::new(
-                        triple.subject.into_owned(),
-                        superprop_node.clone(),
-                        triple.object.into_owned(),
-                    );
+                    let new_triple =
+                        Triple::new(triple.subject, superprop_node.clone(), triple.object);
 
                     if !self.graph.contains(&new_triple) && !self.inferred.contains(&new_triple) {
                         new_triples.push(new_triple);

@@ -28,7 +28,7 @@ exclude = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["COOLJAPAN OU (Team Kitasan)"]
 license = "Apache-2.0"
@@ -42,7 +42,7 @@ anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
-oxicode = { version = "0.2.4", features = ["serde"] }
+oxicode = { version = "0.2.6", features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 indexmap = { version = "2", features = ["serde"] }
 smallvec = "1"
@@ -63,12 +63,12 @@ clap = { version = "4.6", features = ["derive", "cargo", "env"] }
 clap_complete = "4.6"
 rustyline = "18.0"
 colored = "3.1"
-tabled = "0.20"
+tabled = "0.21"
 notify = "8.2"
 indicatif = "0.18"
 dirs = "6.0"
 num_cpus = "1.17"
-oxiarc-deflate = "0.3.3"
+oxiarc-deflate = "0.4.1"
 
 # Dev dependencies
 assert_cmd = "2.2"
@@ -79,64 +79,70 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 
 # SciRS2 dependencies (from crates.io)
-scirs2-core = { version = "0.5.0", features = ["random"] }
-scirs2-linalg = "0.5.0"
-scirs2-autograd = "0.5.0"
-scirs2-optimize = "0.5.0"
+scirs2-core = { version = "0.6.5", features = ["random"] }
+scirs2-linalg = "0.6.5"
+scirs2-autograd = "0.6.5"
+scirs2-optimize = "0.6.5"
 
 # ToRSh dependencies (from crates.io) - Pure Rust PyTorch alternative
-torsh-core = "0.1.2"
-torsh-tensor = "0.1.2"
+torsh-core = "0.2.0"
+torsh-tensor = "0.2.0"
 
 # SkleaRS dependencies (from crates.io)
-sklears-core = "0.1.1"
-sklears-kernel-approximation = "0.1.1"
+sklears-core = "0.2.0"
+sklears-kernel-approximation = "0.2.0"
 
 # QuantRS2 dependencies (from crates.io) - Quantum computing framework
-quantrs2-core = "0.2.0"
-quantrs2-circuit = "0.2.0"
-quantrs2-sim = "0.2.0"
+quantrs2-core = "0.2.1"
+quantrs2-circuit = "0.2.1"
+quantrs2-sim = "0.2.1"
 
 # OxiRS dependencies (from crates.io) - RDF/Knowledge Graph framework
-oxirs-core = "0.3.1"
-oxirs-gql = "0.3.1"
-oxirs-ttl = "0.3.1"
+oxirs-core = "0.4.1"
+oxirs-gql = "0.4.1"
+
+# Low-level RDF types and Turtle/N-Triples parsing (OxiXML — Pure Rust)
+oxrdf = { package = "oxixml-model", version = "0.1.2" }
+oxttl = { package = "oxixml-turtle", version = "0.1.2" }
 
 ndarray = "0.17"
 crc32fast = "1.5"
 byteorder = "1.5"
 hostname = "0.4"
-tokio = { version = "1.52", features = ["sync", "time", "macros", "rt-multi-thread"] }
+tokio = { version = "1.52", features = ["sync", "time", "macros", "rt", "rt-multi-thread"] }
+# Pure-Rust SQLite-compatible storage (OxiSQL — COOLJAPAN, replaces rusqlite/libsqlite3-sys)
+oxisql-core = "0.4.1"
+oxisql-sqlite-compat = "0.4.1"
 
 # Internal tensorlogic crates
-tensorlogic-ir = { version = "0.1.0", path = "crates/tensorlogic-ir" }
-tensorlogic-adapters = { version = "0.1.0", path = "crates/tensorlogic-adapters" }
-tensorlogic-infer = { version = "0.1.0", path = "crates/tensorlogic-infer" }
-tensorlogic-compiler = { version = "0.1.0", path = "crates/tensorlogic-compiler" }
-tensorlogic-scirs-backend = { version = "0.1.0", path = "crates/tensorlogic-scirs-backend" }
-tensorlogic-train = { version = "0.1.0", path = "crates/tensorlogic-train" }
-tensorlogic-oxirs-bridge = { version = "0.1.0", path = "crates/tensorlogic-oxirs-bridge" }
-tensorlogic-sklears-kernels = { version = "0.1.0", path = "crates/tensorlogic-sklears-kernels" }
-tensorlogic-quantrs-hooks = { version = "0.1.0", path = "crates/tensorlogic-quantrs-hooks" }
-tensorlogic-trustformers = { version = "0.1.0", path = "crates/tensorlogic-trustformers" }
+tensorlogic-ir = { version = "0.1.2", path = "crates/tensorlogic-ir" }
+tensorlogic-adapters = { version = "0.1.2", path = "crates/tensorlogic-adapters" }
+tensorlogic-infer = { version = "0.1.2", path = "crates/tensorlogic-infer" }
+tensorlogic-compiler = { version = "0.1.2", path = "crates/tensorlogic-compiler" }
+tensorlogic-scirs-backend = { version = "0.1.2", path = "crates/tensorlogic-scirs-backend" }
+tensorlogic-train = { version = "0.1.2", path = "crates/tensorlogic-train" }
+tensorlogic-oxirs-bridge = { version = "0.1.2", path = "crates/tensorlogic-oxirs-bridge" }
+tensorlogic-sklears-kernels = { version = "0.1.2", path = "crates/tensorlogic-sklears-kernels" }
+tensorlogic-quantrs-hooks = { version = "0.1.2", path = "crates/tensorlogic-quantrs-hooks" }
+tensorlogic-trustformers = { version = "0.1.2", path = "crates/tensorlogic-trustformers" }
 
 # New Round 5 tensorlogic wrapper crates
-tensorlogic-oxicuda-sparse = { version = "0.1.0", path = "crates/tensorlogic-oxicuda-sparse" }
-tensorlogic-oxicuda-solver = { version = "0.1.0", path = "crates/tensorlogic-oxicuda-solver" }
-tensorlogic-oxicuda-rng    = { version = "0.1.0", path = "crates/tensorlogic-oxicuda-rng" }
+tensorlogic-oxicuda-sparse = { version = "0.1.2", path = "crates/tensorlogic-oxicuda-sparse" }
+tensorlogic-oxicuda-solver = { version = "0.1.2", path = "crates/tensorlogic-oxicuda-solver" }
+tensorlogic-oxicuda-rng    = { version = "0.1.2", path = "crates/tensorlogic-oxicuda-rng" }
 
 # OxiCUDA sub-feature crates (Round 5)
-oxicuda-backend = "0.1.8"
-oxicuda-blas    = "0.1.8"
-oxicuda-driver  = "0.1.8"
-oxicuda-fft     = "0.1.8"
-oxicuda-memory  = "0.1.8"
-oxicuda-rand    = "0.1.8"
-oxicuda-solver  = "0.1.8"
-oxicuda-sparse  = "0.1.8"
+oxicuda-backend = "0.5.5"
+oxicuda-blas    = "0.5.5"
+oxicuda-driver  = "0.5.5"
+oxicuda-fft     = "0.5.5"
+oxicuda-memory  = "0.5.5"
+oxicuda-rand    = "0.5.5"
+oxicuda-solver  = "0.5.5"
+oxicuda-sparse  = "0.5.5"
 
 # SciRS2 sparse support
-scirs2-sparse = "0.5.0"
+scirs2-sparse = "0.6.5"
 
 
 [patch.crates-io]

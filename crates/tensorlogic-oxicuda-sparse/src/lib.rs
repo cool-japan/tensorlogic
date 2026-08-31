@@ -82,6 +82,10 @@ mod gpu {
     ///
     /// Returns `Err(SparseError::GpuError(_))` when CUDA initialisation fails;
     /// callers should fall back to the CPU path in that case.
+    ///
+    /// The caller must have validated the `x`/`y` lengths against the matrix
+    /// dimensions beforehand — the kernel indexes device memory directly and
+    /// performs no bounds checking of its own.
     pub(crate) fn gpu_spmv(
         a: &SparseCsr,
         x: &[f32],
@@ -115,6 +119,10 @@ mod gpu {
     ///
     /// Returns `Err(SparseError::GpuError(_))` when CUDA initialisation fails;
     /// callers should fall back to the CPU path in that case.
+    ///
+    /// The caller must have validated the `b`/`c` lengths against the matrix
+    /// dimensions beforehand — the kernel indexes device memory directly and
+    /// performs no bounds checking of its own.
     pub(crate) fn gpu_spmm(
         a: &SparseCsr,
         b: &[f32],
@@ -151,6 +159,71 @@ mod gpu {
 // Always compiled; the GPU path is a wrapper around this for f32.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Shape validation — backend independent.
+//
+// These live at the API boundary rather than inside the CPU kernels because
+// the GPU path hands raw device pointers to the PTX kernels and therefore
+// cannot re-derive the host buffer lengths itself.  Validating up front keeps
+// the contract identical for both backends and stops an undersized `x` from
+// being indexed out of bounds on the device.
+// ---------------------------------------------------------------------------
+
+/// Verify that SpMV operand lengths agree with the CSR matrix dimensions.
+///
+/// # Errors
+///
+/// Returns [`SparseError::ShapeMismatch`] when `x_len != a.cols` or
+/// `y_len != a.rows`.
+fn check_spmv_shapes<T>(a: &SparseCsr<T>, x_len: usize, y_len: usize) -> Result<(), SparseError> {
+    if x_len != a.cols {
+        return Err(SparseError::ShapeMismatch(format!(
+            "spmv: x.len()={} but A.cols={}",
+            x_len, a.cols
+        )));
+    }
+    if y_len != a.rows {
+        return Err(SparseError::ShapeMismatch(format!(
+            "spmv: y.len()={} but A.rows={}",
+            y_len, a.rows
+        )));
+    }
+    Ok(())
+}
+
+/// Verify that SpMM operand lengths agree with the CSR matrix dimensions.
+///
+/// # Errors
+///
+/// Returns [`SparseError::ShapeMismatch`] when `b_len != a.cols * b_cols` or
+/// `c_len != a.rows * b_cols`.
+fn check_spmm_shapes<T>(
+    a: &SparseCsr<T>,
+    b_len: usize,
+    b_cols: usize,
+    c_len: usize,
+) -> Result<(), SparseError> {
+    if b_len != a.cols * b_cols {
+        return Err(SparseError::ShapeMismatch(format!(
+            "spmm: B.len()={} but expected A.cols*b_cols={}*{}={}",
+            b_len,
+            a.cols,
+            b_cols,
+            a.cols * b_cols,
+        )));
+    }
+    if c_len != a.rows * b_cols {
+        return Err(SparseError::ShapeMismatch(format!(
+            "spmm: C.len()={} but expected A.rows*b_cols={}*{}={}",
+            c_len,
+            a.rows,
+            b_cols,
+            a.rows * b_cols,
+        )));
+    }
+    Ok(())
+}
+
 /// Pure-Rust O(nnz) CSR sparse matrix-vector multiply: `y = alpha * A * x + beta * y`.
 ///
 /// Generic over any [`Float`] type.
@@ -161,20 +234,7 @@ pub(crate) fn cpu_spmv_generic<T: Float>(
     beta: T,
     y: &mut [T],
 ) -> Result<(), SparseError> {
-    if x.len() != a.cols {
-        return Err(SparseError::ShapeMismatch(format!(
-            "spmv: x.len()={} but A.cols={}",
-            x.len(),
-            a.cols
-        )));
-    }
-    if y.len() != a.rows {
-        return Err(SparseError::ShapeMismatch(format!(
-            "spmv: y.len()={} but A.rows={}",
-            y.len(),
-            a.rows
-        )));
-    }
+    check_spmv_shapes(a, x.len(), y.len())?;
 
     for (i, y_i) in y.iter_mut().enumerate().take(a.rows) {
         let start = a.indptr[i] as usize;
@@ -205,24 +265,7 @@ fn cpu_spmm_generic<T: Float>(
     let k = a.cols;
     let n = b_cols;
 
-    if b.len() != k * n {
-        return Err(SparseError::ShapeMismatch(format!(
-            "spmm: B.len()={} but expected A.cols*b_cols={}*{}={}",
-            b.len(),
-            k,
-            n,
-            k * n,
-        )));
-    }
-    if c.len() != m * n {
-        return Err(SparseError::ShapeMismatch(format!(
-            "spmm: C.len()={} but expected A.rows*b_cols={}*{}={}",
-            c.len(),
-            m,
-            n,
-            m * n,
-        )));
-    }
+    check_spmm_shapes(a, b.len(), n, c.len())?;
 
     // Pre-allocate temporary column-vector buffers to avoid repeated heap allocation.
     let mut x_col = vec![T::zero(); k];
@@ -304,6 +347,10 @@ pub fn spmv(
     beta: f32,
     y: &mut [f32],
 ) -> Result<(), SparseError> {
+    // Validate before dispatch: the GPU kernel receives bare device pointers
+    // and would happily read past the end of an undersized `x`.
+    check_spmv_shapes(a, x.len(), y.len())?;
+
     #[cfg(feature = "gpu")]
     {
         if gpu::gpu_spmv(a, x, alpha, beta, y).is_ok() {
@@ -346,6 +393,9 @@ pub fn spmm(
     beta: f32,
     c: &mut [f32],
 ) -> Result<(), SparseError> {
+    // Validate before dispatch — see [`spmv`] for the rationale.
+    check_spmm_shapes(a, b.len(), b_cols, c.len())?;
+
     #[cfg(feature = "gpu")]
     {
         if gpu::gpu_spmm(a, b, b_cols, alpha, beta, c).is_ok() {

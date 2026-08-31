@@ -23,15 +23,17 @@ TensorLogic compiles logical rules (predicates, quantifiers, implications) into 
 
 ## 🎉 Stable Release
 
-**Version**: 0.1.1 | **Status**: Stable Release | **Date**: 2026-06-09
+**Version**: 0.1.2 | **Status**: Stable Release | **Date**: 2026-08-30
 
 TensorLogic has reached stable release status with comprehensive testing, benchmarking, and documentation:
 
-- ✅ **SciRS2 ecosystem upgraded to 0.3.4** — Latest scientific computing backend
-- ✅ **OxiRS ecosystem upgraded to 0.2.2** — Major RDF/knowledge graph API upgrade
-- ✅ **SkleaRS upgraded to 0.1.0 stable** — Production-ready kernel integration
-- ✅ **ToRSh upgraded to 0.1.1** — Enhanced neurosymbolic tensor interop
-- ✅ **oxicode upgraded to 0.2** — Improved serialization/codec
+- ✅ **SQLite backend migrated to OxiSQL** — `tensorlogic-adapters`' `sqlite` feature now runs on `oxisql-core`/`oxisql-sqlite-compat` instead of `rusqlite`'s bundled C SQLite, removing the crate's last C dependency (COOLJAPAN Pure Rust policy)
+- ✅ **RDF/Turtle stack migrated to OxiXML** — `tensorlogic-oxirs-bridge` now resolves `oxrdf`/`oxttl` to the COOLJAPAN `oxixml-model`/`oxixml-turtle` crates instead of upstream Oxigraph
+- ✅ **SciRS2 ecosystem upgraded to 0.6.5** — Latest scientific computing backend
+- ✅ **OxiRS ecosystem upgraded to 0.4.1** — Major RDF/knowledge graph API upgrade
+- ✅ **SkleaRS upgraded to 0.2.0** — Production-ready kernel integration
+- ✅ **ToRSh upgraded to 0.2.0** — Enhanced neurosymbolic tensor interop
+- ✅ **oxicode upgraded to 0.2.6** — Improved serialization/codec
 - ✅ **Pure Rust compression** — `flate2` replaced with `oxiarc-deflate` (OxiARC policy)
 - ✅ **RNG unified via scirs2_core** — All `rand_09`/`rand_distr_05` aliases removed; no direct `rand` deps
 - ✅ **No `unwrap()` in production/example/bench code** — clippy::unwrap_used = 0
@@ -543,7 +545,7 @@ let output = attention.forward(&query, &key, &value)?;
 | 7 | Python Bindings | ✅ Production Ready | 98% |
 | 8 | Validation & Scale | ✅ Complete | 100% |
 
-**Overall Project Status**: 🎉 **Stable Release (0.1.1)**
+**Overall Project Status**: 🎉 **Stable Release (0.1.2)**
 
 ## 🤝 Contributing
 

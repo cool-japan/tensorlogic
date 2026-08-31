@@ -1,6 +1,6 @@
 # TensorLogic Adapters — TODO
 
-**Status**: Stable | **Version**: 0.1.1 | **Released**: 2026-04-06 | **Last Updated**: 2026-06-09
+**Status**: Stable | **Version**: 0.1.2 | **Released**: 2026-04-06 | **Last Updated**: 2026-08-30
 **History**: See [CHANGELOG.md](../../CHANGELOG.md) for release history.
 
 External-data adapters (RDF import, SQL/NoSQL bridges) and code generators (Rust, Python, TypeScript, GraphQL).
@@ -175,7 +175,7 @@ External-data adapters (RDF import, SQL/NoSQL bridges) and code generators (Rust
 
 ### Database Integration (Complete)
 - [x] **In-memory database** (SchemaDatabase trait, MemoryDatabase with versioning, SQL gen utilities) — 13 tests
-- [x] **SQLite backend** [feature = "sqlite"] (SQLiteDatabase with rusqlite, persistent file storage, auto-init, version history) — 13 tests
+- [x] **SQLite backend** [feature = "sqlite"] (SQLiteDatabase with oxisql-sqlite-compat (Pure Rust), persistent file storage, auto-init, version history) — 13 tests
 - [x] **PostgreSQL backend** [feature = "postgres"] (PostgreSQLDatabase with tokio-postgres, async API, multi-user, auto-init, version history)
 - [x] **Multi-user locking** (LockedSymbolTable with read/write locks, transactions, lock stats, timeouts) — 15 tests, Example 23
 - [x] **Schema sync across nodes** (vector clocks, conflict resolution, event propagation) — 17 tests, Example 24

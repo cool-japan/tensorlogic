@@ -91,7 +91,7 @@ impl SchemaDatabaseSQL {
     pub fn insert_domain_sql() -> &'static str {
         r#"
         INSERT INTO domains (schema_id, name, cardinality, description, metadata)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5)
         "#
     }
 
@@ -99,7 +99,7 @@ impl SchemaDatabaseSQL {
     pub fn insert_predicate_sql() -> &'static str {
         r#"
         INSERT INTO predicates (schema_id, name, arity, description, constraints, metadata)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6)
         "#
     }
 
@@ -107,7 +107,7 @@ impl SchemaDatabaseSQL {
     pub fn insert_predicate_arg_sql() -> &'static str {
         r#"
         INSERT INTO predicate_arguments (predicate_id, position, domain_name)
-        VALUES (?, ?, ?)
+        VALUES ($1, $2, $3)
         "#
     }
 
@@ -115,28 +115,28 @@ impl SchemaDatabaseSQL {
     pub fn insert_variable_sql() -> &'static str {
         r#"
         INSERT INTO variables (schema_id, name, domain_name)
-        VALUES (?, ?, ?)
+        VALUES ($1, $2, $3)
         "#
     }
 
     /// Generate SELECT query for loading a schema.
     pub fn select_schema_sql() -> &'static str {
-        "SELECT id, name, version, created_at, updated_at, description FROM schemas WHERE id = ?"
+        "SELECT id, name, version, created_at, updated_at, description FROM schemas WHERE id = $1"
     }
 
     /// Generate SELECT query for loading domains.
     pub fn select_domains_sql() -> &'static str {
-        "SELECT name, cardinality, description, metadata FROM domains WHERE schema_id = ?"
+        "SELECT name, cardinality, description, metadata FROM domains WHERE schema_id = $1"
     }
 
     /// Generate SELECT query for loading predicates.
     pub fn select_predicates_sql() -> &'static str {
-        "SELECT id, name, arity, description, constraints, metadata FROM predicates WHERE schema_id = ?"
+        "SELECT id, name, arity, description, constraints, metadata FROM predicates WHERE schema_id = $1"
     }
 
     /// Generate SELECT query for loading predicate arguments.
     pub fn select_predicate_args_sql() -> &'static str {
-        "SELECT position, domain_name FROM predicate_arguments WHERE predicate_id = ? ORDER BY position"
+        "SELECT position, domain_name FROM predicate_arguments WHERE predicate_id = $1 ORDER BY position"
     }
 }
 

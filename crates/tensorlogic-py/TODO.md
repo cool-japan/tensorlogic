@@ -1,6 +1,6 @@
 # TensorLogic Python Bindings — TODO
 
-**Status**: Alpha | **Version**: 0.1.1 | **Released**: 2026-04-06 | **Last Updated**: 2026-06-09
+**Status**: Alpha | **Version**: 0.1.2 | **Released**: 2026-04-06 | **Last Updated**: 2026-08-30
 **History**: See [CHANGELOG.md](../../CHANGELOG.md) for release history.
 
 PyO3 / abi3-py39 Python bindings via maturin.

@@ -224,9 +224,9 @@ fn parse_ntriple_line(line: &str) -> Result<oxrdf::Triple> {
         .strip_prefix('<')
         .and_then(|s| s.strip_suffix('>'))
     {
-        NamedOrBlankNode::NamedNode(NamedNode::new(iri)?)
+        NamedOrBlankNode::NamedNode(NamedNode::new(iri.to_string())?)
     } else if let Some(blank_id) = subject_str.strip_prefix("_:") {
-        NamedOrBlankNode::BlankNode(oxrdf::BlankNode::new(blank_id)?)
+        NamedOrBlankNode::BlankNode(oxrdf::BlankNode::new(blank_id.to_string())?)
     } else {
         anyhow::bail!("Invalid subject: {}", subject_str);
     };
@@ -237,7 +237,7 @@ fn parse_ntriple_line(line: &str) -> Result<oxrdf::Triple> {
         .strip_prefix('<')
         .and_then(|s| s.strip_suffix('>'))
     {
-        NamedNode::new(iri)?
+        NamedNode::new(iri.to_string())?
     } else {
         anyhow::bail!("Invalid predicate: {}", predicate_str);
     };
@@ -248,15 +248,15 @@ fn parse_ntriple_line(line: &str) -> Result<oxrdf::Triple> {
         .strip_prefix('<')
         .and_then(|s| s.strip_suffix('>'))
     {
-        Term::NamedNode(NamedNode::new(iri)?)
+        Term::NamedNode(NamedNode::new(iri.to_string())?)
     } else if let Some(blank_id) = object_str.strip_prefix("_:") {
-        Term::BlankNode(oxrdf::BlankNode::new(blank_id)?)
+        Term::BlankNode(oxrdf::BlankNode::new(blank_id.to_string())?)
     } else if let Some(rest) = object_str.strip_prefix('"') {
         // Parse literal (simplified - doesn't handle language tags or datatypes)
         let end_quote = rest.find('"').unwrap_or(rest.len());
         let literal_value = &rest[..end_quote];
         let unescaped = unescape_literal(literal_value);
-        Term::Literal(Literal::new_simple_literal(&unescaped))
+        Term::Literal(Literal::new_simple_literal(unescaped))
     } else {
         anyhow::bail!("Invalid object: {}", object_str);
     };

@@ -21,11 +21,10 @@ tensorlogic-scirs-backend.workspace = true
 # OxiRS integration - RDF/Knowledge Graph/SPARQL
 oxirs-core.workspace = true
 oxirs-gql.workspace = true
-oxirs-ttl.workspace = true
 
 # Low-level RDF types (for compatibility with existing code)
-oxrdf = "0.3.3"
-oxttl = "0.2.3"
+oxrdf.workspace = true
+oxttl.workspace = true
 
 # Random number generation
 scirs2-core = { workspace = true, features = ["random"] }

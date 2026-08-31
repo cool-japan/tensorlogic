@@ -1,6 +1,6 @@
 # TensorLogic Train — TODO
 
-**Status**: Stable | **Version**: 0.1.1 | **Released**: 2026-04-06 | **Last Updated**: 2026-06-09
+**Status**: Stable | **Version**: 0.1.2 | **Released**: 2026-04-06 | **Last Updated**: 2026-08-30
 **History**: See [CHANGELOG.md](../../CHANGELOG.md) for release history.
 
 Training loop, loss functions, optimizers, schedulers, and callbacks.

@@ -2,7 +2,7 @@
 //!
 //! This module provides functionality to store and retrieve symbol tables
 //! from relational databases. Supported databases:
-//! - SQLite (via rusqlite) - embedded, file-based
+//! - SQLite (via oxisql-sqlite-compat, Pure Rust) - embedded, file-based
 //! - PostgreSQL (via tokio-postgres) - server-based, multi-user
 //!
 //! The database schema includes tables for:

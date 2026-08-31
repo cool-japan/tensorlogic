@@ -46,7 +46,7 @@ pub mod validation;
 pub use report_export::{ReportExportError, ShaclReportExporter, ShaclReportFormat};
 
 use anyhow::Result;
-use oxrdf::{Graph, NamedNode, NamedOrBlankNodeRef, TermRef};
+use oxrdf::{Graph, NamedNode, NamedOrBlankNodeRef, TermRef as RdfTerm};
 use oxttl::TurtleParser;
 use std::collections::HashMap;
 use std::io::BufReader;
@@ -125,7 +125,7 @@ impl ShaclConverter {
         // Find all NodeShapes
         for triple in graph.iter() {
             if triple.predicate == rdf_type.as_ref()
-                && matches!(triple.object, TermRef::NamedNode(n) if n == node_shape.as_ref())
+                && matches!(&triple.object, RdfTerm::NamedNode(n) if *n == node_shape.as_ref())
             {
                 if let NamedOrBlankNodeRef::NamedNode(shape_node) = triple.subject {
                     let mut shape = Shape {
@@ -136,13 +136,13 @@ impl ShaclConverter {
                     // Extract target class
                     for t in graph.triples_for_subject(shape_node) {
                         if t.predicate == target_class.as_ref() {
-                            if let TermRef::NamedNode(class_node) = t.object {
+                            if let RdfTerm::NamedNode(class_node) = &t.object {
                                 shape.target_class =
                                     Some(self.extract_local_name(class_node.as_str()));
                             }
                         } else if t.predicate == property_pred.as_ref() {
                             // Extract property constraints
-                            if let TermRef::BlankNode(prop_node) = t.object {
+                            if let RdfTerm::BlankNode(prop_node) = &t.object {
                                 if let Some(constraint) =
                                     self.extract_property_constraint(graph, prop_node.as_str())?
                                 {
@@ -205,67 +205,67 @@ impl ShaclConverter {
 
         // Find the blank node's properties
         for triple in graph.iter() {
-            if let NamedOrBlankNodeRef::BlankNode(subj_blank) = triple.subject {
+            if let NamedOrBlankNodeRef::BlankNode(subj_blank) = &triple.subject {
                 if subj_blank.as_str() == blank_id {
                     if triple.predicate == path_pred.as_ref() {
-                        if let TermRef::NamedNode(path_node) = triple.object {
+                        if let RdfTerm::NamedNode(path_node) = &triple.object {
                             constraint.path = self.extract_local_name(path_node.as_str());
                         }
                     } else if triple.predicate == min_count_pred.as_ref() {
-                        if let TermRef::Literal(lit) = triple.object {
+                        if let RdfTerm::Literal(lit) = &triple.object {
                             constraint.min_count = lit.value().parse().ok();
                         }
                     } else if triple.predicate == max_count_pred.as_ref() {
-                        if let TermRef::Literal(lit) = triple.object {
+                        if let RdfTerm::Literal(lit) = &triple.object {
                             constraint.max_count = lit.value().parse().ok();
                         }
                     } else if triple.predicate == class_pred.as_ref() {
-                        if let TermRef::NamedNode(class_node) = triple.object {
+                        if let RdfTerm::NamedNode(class_node) = &triple.object {
                             constraint.class = Some(self.extract_local_name(class_node.as_str()));
                         }
                     } else if triple.predicate == datatype_pred.as_ref() {
-                        if let TermRef::NamedNode(datatype_node) = triple.object {
+                        if let RdfTerm::NamedNode(datatype_node) = &triple.object {
                             constraint.datatype =
                                 Some(self.extract_local_name(datatype_node.as_str()));
                         }
                     } else if triple.predicate == pattern_pred.as_ref() {
-                        if let TermRef::Literal(lit) = triple.object {
+                        if let RdfTerm::Literal(lit) = &triple.object {
                             constraint.pattern = Some(lit.value().to_string());
                         }
                     } else if triple.predicate == min_length_pred.as_ref() {
-                        if let TermRef::Literal(lit) = triple.object {
+                        if let RdfTerm::Literal(lit) = &triple.object {
                             constraint.min_length = lit.value().parse().ok();
                         }
                     } else if triple.predicate == max_length_pred.as_ref() {
-                        if let TermRef::Literal(lit) = triple.object {
+                        if let RdfTerm::Literal(lit) = &triple.object {
                             constraint.max_length = lit.value().parse().ok();
                         }
                     } else if triple.predicate == min_inclusive_pred.as_ref() {
-                        if let TermRef::Literal(lit) = triple.object {
+                        if let RdfTerm::Literal(lit) = &triple.object {
                             constraint.min_inclusive = lit.value().parse().ok();
                         }
                     } else if triple.predicate == max_inclusive_pred.as_ref() {
-                        if let TermRef::Literal(lit) = triple.object {
+                        if let RdfTerm::Literal(lit) = &triple.object {
                             constraint.max_inclusive = lit.value().parse().ok();
                         }
                     } else if triple.predicate == in_pred.as_ref() {
                         // sh:in expects an RDF list - for simplicity, we'll extract literals
                         // A full implementation would need to parse RDF lists properly
                         let mut values = Vec::new();
-                        if let TermRef::BlankNode(list_node) = triple.object {
+                        if let RdfTerm::BlankNode(list_node) = &triple.object {
                             values.extend(self.extract_rdf_list(graph, list_node.as_str()));
                         }
                         if !values.is_empty() {
                             constraint.in_values = Some(values);
                         }
                     } else if triple.predicate == node_pred.as_ref() {
-                        if let TermRef::NamedNode(node_shape) = triple.object {
+                        if let RdfTerm::NamedNode(node_shape) = &triple.object {
                             constraint.node = Some(self.extract_local_name(node_shape.as_str()));
                         }
                     } else if triple.predicate == and_pred.as_ref() {
                         // sh:and expects an RDF list of shapes
                         let mut shapes = Vec::new();
-                        if let TermRef::BlankNode(list_node) = triple.object {
+                        if let RdfTerm::BlankNode(list_node) = &triple.object {
                             shapes.extend(self.extract_rdf_list(graph, list_node.as_str()));
                         }
                         if !shapes.is_empty() {
@@ -274,20 +274,20 @@ impl ShaclConverter {
                     } else if triple.predicate == or_pred.as_ref() {
                         // sh:or expects an RDF list of shapes
                         let mut shapes = Vec::new();
-                        if let TermRef::BlankNode(list_node) = triple.object {
+                        if let RdfTerm::BlankNode(list_node) = &triple.object {
                             shapes.extend(self.extract_rdf_list(graph, list_node.as_str()));
                         }
                         if !shapes.is_empty() {
                             constraint.or = Some(shapes);
                         }
                     } else if triple.predicate == not_pred.as_ref() {
-                        if let TermRef::NamedNode(shape_node) = triple.object {
+                        if let RdfTerm::NamedNode(shape_node) = &triple.object {
                             constraint.not = Some(self.extract_local_name(shape_node.as_str()));
                         }
                     } else if triple.predicate == xone_pred.as_ref() {
                         // sh:xone expects an RDF list of shapes
                         let mut shapes = Vec::new();
-                        if let TermRef::BlankNode(list_node) = triple.object {
+                        if let RdfTerm::BlankNode(list_node) = &triple.object {
                             shapes.extend(self.extract_rdf_list(graph, list_node.as_str()));
                         }
                         if !shapes.is_empty() {
@@ -333,26 +333,26 @@ impl ShaclConverter {
             let mut next_node = None;
 
             for triple in graph.iter() {
-                if let NamedOrBlankNodeRef::BlankNode(subj) = triple.subject {
+                if let NamedOrBlankNodeRef::BlankNode(subj) = &triple.subject {
                     if subj.as_str() == current {
                         if triple.predicate == rdf_first.as_ref() {
-                            match triple.object {
-                                TermRef::NamedNode(n) => {
+                            match &triple.object {
+                                RdfTerm::NamedNode(n) => {
                                     values.push(self.extract_local_name(n.as_str()));
                                     found_first = true;
                                 }
-                                TermRef::Literal(lit) => {
+                                RdfTerm::Literal(lit) => {
                                     values.push(lit.value().to_string());
                                     found_first = true;
                                 }
                                 _ => {}
                             }
                         } else if triple.predicate == rdf_rest.as_ref() {
-                            match triple.object {
-                                TermRef::BlankNode(rest) => {
+                            match &triple.object {
+                                RdfTerm::BlankNode(rest) => {
                                     next_node = Some(rest.as_str().to_string());
                                 }
-                                TermRef::NamedNode(n) if n == rdf_nil.as_ref() => {
+                                RdfTerm::NamedNode(n) if *n == rdf_nil.as_ref() => {
                                     return values;
                                 }
                                 _ => {}

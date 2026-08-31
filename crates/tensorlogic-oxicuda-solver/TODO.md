@@ -1,6 +1,6 @@
 # tensorlogic-oxicuda-solver — TODO
 
-**Status**: Alpha | **Version**: 0.1.1 | **Last Updated**: 2026-06-09
+**Status**: Alpha | **Version**: 0.1.2 | **Last Updated**: 2026-08-30
 
 ## Completed
 

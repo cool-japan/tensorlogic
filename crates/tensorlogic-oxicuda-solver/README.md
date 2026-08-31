@@ -4,7 +4,7 @@ GPU-accelerated linear system solvers and matrix decompositions for TensorLogic 
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 [![Status](https://img.shields.io/badge/status-Alpha-yellow.svg)]()
-[![Tests](https://img.shields.io/badge/tests-47%2F47-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-51%2F51-brightgreen.svg)]()
 
 Provides direct and iterative solvers for dense and sparse linear systems. All solvers
 have a pure-Rust CPU implementation (default) that switches to OxiCUDA GPU acceleration

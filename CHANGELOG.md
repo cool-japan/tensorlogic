@@ -5,6 +5,23 @@ All notable changes to TensorLogic will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-08-30
+
+### Added
+
+- **GPU sparse shape validation** (tensorlogic-oxicuda-sparse): new `check_spmv_shapes` / `check_spmm_shapes` helpers validate operand buffer lengths against the CSR matrix dimensions before dispatching to device kernels, returning `SparseError::ShapeMismatch` instead of letting an undersized buffer be indexed out of bounds on the device.
+- `count_for_schema` (tensorlogic-adapters): row-count helper for the SQLite-backed schema store.
+
+### Changed
+
+- **SQLite backend migrated from rusqlite to OxiSQL** (tensorlogic-adapters): the `sqlite` feature now depends on `oxisql-core` + `oxisql-sqlite-compat` instead of `rusqlite` (which bundled a C SQLite build), removing the crate's last C dependency for full Pure Rust compliance. SQL placeholder syntax changed from `?` to numbered `$1, $2, ...` to match OxiSQL's parameter binding; `initialize_schema` no longer requires `&mut self`; reads/writes now run through a dedicated Tokio runtime with errors mapped via a new `map_oxi` helper.
+- **RDF/Turtle stack migrated from oxrdf/oxttl to OxiXML** (tensorlogic-oxirs-bridge): `oxrdf` / `oxttl` are now workspace aliases for the COOLJAPAN `oxixml-model` / `oxixml-turtle` crates (0.1.2) instead of the upstream Oxigraph crates; the now-dead `oxirs-ttl` dependency was dropped. Call sites in `schema/inference.rs`, `schema/metadata.rs`, `schema/nquads.rs`, `schema/ntriples.rs`, and `shacl/mod.rs` were updated for OxiXML's borrowed-reference iterator API.
+- Dependency updates: `scirs2-{core,linalg,autograd,optimize,sparse}` 0.5.0 → 0.6.5; `oxicuda-{backend,blas,driver,fft,memory,rand,solver,sparse}` 0.1.8 → 0.5.5; `torsh-{core,tensor}` 0.1.2 → 0.2.0; `sklears-{core,kernel-approximation}` 0.1.1 → 0.2.0; `quantrs2-{core,circuit,sim}` 0.2.0 → 0.2.1; `oxirs-{core,gql}` 0.3.1 → 0.4.1; `oxicode` → 0.2.6; `oxiarc-deflate` 0.3.3 → 0.4.1; `tabled` 0.20 → 0.21; new `oxisql-core` / `oxisql-sqlite-compat` workspace dependencies at 0.4.1.
+
+### Fixed
+
+- GPU sparse SpMV/SpMM (tensorlogic-oxicuda-sparse) previously trusted caller-supplied buffer lengths when dispatching to device kernels; mismatched `x`/`y` (SpMV) or `b`/`c` (SpMM) lengths could index device memory out of bounds. Both entry points now validate shapes up front and return an error on mismatch instead.
+
 ## [0.1.1] - 2026-06-09
 
 ### Added — Round 7 (2026-06-02)
@@ -420,4 +437,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tutorial notebooks
 - 15+ examples (Rust + Python)
 
+[0.1.2]: https://github.com/cool-japan/tensorlogic/releases/tag/v0.1.2
 [0.1.1]: https://github.com/cool-japan/tensorlogic/releases/tag/v0.1.1

@@ -38,6 +38,5 @@ harness = false
 
 [dev-dependencies]
 criterion = { workspace = true, features = ["html_reports"] }
-tensorlogic-scirs-backend = { workspace = true }
+tensorlogic-scirs-backend = { path = "../tensorlogic-scirs-backend" }
 scirs2-core = { workspace = true }
-tensorlogic-infer = { workspace = true }

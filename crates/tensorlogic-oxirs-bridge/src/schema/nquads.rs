@@ -331,26 +331,28 @@ fn format_object(object: &str) -> String {
 fn quad_to_triple(quad: &Quad) -> Result<Triple> {
     // Parse subject
     let subject = if quad.subject.starts_with("_:") {
-        NamedOrBlankNode::BlankNode(oxrdf::BlankNode::new(&quad.subject[2..])?)
+        NamedOrBlankNode::BlankNode(oxrdf::BlankNode::new(quad.subject[2..].to_string())?)
     } else {
-        NamedOrBlankNode::NamedNode(NamedNode::new(&quad.subject)?)
+        NamedOrBlankNode::NamedNode(NamedNode::new(quad.subject.clone())?)
     };
 
     // Parse predicate
-    let predicate = NamedNode::new(&quad.predicate)?;
+    let predicate = NamedNode::new(quad.predicate.clone())?;
 
     // Parse object
     let object = if quad.object.starts_with('<') && quad.object.ends_with('>') {
-        Term::NamedNode(NamedNode::new(&quad.object[1..quad.object.len() - 1])?)
+        Term::NamedNode(NamedNode::new(
+            quad.object[1..quad.object.len() - 1].to_string(),
+        )?)
     } else if quad.object.starts_with("_:") {
-        Term::BlankNode(oxrdf::BlankNode::new(&quad.object[2..])?)
+        Term::BlankNode(oxrdf::BlankNode::new(quad.object[2..].to_string())?)
     } else if quad.object.starts_with('"') {
         // Parse literal
         let value = extract_literal_value(&quad.object);
-        Term::Literal(Literal::new_simple_literal(&value))
+        Term::Literal(Literal::new_simple_literal(value))
     } else {
         // Treat as simple literal
-        Term::Literal(Literal::new_simple_literal(&quad.object))
+        Term::Literal(Literal::new_simple_literal(quad.object.clone()))
     };
 
     Ok(Triple::new(subject, predicate, object))

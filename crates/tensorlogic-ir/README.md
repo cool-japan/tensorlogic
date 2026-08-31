@@ -4,11 +4,11 @@
 
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic--ir-orange)](https://crates.io/crates/tensorlogic-ir)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-ir)
-[![Tests](https://img.shields.io/badge/tests-806%2F806-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-823%2F823-brightgreen)](#)
 [![Examples](https://img.shields.io/badge/examples-17-blue)](#)
 [![Benchmarks](https://img.shields.io/badge/benchmarks-50+-orange)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
-[![Version](https://img.shields.io/badge/version-0.1.1-blue)](#)
+[![Version](https://img.shields.io/badge/version-0.1.2-blue)](#)
 [![Zero Warnings](https://img.shields.io/badge/warnings-0-success)](#)
 
 ## Overview
@@ -19,7 +19,7 @@ This crate serves as the **lingua franca** between all TensorLogic components, p
 
 ## Features
 
-### Production Ready (v0.1.1)
+### Production Ready (v0.1.2)
 
 #### Advanced Type Systems
 - **Parametric Types**: Type constructors (`List<T>`, `Option<T>`, `Map<K,V>`), unification, generalization
@@ -68,7 +68,7 @@ This crate serves as the **lingua franca** between all TensorLogic components, p
 
 ```toml
 [dependencies]
-tensorlogic-ir = "0.1.1"
+tensorlogic-ir = "0.1.2"
 ```
 
 ## Quick Start
@@ -465,7 +465,7 @@ cargo bench -p tensorlogic-ir
 cargo tarpaulin --out Html
 ```
 
-**Test Status**: 806/806 passing (100%)
+**Test Status**: 823/823 passing (100%)
 - **762 unit tests**: Core functionality, edge cases, automated theorem proving, and S-expression serialization
 - **44 property tests**: Randomized invariant checking (43 passing, 1 ignored)
 - **50+ benchmarks**: Performance measurement across all operations
@@ -605,9 +605,9 @@ Apache-2.0
 
 ---
 
-**Status**: Stable (v0.1.1)
-**Last Updated**: 2026-06-09
-**Tests**: 806/806 passing (100%)
+**Status**: Stable (v0.1.2)
+**Last Updated**: 2026-08-30
+**Tests**: 823/823 passing (100%)
 **Examples**: 17 comprehensive demonstrations
 **Benchmarks**: 50+ performance tests
 **Documentation**: Zero rustdoc warnings with comprehensive module docs

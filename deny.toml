@@ -1,0 +1,70 @@
+# cargo-deny configuration for TensorLogic.
+#
+# Scope: this file is deliberately narrow. Only `[graph]` and `[bans]` are
+# populated because the workspace policy requires `cargo deny check bans`
+# specifically (see CLAUDE.md / COOLJAPAN policy); `[licenses]`,
+# `[advisories]`, and `[sources]` are left at cargo-deny's defaults rather
+# than tuned here, since license/advisory policy is a separate concern from
+# the COOLJAPAN dependency-replacement bans this file exists to enforce.
+#
+# Run with: `cargo deny check bans`
+
+[graph]
+all-features = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+workspace-default-features = "allow"
+external-default-features = "allow"
+# Workspace members (tensorlogic, tensorlogic-cli, tensorlogic-ir,
+# tensorlogic-compiler, tensorlogic-infer, tensorlogic-train,
+# tensorlogic-adapters, tensorlogic-oxirs-bridge, tensorlogic-scirs-backend,
+# tensorlogic-sklears-kernels, tensorlogic-quantrs-hooks,
+# tensorlogic-trustformers, tensorlogic-oxicuda-backend,
+# tensorlogic-oxicuda-sparse, tensorlogic-oxicuda-solver,
+# tensorlogic-oxicuda-rng, bench-tracker) are always allowed regardless of
+# the deny list below.
+allow-workspace = true
+
+deny = [
+    # --- COOLJAPAN ecosystem replacements ---
+    { crate = "bincode", reason = "use oxicode instead (COOLJAPAN policy)" },
+    { crate = "rustfft", reason = "use oxifft instead (COOLJAPAN policy)" },
+    # Reachable only transitively through oxirs-core 0.4.1 (directly, and via
+    # its oxrdfxml dep). oxirs-core is a COOLJAPAN sibling project that has not
+    # yet migrated its RDF/XML parsing to an oxixml-* crate -- the fix belongs
+    # upstream in ~/work/oxirs, not here. Scoped so any *direct* quick-xml use
+    # inside tensorlogic still fails the check.
+    #
+    # NOTE: cargo audit flags two HIGH-severity (CVSS 7.5) RUSTSEC advisories
+    # against quick-xml 0.37.5 pulled in on this exact path. This exposure
+    # already shipped in tensorlogic 0.1.1; it is not new in 0.1.2. Tracked
+    # here pending the upstream oxirs-core migration, not silently dropped.
+    { crate = "quick-xml", wrappers = ["oxrdfxml", "oxirs-core"], reason = "use an oxixml-* crate instead (COOLJAPAN policy)" },
+    { crate = "zip", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "flate2", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "zstd", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "zstd-safe", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "bzip2", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "lz4", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "lz4-sys", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "tar", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "snap", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "brotli", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "miniz_oxide", reason = "use an oxiarc-* crate instead (COOLJAPAN policy)" },
+    { crate = "rusqlite", reason = "use oxisql-sqlite-compat instead (COOLJAPAN policy)" },
+    { crate = "z3", reason = "use oxiz instead (COOLJAPAN policy)" },
+    { crate = "z3-sys", reason = "use oxiz instead (COOLJAPAN policy)" },
+
+    # --- OpenBLAS family: OxiBLAS is the sanctioned pure-Rust replacement.
+    # Not currently reachable anywhere in this workspace's dependency graph
+    # (verified: no crate here references openblas/blas-src/ndarray-linalg);
+    # kept as a standing guard against a future dependency pulling one in.
+    { crate = "openblas-src", reason = "use oxiblas as the production BLAS (COOLJAPAN policy)" },
+    { crate = "openblas-build", reason = "use oxiblas as the production BLAS (COOLJAPAN policy)" },
+    { crate = "blas-src", reason = "use oxiblas as the production BLAS (COOLJAPAN policy)" },
+    { crate = "cblas-sys", reason = "use oxiblas-blas's cblas module instead (COOLJAPAN policy)" },
+    { crate = "lapack-sys", reason = "use oxiblas-lapack instead (COOLJAPAN policy)" },
+    { crate = "ndarray-linalg", reason = "use oxiblas-lapack instead (COOLJAPAN policy)" },
+]

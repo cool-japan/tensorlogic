@@ -2,7 +2,7 @@
 
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic--infer-orange)](https://crates.io/crates/tensorlogic-infer)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-infer)
-[![Tests](https://img.shields.io/badge/tests-909%2F909_passing-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-937%2F937_passing-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-stable-success)](#)
 [![Completion](https://img.shields.io/badge/completion-100%25-success)](#)
 
@@ -1221,7 +1221,7 @@ cargo test -p tensorlogic-infer -- --nocapture
 cargo test -p tensorlogic-infer test_streaming
 ```
 
-**Test Coverage**: 909 tests covering all traits and utilities (100% passing)
+**Test Coverage**: 937 tests covering all traits and utilities (100% passing)
 
 ## Contributing
 
@@ -1233,9 +1233,9 @@ Apache-2.0
 
 ---
 
-**Status**: Stable (v0.1.1)
-**Last Updated**: 2026-06-09
-**Tests**: 909 passing (100%)
+**Status**: Stable (v0.1.2)
+**Last Updated**: 2026-08-30
+**Tests**: 937 passing (100%)
 **Code**: 74 files, ~26,000 lines
 **Completeness**: 100%
 **Dependencies**: Random number generation via `scirs2_core::random` (no direct `rand` dependency)

@@ -1,7 +1,7 @@
 # tensorlogic-train
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic-train-orange)](https://crates.io/crates/tensorlogic-train)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-train)
-[![Tests](https://img.shields.io/badge/tests-741%2F741-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-745%2F745-brightgreen)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
 
 Training scaffolds for Tensorlogic: loss composition, optimizers, schedulers, and callbacks.
@@ -634,7 +634,7 @@ All modules have comprehensive unit tests:
 | `neural_ode.rs` | 22 | RK4, DOPRI5, NeuralOde, adjoint sensitivity (v0.1.18) |
 | `online_learning.rs` | 28 | Perceptron, PassiveAggressive, OGD, FTRL, OnlineStats (v0.1.20) |
 | `adversarial.rs` | 29 | FGSM, PGD, L∞/L2/L1, adversarial training loss (v0.1.21) |
-| **Total** | **741** | **100%** |
+| **Total** | **745** | **100%** |
 
 Run tests with:
 
@@ -721,10 +721,10 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
 
 ---
 
-**Status**: Production Ready (v0.1.1 Stable)
-**Last Updated**: 2026-06-09
-**Version**: 0.1.1
-**Test Coverage**: 741/741 tests passing (100%)
+**Status**: Production Ready (v0.1.2 Stable)
+**Last Updated**: 2026-08-30
+**Version**: 0.1.2
+**Test Coverage**: 745/745 tests passing (100%)
 **Code Quality**: Zero warnings, clippy clean
 **Features**: 15 losses, 18 optimizers, 12 schedulers, 14+ callbacks, 9 regularization techniques, 9 augmentations, DropPath, DropBlock, quantization, mixed precision, few-shot learning, meta-learning, Bayesian optimization, gradient centralization, Neural ODE (RK4/DOPRI5/adjoint), online learning (Perceptron/PA/OGD/FTRL), adversarial training (FGSM/PGD)
 **Examples**: 20 comprehensive training examples

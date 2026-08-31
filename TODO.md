@@ -1,6 +1,11 @@
 # TensorLogic — TODO
 
-**Status**: Stable | **Version**: 0.1.1 | **Released**: 2026-06-09 | **Last Updated**: 2026-06-09
+**Status**: Stable | **Version**: 0.1.2 | **Released**: 2026-08-30 | **Last Updated**: 2026-08-30
+
+## Stubs to implement (added 2026-06-12 by /cooljapan-stub-check)
+
+- [ ] `tensorlogic-infer`: `crates/tensorlogic-infer/src/backend_kind.rs:139` — implement Metal, Vulkan, ROCm, WebGPU, LevelZero backends (currently doc-hidden stubs)
+  - Priority: P2 | Scope: large | Hint: none
 **History**: See [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ## Round 5 (2026-04-17) — Complete
@@ -11,8 +16,8 @@
 - [x] **tensorlogic-oxicuda-solver** — new wrapper crate: `solve_lu`, `solve_cholesky`, `solve_qr_lstsq`, `cg_solve`. Pure-Rust CPU solvers (Doolittle LU, Cholesky-Banachiewicz, Modified Gram-Schmidt QR, CG). GPU path: stubbed.
 - [x] **tensorlogic-oxicuda-rng** — new wrapper crate: `RngEngine` (PCG-XSH-RR, Box-Muller), `uniform_f32`, `normal_f32`, `bernoulli`. `Send+!Sync`. GPU path: stubbed.
 - [x] **Umbrella feature flags** — `sparse`, `solver`, `rng`, `full-advanced` added to `crates/tensorlogic/Cargo.toml` and re-exported in `crates/tensorlogic/src/lib.rs`.
-- [x] **`[patch.crates-io]` extended** — `oxicuda-sparse`, `oxicuda-solver`, `oxicuda-rand` patched to `/notebooks/oxicuda/crates/*`.
-- [x] **Native `fill` kernel** — `oxicuda_blas::elementwise::fill<T>()` in `/notebooks/oxicuda/crates/oxicuda-blas/src/elementwise/fill.rs`. PTX via `ElementwiseOp::Fill` (added to oxicuda-ptx).
+- [x] **`[patch.crates-io]` extended** — `oxicuda-sparse`, `oxicuda-solver`, `oxicuda-rand` patched to `$HOME/work/oxicuda/crates/*`.
+- [x] **Native `fill` kernel** — `oxicuda_blas::elementwise::fill<T>()` in `$HOME/work/oxicuda/crates/oxicuda-blas/src/elementwise/fill.rs`. PTX via `ElementwiseOp::Fill` (added to oxicuda-ptx).
 - [x] **Native `broadcast_axes` kernel** — `oxicuda_blas::elementwise::broadcast_axes<T>()` in `.../broadcast.rs`. `BroadcastTemplate` in oxicuda-ptx uses stride-zero trick; 28-param PTX kernel supports rank ≤ 8.
 - [x] **Autodiff rewiring** — `crates/tensorlogic-oxicuda-backend`: `native-broadcast = ["gpu"]` feature. Under this feature, `broadcast_to_shape` and Mean-divisor `fill` use native GPU kernels (upload→kernel→readback). Removed 4 `TODO(perf)` Round-5-follow-up comments.
 - [x] **LRU cache correctness fix** — `tensorlogic-infer/src/memo_cache.rs`: `find_lru_key` now uses the deque-front strategy (O(1), tie-safe) instead of `min_by_key(last_accessed)` which was racy under nanosecond-level Instant precision.
@@ -147,6 +152,22 @@ All initial v0.2.0 research-preview items for in-repo work are delivered. Next e
 - `tensorlogic-train/src/nas/tests.rs`: 15 new tests; 741 total in crate
 - `tensorlogic-sklears-kernels/src/svm/tests.rs`: 24 new tests; 557 total in crate
 - **Full workspace: 7019 tests, 7018 passed, 21 skipped (GPU-only), 0 failures** (1 pre-existing resource-exhaustion flake in tensorlogic-adapters::integration_tests, passes in isolation)
+
+## Round 9 (2026-08-30) — Complete
+
+### Deliverables
+
+- [x] **SQLite backend migrated from rusqlite to OxiSQL** (tensorlogic-adapters) — the `sqlite` feature now depends on `oxisql-core` + `oxisql-sqlite-compat` instead of `rusqlite` (which bundled a C SQLite build), removing the crate's last C dependency for full Pure Rust compliance. SQL placeholder syntax changed from `?` to numbered `$1, $2, ...`; `initialize_schema` no longer requires `&mut self`; reads/writes now run through a dedicated Tokio runtime with errors mapped via a new `map_oxi` helper; new `count_for_schema` row-count helper.
+- [x] **RDF/Turtle stack migrated from oxrdf/oxttl to OxiXML** (tensorlogic-oxirs-bridge) — `oxrdf`/`oxttl` are now workspace aliases for the COOLJAPAN `oxixml-model`/`oxixml-turtle` crates (0.1.2) instead of the upstream Oxigraph crates; the dead `oxirs-ttl` dependency was dropped. Call sites in `schema/inference.rs`, `schema/metadata.rs`, `schema/nquads.rs`, `schema/ntriples.rs`, and `shacl/mod.rs` updated for OxiXML's borrowed-reference iterator API.
+- [x] **GPU sparse shape validation** (tensorlogic-oxicuda-sparse) — new `check_spmv_shapes`/`check_spmm_shapes` helpers validate operand buffer lengths against CSR matrix dimensions before dispatching to device kernels, closing an out-of-bounds device-memory risk on mismatched `x`/`y` (SpMV) or `b`/`c` (SpMM) lengths.
+- [x] Dependency updates: `scirs2-{core,linalg,autograd,optimize,sparse}` 0.5.0 → 0.6.5; `oxicuda-{backend,blas,driver,fft,memory,rand,solver,sparse}` 0.1.8 → 0.5.5; `torsh-{core,tensor}` 0.1.2 → 0.2.0; `sklears-{core,kernel-approximation}` 0.1.1 → 0.2.0; `quantrs2-{core,circuit,sim}` 0.2.0 → 0.2.1; `oxirs-{core,gql}` 0.3.1 → 0.4.1; `oxicode` → 0.2.6; `oxiarc-deflate` 0.3.3 → 0.4.1.
+
+### Round 9 Test Coverage
+- **Full workspace: 7019 tests (default features), 7178 tests (--all-features), 0 failures** — net test count unchanged from Round 8 (this round was migrations/hardening, not new surface area).
+
+### Known non-blocking items (tracked, not resolved this round)
+- Two HIGH-severity RUSTSEC advisories in `quick-xml 0.37.5`, reachable transitively via `oxirs-core` → `oxrdfxml` (this exposure already shipped in 0.1.1). Fix belongs upstream in `oxirs-core`, not here; scoped in `deny.toml` pending that migration.
+- `tensorlogic-py` (standalone PyO3 crate, not part of the crates.io publish set) currently fails to build standalone due to an upstream `numpy 0.27` (ndarray 0.16) vs `scirs2-core 0.6.5` (ndarray 0.17) conflict. Unrelated to this round's changes.
 
 ## Per-crate TODOs
 

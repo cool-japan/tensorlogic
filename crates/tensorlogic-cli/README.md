@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../../LICENSE)
 [![Status](https://img.shields.io/badge/status-stable-success)](#)
 
-**Version**: 0.1.1 | **Status**: Stable | **Last Updated**: 2026-06-09
+**Version**: 0.1.2 | **Status**: Stable | **Last Updated**: 2026-08-30
 
 A comprehensive command-line tool for compiling logical expressions to tensor graphs using TensorLogic.
 

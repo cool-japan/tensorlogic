@@ -189,7 +189,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tensorlogic-adapters = "0.1.1"
+tensorlogic-adapters = "0.1.2"
 ```
 
 ## Quick Start
@@ -645,8 +645,8 @@ Licensed under the Apache License, Version 2.0. See [LICENSE](../../LICENSE) for
 
 ---
 
-**Status**: Stable (v0.1.1)
-**Last Updated**: 2026-06-09
+**Status**: Stable (v0.1.2)
+**Last Updated**: 2026-08-30
 **Tests**: 602/602 passing (100%)
 **Lines of Code**: ~31,500+ (70+ Rust files)
 **Examples**: 26 comprehensive examples

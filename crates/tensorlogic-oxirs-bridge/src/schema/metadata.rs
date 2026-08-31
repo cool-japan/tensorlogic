@@ -210,12 +210,12 @@ impl MetadataStore {
             .context("Invalid IRI")?;
 
         for triple in graph.iter() {
-            if let NamedOrBlankNodeRef::NamedNode(subject) = triple.subject {
+            if let NamedOrBlankNodeRef::NamedNode(subject) = &triple.subject {
                 let subject_iri = subject.as_str().to_string();
 
                 // Extract labels
                 if triple.predicate == rdfs_label.as_ref() {
-                    if let TermRef::Literal(lit) = triple.object {
+                    if let TermRef::Literal(lit) = &triple.object {
                         let meta = self.get_or_create(&subject_iri);
                         meta.add_label(
                             lit.value().to_string(),
@@ -226,7 +226,7 @@ impl MetadataStore {
 
                 // Extract comments
                 if triple.predicate == rdfs_comment.as_ref() {
-                    if let TermRef::Literal(lit) = triple.object {
+                    if let TermRef::Literal(lit) = &triple.object {
                         let meta = self.get_or_create(&subject_iri);
                         meta.add_comment(
                             lit.value().to_string(),
@@ -244,7 +244,7 @@ impl MetadataStore {
                     .map(|(name, _)| name.clone());
 
                 if let Some(name) = annotation_name {
-                    if let TermRef::Literal(lit) = triple.object {
+                    if let TermRef::Literal(lit) = &triple.object {
                         let meta = self.get_or_create(&subject_iri);
                         meta.add_annotation(name, lit.value().to_string());
                     }

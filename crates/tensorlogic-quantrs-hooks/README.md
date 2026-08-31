@@ -2,7 +2,7 @@
 
 [![Crate](https://img.shields.io/badge/crates.io-tensorlogic--quantrs--hooks-orange)](https://crates.io/crates/tensorlogic-quantrs-hooks)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue)](https://docs.rs/tensorlogic-quantrs-hooks)
-[![Tests](https://img.shields.io/badge/tests-276%2F276-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-346%2F346-brightgreen)](#)
 [![Benchmarks](https://img.shields.io/badge/benchmarks-50%2B-blue)](#)
 [![Production](https://img.shields.io/badge/status-production_ready-success)](#)
 
@@ -92,7 +92,7 @@ Bridge between logic-based reasoning and probabilistic inference through factor 
 - **Quality Assurance**:
   - Property-based testing with proptest (14 property tests)
   - Comprehensive benchmark suite with criterion (50+ benchmarks across 3 suites)
-  - 276 tests (100% pass rate for non-precision-limited tests, 4 skipped)
+  - 346 tests (100% pass rate for non-precision-limited tests, 4 skipped)
   - 4 tests skipped with documented precision investigation notes
 - **Full SciRS2 Integration**: All tensor operations use SciRS2 for performance and consistency
 
@@ -311,7 +311,7 @@ streaming.process_batch(&batch, &algorithm)?;
 
 ```bash
 cargo nextest run -p tensorlogic-quantrs-hooks
-# 276 tests, all applicable tests passing (4 skipped)
+# 346 tests, all applicable tests passing (4 skipped)
 ```
 
 ## Benchmarking
@@ -380,9 +380,9 @@ Apache-2.0
 
 ---
 
-**Status**: Production Ready (v0.1.1 Stable)
-**Last Updated**: 2026-06-09
-**Tests**: 276 passing (100% pass rate for non-precision-limited tests, 4 skipped)
+**Status**: Production Ready (v0.1.2 Stable)
+**Last Updated**: 2026-08-30
+**Tests**: 346 passing (100% pass rate for non-precision-limited tests, 4 skipped)
 **Benchmarks**: 3 suites, 50+ benchmarks
 **Examples**: 8 comprehensive examples
 **Part of**: [TensorLogic Ecosystem](https://github.com/cool-japan/tensorlogic)
