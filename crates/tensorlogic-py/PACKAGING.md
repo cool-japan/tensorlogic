@@ -59,7 +59,7 @@ The bindings use:
 
 4. **Development Dependencies**:
    ```bash
-   pip install -r crates/pytensorlogic/requirements-dev.txt
+   pip install -r crates/tensorlogic-py/requirements-dev.txt
    ```
 
 ### Optional Tools
@@ -99,7 +99,7 @@ source .venv/bin/activate
 ### 3. Install Development Dependencies
 
 ```bash
-cd crates/pytensorlogic
+cd crates/tensorlogic-py
 pip install -r requirements-dev.txt
 ```
 
@@ -110,7 +110,7 @@ pip install -r requirements-dev.txt
 The fastest way to test changes during development:
 
 ```bash
-cd crates/pytensorlogic
+cd crates/tensorlogic-py
 
 # Build and install in development mode (editable)
 maturin develop
@@ -145,7 +145,7 @@ maturin develop --features "simd,cpu"
 pytest tests/
 
 # Rust tests
-cargo test -p pytensorlogic
+cargo test -p tensorlogic-py
 
 # All workspace tests
 cargo test --workspace
@@ -174,7 +174,7 @@ pytest tests/test_types.py -v
 Build an optimized wheel for your current platform:
 
 ```bash
-cd crates/pytensorlogic
+cd crates/tensorlogic-py
 
 # Build release wheel
 maturin build --release
@@ -221,7 +221,7 @@ cargo install cross
 # Build for manylinux (widely compatible Linux wheels)
 docker run --rm -v $(pwd):/io \
   ghcr.io/pyo3/maturin:latest \
-  build --release -m crates/pytensorlogic/Cargo.toml
+  build --release -m crates/tensorlogic-py/Cargo.toml
 
 # This creates wheels compatible with most Linux distributions
 ```
@@ -290,7 +290,7 @@ chmod 600 ~/.pypirc
 ### 2. Build Release Wheels
 
 ```bash
-cd crates/pytensorlogic
+cd crates/tensorlogic-py
 
 # Clean previous builds
 rm -rf target/wheels/*
@@ -375,7 +375,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist -m crates/pytensorlogic/Cargo.toml
+          args: --release --out dist -m crates/tensorlogic-py/Cargo.toml
           sccache: 'true'
           manylinux: auto
 
@@ -397,7 +397,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist -m crates/pytensorlogic/Cargo.toml
+          args: --release --out dist -m crates/tensorlogic-py/Cargo.toml
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -417,7 +417,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist -m crates/pytensorlogic/Cargo.toml
+          args: --release --out dist -m crates/tensorlogic-py/Cargo.toml
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -463,11 +463,11 @@ build:linux:
   stage: build
   image: ghcr.io/pyo3/maturin:latest
   script:
-    - cd crates/pytensorlogic
+    - cd crates/tensorlogic-py
     - maturin build --release --out dist
   artifacts:
     paths:
-      - crates/pytensorlogic/target/wheels/
+      - crates/tensorlogic-py/target/wheels/
     expire_in: 1 week
 
 test:
@@ -476,9 +476,9 @@ test:
   dependencies:
     - build:linux
   script:
-    - pip install crates/pytensorlogic/target/wheels/*.whl
+    - pip install crates/tensorlogic-py/target/wheels/*.whl
     - pip install pytest numpy
-    - cd crates/pytensorlogic
+    - cd crates/tensorlogic-py
     - pytest tests/
 
 deploy:pypi:
@@ -490,7 +490,7 @@ deploy:pypi:
     - tags
   script:
     - pip install maturin
-    - cd crates/pytensorlogic
+    - cd crates/tensorlogic-py
     - maturin upload target/wheels/*
   environment:
     name: production
@@ -543,7 +543,7 @@ maturin develop --interpreter python3.11
 ```bash
 # Build from source
 pip install maturin
-cd crates/pytensorlogic
+cd crates/tensorlogic-py
 maturin develop
 ```
 
@@ -700,14 +700,14 @@ For projects with multiple Python packages:
 # workspace Cargo.toml
 [workspace]
 members = [
-    "crates/pytensorlogic",
-    "crates/pytensorlogic-gpu",
+    "crates/tensorlogic-py",
+    "crates/tensorlogic-py-gpu",
 ]
 ```
 
 Build specific package:
 ```bash
-maturin build -m crates/pytensorlogic/Cargo.toml
+maturin build -m crates/tensorlogic-py/Cargo.toml
 ```
 
 ### 7. Conditional Compilation
@@ -766,7 +766,7 @@ maturin build --release --features simd  # With features
 
 # Testing
 pytest tests/                     # Run Python tests
-cargo test -p pytensorlogic      # Run Rust tests
+cargo test -p tensorlogic-py      # Run Rust tests
 
 # Publishing
 maturin publish --no-sdist --repository testpypi  # Upload to TestPyPI
@@ -788,7 +788,7 @@ export CARGO_INCREMENTAL=1               # Incremental compilation
 export MATURIN_PEP517_ARGS="--features simd"  # Default features
 
 # Python
-export PYTHONPATH="$PWD/crates/pytensorlogic/python"  # Add to path
+export PYTHONPATH="$PWD/crates/tensorlogic-py/python"  # Add to path
 ```
 
 ## Conclusion

@@ -45,13 +45,13 @@ tensorlogic-scirs-backend = "0.1.0"
 ### Python
 
 ```bash
-pip install tensorlogic-py
+pip install pytensorlogic
 ```
 
 ### CLI Tool
 
 ```bash
-cargo install tensorlogic --bin tlc
+cargo install tensorlogic-cli
 ```
 
 ## Basic Concepts
