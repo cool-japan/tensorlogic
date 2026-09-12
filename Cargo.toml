@@ -68,7 +68,7 @@ notify = "8.2"
 indicatif = "0.18"
 dirs = "6.0"
 num_cpus = "1.17"
-oxiarc-deflate = "0.4.1"
+oxiarc-deflate = "0.4.2"
 
 # Dev dependencies
 assert_cmd = "2.2"
