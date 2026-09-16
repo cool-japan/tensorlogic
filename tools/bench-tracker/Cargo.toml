@@ -7,7 +7,7 @@ license.workspace = true
 description = "Benchmark regression tracking tool for TensorLogic"
 readme = "README.md"
 keywords = ["benchmark", "regression", "tracking", "performance", "tensorlogic"]
-categories = ["development-tools", "development-tools::profiling"]
+categories = ["development-tools::profiling"]
 documentation = "https://docs.rs/bench-tracker"
 
 [[bin]]
