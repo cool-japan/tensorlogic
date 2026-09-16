@@ -9,7 +9,7 @@ repository.workspace = true
 documentation = "https://docs.rs/tensorlogic-quantrs-hooks"
 readme = "README.md"
 keywords = ["tensor", "logic", "quantum-computing", "quantum-circuits", "hooks"]
-categories = ["science", "algorithms", "simulation"]
+categories = ["science::quantum-computing", "algorithms", "simulation"]
 
 [dependencies]
 anyhow.workspace = true
