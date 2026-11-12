@@ -574,7 +574,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## Sponsorship
 
-TensorLogic is developed and maintained by **COOLJAPAN OU (Team Kitasan)**.
+TensorLogic is developed and maintained by **COOLJAPAN OU (Team KitaSan)**.
 
 If you find TensorLogic useful, please consider sponsoring the project to support continued development of the Pure Rust ecosystem.
 

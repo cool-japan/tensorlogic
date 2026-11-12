@@ -30,7 +30,7 @@ resolver = "2"
 [workspace.package]
 version = "0.1.3"
 edition = "2021"
-authors = ["COOLJAPAN OU (Team Kitasan)"]
+authors = ["COOLJAPAN OU (Team KitaSan)"]
 license = "Apache-2.0"
 homepage = "https://github.com/cool-japan/tensorlogic"
 repository = "https://github.com/cool-japan/tensorlogic"
